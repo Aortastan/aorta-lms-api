@@ -63,12 +63,11 @@ class AuthController extends Controller
             'name' => 'required',
             'email' => 'required|email|unique:users',
             'username' => 'required|unique:users',
-            'password' => 'required',
+            'password' => 'required|min:8',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false,
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
@@ -81,13 +80,16 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'username' => $request->username,
             'role' => 'student',
-        ])->sendEmailVerificationNotification();
+        ]);
+        $user->sendEmailVerificationNotification();
+        $token = JWTAuth::fromUser($user);
         return response()->json([
-            'success' => true,
             'message' => 'Check your email',
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60
         ], 200);
-        // $token = JWTAuth::fromUser($user);
-        // return $this->respondWithToken($token);
+
 
     }
 

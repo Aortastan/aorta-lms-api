@@ -60,12 +60,11 @@ class VerificationController extends Controller
         if(Auth::user()->hasVerifiedEmail()){
             return response()->json([
                 'message' => 'Your email already verified',
-            ], 200);
+            ], 403);
         }
 
         Auth()->user()->sendEmailVerificationNotification();
         return response()->json([
-            'success' => true,
             'message' => 'Check your email',
         ], 200);
     }
