@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 
 class VerificationController extends Controller
@@ -35,8 +37,36 @@ class VerificationController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth');
+        // $this->middleware('auth');
         $this->middleware('signed')->only('verify');
         $this->middleware('throttle:6,1')->only('verify', 'resend');
+    }
+
+    public function verify($id, Request $request){
+        if(!$request->hasValidSignature()){
+            return response()->json([
+                'message' => 'Verification email fails',
+            ], 400);
+        }
+
+        $user = User::find($id);
+        if(!$user->hasVerifiedEmail()){
+            $user->markEmailAsVerified();
+        }
+        return  redirect()->route('home');
+    }
+
+    public function resend(){
+        if(Auth::user()->hasVerifiedEmail()){
+            return response()->json([
+                'message' => 'Your email already verified',
+            ], 200);
+        }
+
+        Auth()->user()->sendEmailVerificationNotification();
+        return response()->json([
+            'success' => true,
+            'message' => 'Check your email',
+        ], 200);
     }
 }

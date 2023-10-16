@@ -16,7 +16,7 @@ class CreateAssignmentsTable extends Migration
         Schema::create('assignments', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreginId('lesson_id');
+            $table->foreignId('lesson_id');
             $table->string('name');
             $table->text('description');
             $table->boolean('status');

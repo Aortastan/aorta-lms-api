@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\User;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
+
+use Illuminate\Support\Facades\Validator;
+
 
 class AuthController extends Controller
 {
@@ -18,7 +21,7 @@ class AuthController extends Controller
     public function __construct()
     {
         # except for authenticate/login & register
-        $this->middleware('auth:api', ['except' => ['authenticate','register']]);
+        $this->middleware(['auth:api'], ['except' => ['authenticate','register']]);
     }
 
     /**
@@ -28,12 +31,21 @@ class AuthController extends Controller
      * @return JsonResponse
      */
     public function authenticate(Request $request): JsonResponse{
-        //Verify fields
-        $this->validate($request,['email' => 'required|email','password'=> 'required']);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
         //Verify login information
         $credentials = $request->only(['email','password']);
         if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'Incorrect credentials'], 401);
+            return response()->json(['message' => 'Incorrect credentials'], 401);
         }
         return $this->respondWithToken($token);
 
@@ -47,21 +59,35 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse{
 
-        $existingUser = User::where('email', $request->email)->first();
-        if($existingUser) {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required',
+            'email' => 'required|email|unique:users',
+            'username' => 'required|unique:users',
+            'password' => 'required',
+        ]);
+
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'User already exists',
-            ], 400);
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
+
         //Create a new user and return the token token token
         $user =  User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-        ]);
-        $token = JWTAuth::fromUser($user);
-        return $this->respondWithToken($token);
+            'username' => $request->username,
+            'role' => 'student',
+        ])->sendEmailVerificationNotification();
+        return response()->json([
+            'success' => true,
+            'message' => 'Check your email',
+        ], 200);
+        // $token = JWTAuth::fromUser($user);
+        // return $this->respondWithToken($token);
 
     }
 
@@ -84,12 +110,12 @@ class AuthController extends Controller
     {
         auth()->logout();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return response()->json(['message' => 'Successfully logged out'], 200);
     }
 
     /**
      * Refresh a token.
-     * Maybe implement in the future: https://github.com/tymondesigns/jwt-auth/issues/872#issuecomment-256616017 
+     * Maybe implement in the future: https://github.com/tymondesigns/jwt-auth/issues/872#issuecomment-256616017
      * @return JsonResponse
      */
     public function refresh(): JsonResponse
@@ -112,4 +138,6 @@ class AuthController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 60
         ]);
     }
+
+
 }
