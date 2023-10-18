@@ -48,12 +48,22 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // question management
         Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
             Route::get('', 'Admin\QuestionController@index')->name('get');
-            Route::get('{detail}', 'Admin\QuestionController@show')->name('get.detail'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
+            Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
             Route::post('', 'Admin\QuestionController@store')->name('store');
             Route::put('{uuid}', 'Admin\QuestionController@update')->name('update');
             Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
         });
         // end question management
+
+        // category management
+        Route::group(['prefix' => 'categories', 'as' => 'categories.',], function () {
+            Route::get('', 'Admin\CategoryController@index')->name('get');
+            Route::get('{uuid}', 'Admin\CategoryController@show')->name('show');
+            Route::post('', 'Admin\CategoryController@store')->name('store');
+            Route::put('{uuid}', 'Admin\CategoryController@update')->name('update');
+            Route::delete('{uuid}', 'Admin\CategoryController@delete')->name('delete');
+        });
+        // end category management
 
     });
 });
