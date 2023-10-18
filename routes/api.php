@@ -75,5 +75,14 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // end tag management
 
+        // blog management
+        Route::group(['prefix' => 'blogs', 'as' => 'blogs.',], function () {
+            Route::get('', 'Admin\BlogController@index')->name('get');
+            Route::get('{uuid}', 'Admin\BlogController@show')->name('show');
+            Route::post('', 'Admin\BlogController@store')->name('store');
+            Route::put('{uuid}', 'Admin\BlogController@update')->name('update');
+            Route::delete('{uuid}', 'Admin\BlogController@delete')->name('delete');
+        });
+        // end blog management
     });
 });
