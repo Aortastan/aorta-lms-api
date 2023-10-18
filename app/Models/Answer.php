@@ -17,12 +17,17 @@ class Answer extends Model
      * @var array
      */
     protected $fillable = [
-        'question_id',
+        'question_uuid',
         'answer',
         'image',
         'is_correct',
         'point',
     ];
+
+    public function question()
+    {
+        return $this->belongsTo(Question::class, 'question_id', 'id');
+    }
 
     protected static function boot()
     {

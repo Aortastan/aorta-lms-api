@@ -28,6 +28,11 @@ class Question extends Model
         'type',
     ];
 
+    public function answers()
+    {
+        return $this->hasMany(Answer::class);
+    }
+
     protected static function boot()
     {
         parent::boot();

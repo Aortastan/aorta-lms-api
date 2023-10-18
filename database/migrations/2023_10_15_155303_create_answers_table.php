@@ -16,10 +16,10 @@ class CreateAnswersTable extends Migration
         Schema::create('answers', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('question_id');
+            $table->string('question_uuid');
             $table->text('answer');
             $table->string('image')->nullable();
-            $table->boolean('is_correct');
+            $table->boolean('is_correct')->nullable();
             $table->integer('point')->nullable();
             $table->timestamps();
         });

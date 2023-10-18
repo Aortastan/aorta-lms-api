@@ -24,6 +24,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('logout', 'AuthController@logout');
 
     Route::group(['middleware' => ['auth', 'admin', 'verified'], 'prefix' => 'admin', 'as' => 'admin.',], function () {
+        // User management
         Route::group(['prefix' => 'users', 'as' => 'users.',], function () {
             Route::group(['prefix' => 'admin', 'as' => 'admin.',], function () {
                 Route::get('', 'Admin\UserController@indexAdmin')->name('get');
@@ -42,6 +43,17 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
             Route::delete('users/{uuid}', 'Admin\UserController@delete')->name('delete');
         });
+        // end user management
+
+        // question management
+        Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
+            Route::get('', 'Admin\QuestionController@index')->name('get');
+            Route::get('{detail}', 'Admin\QuestionController@show')->name('get.detail'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
+            Route::post('', 'Admin\QuestionController@store')->name('store');
+            Route::put('{uuid}', 'Admin\QuestionController@update')->name('update');
+            Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
+        });
+        // end question management
 
     });
 });
