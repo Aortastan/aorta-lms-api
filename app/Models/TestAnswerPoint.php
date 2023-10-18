@@ -18,7 +18,7 @@ class TestAnswerPoint extends Model
      * @var array
      */
     protected $fillable = [
-        'test_id',
+        'test_uuid',
         'answer_data',
     ];
 

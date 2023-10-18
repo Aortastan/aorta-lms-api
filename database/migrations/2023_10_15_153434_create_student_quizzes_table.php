@@ -17,8 +17,8 @@ class CreateStudentQuizzesTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->text('data_question');
-            $table->foreignId('user_id');
-            $table->foreignId('lesson_quiz_id');
+            $table->string('user_uuid');
+            $table->string('lesson_quiz_uuid');
             $table->integer('score');
             $table->timestamps();
         });

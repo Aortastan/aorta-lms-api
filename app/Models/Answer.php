@@ -26,7 +26,7 @@ class Answer extends Model
 
     public function question()
     {
-        return $this->belongsTo(Question::class, 'question_id', 'id');
+        return $this->belongsTo(Question::class, 'question_uuid');
     }
 
     protected static function boot()

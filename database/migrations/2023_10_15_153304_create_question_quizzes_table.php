@@ -16,8 +16,8 @@ class CreateQuestionQuizzesTable extends Migration
         Schema::create('question_quizzes', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('lesson_quiz_id');
-            $table->foreignId('question_id');
+            $table->string('lesson_quiz_uuid');
+            $table->string('question_uuid');
             $table->timestamps();
         });
     }

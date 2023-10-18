@@ -18,8 +18,8 @@ class PretestPosttest extends Model
      * @var array
      */
     protected $fillable = [
-       'package_id',
-       'test_id',
+       'package_uuid',
+       'test_uuid',
        'max_attempt',
     ];
 

@@ -18,8 +18,8 @@ class MembershipHistory extends Model
      * @var array
      */
     protected $fillable = [
-        'transaction_id',
-        'package_id',
+        'transaction_uuid',
+        'package_uuid',
         'expired_date',
     ];
 

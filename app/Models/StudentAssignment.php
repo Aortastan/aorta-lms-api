@@ -18,8 +18,8 @@ class StudentAssignment extends Model
      * @var array
      */
     protected $fillable = [
-        'student_id',
-        'assignment_id',
+        'student_uuid',
+        'assignment_uuid',
         'assignment_url',
         'feedback',
         'status',

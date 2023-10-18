@@ -18,8 +18,8 @@ class PackageCourse extends Model
      * @var array
      */
     protected $fillable = [
-        'package_id',
-        'course_id',
+        'package_uuid',
+        'course_uuid',
         'status',
     ];
 

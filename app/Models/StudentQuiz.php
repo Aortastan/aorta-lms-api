@@ -19,8 +19,8 @@ class StudentQuiz extends Model
      */
     protected $fillable = [
         'data_question',
-        'user_id',
-        'lesson_quiz_id',
+        'user_uuid',
+        'lesson_quiz_uuid',
         'score',
     ];
 

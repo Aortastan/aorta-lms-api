@@ -18,8 +18,8 @@ class ClaimedCoupon extends Model
      * @var array
      */
     protected $fillable = [
-        'coupon_id',
-        'user_id',
+        'coupon_uuid',
+        'user_uuid',
         'is_used',
     ];
 

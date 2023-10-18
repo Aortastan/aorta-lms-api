@@ -19,7 +19,7 @@ class SessionTest extends Model
      */
     protected $fillable = [
         'type_test',
-        'test_id',
+        'test_uuid',
         'answer_data',
     ];
 

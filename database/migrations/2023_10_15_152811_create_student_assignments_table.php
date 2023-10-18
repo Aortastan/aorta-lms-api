@@ -16,9 +16,9 @@ class CreateStudentAssignmentsTable extends Migration
         Schema::create('student_assignments', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('student_id');
-            $table->foreignId('assignment_id');
-            $table->foreignId('assignment_url');
+            $table->string('student_uuid');
+            $table->string('assignment_uuid');
+            $table->string('assignment_url');
             $table->text('feedback')->nullable();
             $table->boolean('status');
             $table->timestamps();

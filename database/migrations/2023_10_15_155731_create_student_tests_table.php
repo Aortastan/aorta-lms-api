@@ -16,9 +16,9 @@ class CreateStudentTestsTable extends Migration
         Schema::create('student_tests', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('user_id');
+            $table->string('user_uuid');
             $table->text('data_question');
-            $table->foreignId('test_id');
+            $table->string('test_uuid');
             $table->integer('score');
             $table->timestamps();
         });

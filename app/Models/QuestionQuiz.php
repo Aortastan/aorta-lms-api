@@ -18,8 +18,8 @@ class QuestionQuiz extends Model
      * @var array
      */
     protected $fillable = [
-        'lesson_quiz_id',
-        'question_id',
+        'lesson_quiz_uuid',
+        'question_uuid',
     ];
 
     protected static function boot()

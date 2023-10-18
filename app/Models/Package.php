@@ -17,7 +17,7 @@ class Package extends Model
      * @var array
      */
     protected $fillable = [
-        'category_id',
+        'category_uuid',
         'package_type',
         'name',
         'price_lifetime',

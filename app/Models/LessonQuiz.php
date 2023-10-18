@@ -18,7 +18,7 @@ class LessonQuiz extends Model
      * @var array
      */
     protected $fillable = [
-        'lesson_id',
+        'lesson_uuid',
         'name',
         'description',
         'duration',

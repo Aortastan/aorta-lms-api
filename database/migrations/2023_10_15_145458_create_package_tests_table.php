@@ -16,8 +16,8 @@ class CreatePackageTestsTable extends Migration
         Schema::create('package_tests', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('package_id');
-            $table->foreignId('test_id');
+            $table->string('package_uuid');
+            $table->string('test_uuid');
             $table->integer('attempt');
             $table->integer('passing_grade');
             $table->integer('duration');

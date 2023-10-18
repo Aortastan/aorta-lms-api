@@ -18,7 +18,7 @@ class LessonLecture extends Model
      * @var array
      */
     protected $fillable = [
-        'lesson_id',
+        'lesson_uuid',
         'title',
         'file_path',
         'url_path',

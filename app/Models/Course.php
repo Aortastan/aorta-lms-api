@@ -24,7 +24,7 @@ class Course extends Model
         'video',
         'number_of_meeting',
         'is_have_pretest_posttest',
-        'instructor_id',
+        'instructor_uuid',
         'status',
     ];
 

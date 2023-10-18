@@ -18,9 +18,9 @@ class StudentPretestPosttest extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
+        'user_uuid',
         'data_question',
-        'pretest_posttest_id',
+        'pretest_posttest_uuid',
         'score',
     ];
 

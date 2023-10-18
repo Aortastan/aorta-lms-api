@@ -17,8 +17,8 @@ class CourseTag extends Model
      * @var array
      */
     protected $fillable = [
-        'course_id',
-        'tag_id',
+        'course_uuid',
+        'tag_uuid',
     ];
 
     protected static function boot()

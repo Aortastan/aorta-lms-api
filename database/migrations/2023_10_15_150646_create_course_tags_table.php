@@ -16,8 +16,8 @@ class CreateCourseTagsTable extends Migration
         Schema::create('course_tags', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('course_id');
-            $table->foreignId('tag_id');
+            $table->string('course_uuid');
+            $table->string('tag_uuid');
             $table->timestamps();
         });
     }

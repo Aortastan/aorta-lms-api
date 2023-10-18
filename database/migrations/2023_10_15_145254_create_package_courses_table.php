@@ -16,8 +16,8 @@ class CreatePackageCoursesTable extends Migration
         Schema::create('package_courses', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('package_id');
-            $table->foreignId('course_id');
+            $table->string('package_uuid');
+            $table->string('course_uuid');
             $table->boolean('status');
             $table->timestamps();
         });

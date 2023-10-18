@@ -17,8 +17,8 @@ class QuestionTest extends Model
      * @var array
      */
     protected $fillable = [
-        'test_id',
-        'question_id',
+        'test_uuid',
+        'question_uuid',
     ];
 
     protected static function boot()

@@ -18,8 +18,8 @@ class StudentCertificate extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
-        'package_id',
+        'user_uuid',
+        'package_uuid',
     ];
 
     protected static function boot()

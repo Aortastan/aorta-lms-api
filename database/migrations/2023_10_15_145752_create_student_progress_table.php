@@ -16,10 +16,10 @@ class CreateStudentProgressTable extends Migration
         Schema::create('student_progress', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('user_id');
-            $table->foreignId('package_id');
-            $table->foreignId('course_id');
-            $table->foreignId('lesson_id');
+            $table->string('user_uuid');
+            $table->string('package_uuid');
+            $table->string('course_uuid');
+            $table->string('lesson_uuid');
             $table->timestamps();
         });
     }

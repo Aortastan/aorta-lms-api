@@ -22,7 +22,7 @@ class CreateCoursesTable extends Migration
             $table->string('video')->nullable();
             $table->integer('number_of_meeting')->nullable();
             $table->boolean('is_have_pretest_posttest');
-            $table->foreignId('instructor_id');
+            $table->string('instructor_uuid');
             $table->string('status')->comment('pending, published, waiting for review, hold, draft');
             $table->timestamps();
         });

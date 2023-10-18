@@ -16,7 +16,7 @@ class CreateLessonLecturesTable extends Migration
         Schema::create('lesson_lectures', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('lesson_id');
+            $table->string('lesson_uuid');
             $table->string('title');
             $table->string('file_path')->nullable();
             $table->string('url_path')->nullable();

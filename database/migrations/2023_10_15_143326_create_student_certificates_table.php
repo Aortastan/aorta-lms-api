@@ -16,8 +16,8 @@ class CreateStudentCertificatesTable extends Migration
         Schema::create('student_certificates', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('user_id');
-            $table->foreignId('package_id');
+            $table->string('user_uuid');
+            $table->string('package_uuid');
             $table->timestamps();
         });
     }

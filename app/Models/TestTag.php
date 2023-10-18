@@ -18,8 +18,8 @@ class TestTag extends Model
      * @var array
      */
     protected $fillable = [
-        'test_id',
-        'tag_id',
+        'test_uuid',
+        'tag_uuid',
     ];
 
     protected static function boot()

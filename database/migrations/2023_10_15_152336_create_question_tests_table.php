@@ -16,8 +16,8 @@ class CreateQuestionTestsTable extends Migration
         Schema::create('question_tests', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('test_id');
-            $table->foreignId('question_id');
+            $table->string('test_uuid');
+            $table->string('question_uuid');
             $table->timestamps();
         });
     }

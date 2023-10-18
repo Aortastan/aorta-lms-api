@@ -16,8 +16,8 @@ class CreateTestTagsTable extends Migration
         Schema::create('test_tags', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('test_id');
-            $table->foreignId('tag_id');
+            $table->string('test_uuid');
+            $table->string('tag_uuid');
             $table->timestamps();
         });
     }

@@ -16,8 +16,8 @@ class CreateMembershipHistoriesTable extends Migration
         Schema::create('membership_histories', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('transaction_id');
-            $table->foreignId('package_id');
+            $table->string('transaction_uuid');
+            $table->string('package_uuid');
             $table->datetime('expired_date');
             $table->timestamps();
         });

@@ -18,7 +18,7 @@ class CourseLesson extends Model
      * @var array
      */
     protected $fillable = [
-        'course_id',
+        'course_uuid',
         'name',
         'description',
         'is_have_quiz',

@@ -17,8 +17,8 @@ class Blog extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
-        'category_id',
+        'user_uuid',
+        'category_uuid',
         'title',
         'slug',
         'body',

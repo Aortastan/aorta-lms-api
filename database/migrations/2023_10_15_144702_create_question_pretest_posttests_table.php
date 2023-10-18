@@ -16,8 +16,8 @@ class CreateQuestionPretestPosttestsTable extends Migration
         Schema::create('question_pretest_posttests', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('pretest_posttest_id');
-            $table->foreignId('question_id');
+            $table->string('pretest_posttest_uuid');
+            $table->string('question_uuid');
             $table->timestamps();
         });
     }

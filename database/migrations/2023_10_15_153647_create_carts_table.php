@@ -16,9 +16,9 @@ class CreateCartsTable extends Migration
         Schema::create('carts', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('user_id');
+            $table->string('user_uuid');
             $table->string('product_type')->comment('course, test, digital book');
-            $table->string('package_id');
+            $table->string('package_uuid');
             $table->integer('qty');
             $table->timestamps();
         });

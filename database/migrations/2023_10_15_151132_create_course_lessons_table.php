@@ -16,7 +16,7 @@ class CreateCourseLessonsTable extends Migration
         Schema::create('course_lessons', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('course_id');
+            $table->string('course_uuid');
             $table->string('name');
             $table->text('description')->nullable();
             $table->boolean('is_have_quiz');

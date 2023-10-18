@@ -17,7 +17,7 @@ class CreateSessionTestsTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('type_test')->comment('tryout, quiz, pretest posttest');
-            $table->foreignId('test_id');
+            $table->string('test_uuid');
             $table->text('answer_data');
             $table->timestamps();
         });

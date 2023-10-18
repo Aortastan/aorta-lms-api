@@ -18,8 +18,8 @@ class PackageTest extends Model
      * @var array
      */
     protected $fillable = [
-        'package_id',
-        'test_id',
+        'package_uuid',
+        'test_uuid',
         'attempt',
         'passing_grade',
         'duration',

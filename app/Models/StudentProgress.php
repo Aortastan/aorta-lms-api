@@ -17,10 +17,10 @@ class StudentProgress extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
-        'package_id',
-        'course_id',
-        'lesson_id',
+        'user_uuid',
+        'package_uuid',
+        'course_uuid',
+        'lesson_uuid',
     ];
 
     protected static function boot()
