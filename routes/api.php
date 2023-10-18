@@ -65,5 +65,15 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // end category management
 
+        // tag management
+        Route::group(['prefix' => 'tags', 'as' => 'tags.',], function () {
+            Route::get('', 'Admin\TagController@index')->name('get');
+            Route::get('{uuid}', 'Admin\TagController@show')->name('show');
+            Route::post('', 'Admin\TagController@store')->name('store');
+            Route::put('{uuid}', 'Admin\TagController@update')->name('update');
+            Route::delete('{uuid}', 'Admin\TagController@delete')->name('delete');
+        });
+        // end tag management
+
     });
 });

@@ -4,19 +4,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use App\Models\Category;
+use App\Models\Tag;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
 
-class CategoryController extends Controller
+class TagController extends Controller
 {
     public function index(){
         try{
-            $categories = Category::select('uuid', 'name')->get();
+            $tags = Tag::select('uuid', 'name')->get();
             return response()->json([
                 'message' => 'Success get data',
-                'categories' => $categories,
+                'tags' => $tags,
             ], 200);
         }
         catch(\Exception $e){
@@ -28,16 +28,16 @@ class CategoryController extends Controller
 
     public function show(Request $request, $uuid){
         try{
-            $category = Category::select('uuid', 'name')->where(['uuid' => $uuid])->first();
+            $tag = Tag::select('uuid', 'name')->where(['uuid' => $uuid])->first();
 
-            if(!$category){
+            if(!$tag){
                 return response()->json([
                     'message' => 'Data not found',
                 ], 404);
             }
             return response()->json([
                 'message' => 'Success get data',
-                'category' => $category,
+                'tag' => $tag,
             ], 200);
         }
         catch(\Exception $e){
@@ -49,7 +49,7 @@ class CategoryController extends Controller
 
     public function store(Request $request): JsonResponse{
         $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:categories',
+            'name' => 'required|unique:tags',
         ]);
 
         if ($validator->fails()) {
@@ -59,26 +59,26 @@ class CategoryController extends Controller
             ], 422);
         }
 
-        Category::create([
+        Tag::create([
             'name' => $request->name,
         ]);
 
         return response()->json([
-            'message' => 'Success create new category'
+            'message' => 'Success create new tag'
         ], 200);
     }
 
     public function update(Request $request, $uuid): JsonResponse{
-        $checkCategory = Category::where(['uuid' => $uuid])->first();
-        if(!$checkCategory){
+        $checkTag = Tag::where(['uuid' => $uuid])->first();
+        if(!$checkTag){
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
         }
 
-        if($checkCategory->name != $request->name){
+        if($checkTag->name != $request->name){
             $validator = Validator::make($request->all(), [
-                'name' => 'required|unique:categories',
+                'name' => 'required|unique:tags',
             ]);
 
             if ($validator->fails()) {
@@ -88,30 +88,30 @@ class CategoryController extends Controller
                 ], 422);
             }
 
-            Category::where(['uuid' => $uuid])->update([
+            Tag::where(['uuid' => $uuid])->update([
                 'name' => $request->name,
             ]);
         }
 
 
         return response()->json([
-            'message' => 'Success update category'
+            'message' => 'Success update tag'
         ], 200);
     }
 
     public function delete(Request $request, $uuid){
-        $checkCategory = Category::where(['uuid' => $uuid])->first();
-        if(!$checkCategory){
+        $checkTag = Tag::where(['uuid' => $uuid])->first();
+        if(!$checkTag){
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
         }
 
-        Category::where(['uuid' => $uuid])->delete();
+        Tag::where(['uuid' => $uuid])->delete();
 
 
         return response()->json([
-            'message' => 'Success delete category'
+            'message' => 'Success delete tag'
         ], 200);
     }
 }
