@@ -28,6 +28,16 @@ class Course extends Model
         'status',
     ];
 
+    public function instructor()
+    {
+        return $this->belongsTo(User::class, 'instructor_uuid', 'uuid');
+    }
+
+    public function lessons()
+    {
+        return $this->hasMany(CourseLesson::class);
+    }
+
     protected static function boot()
     {
         parent::boot();

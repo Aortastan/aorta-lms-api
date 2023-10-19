@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use App\Models\Category;
 use App\Models\Blog;
@@ -14,7 +15,12 @@ class BlogController extends Controller
 {
     public function index(){
         try{
-            $blogs = Blog::select('uuid', 'title', 'slug', 'body', 'image', 'status', 'seo_title', 'seo_description', 'seo_keywords')->with(['user', 'category'])->get();
+            $blogs = DB::table('blogs')
+                ->select('blogs.uuid', 'blogs.title', 'blogs.slug', 'blogs.body', 'blogs.image', 'blogs.status', 'blogs.seo_title', 'blogs.seo_description', 'blogs.seo_keywords', 'users.name as user_name', 'categories.name as category_name')
+                ->join('users', 'blogs.user_uuid', '=', 'users.uuid')
+                ->join('categories', 'blogs.category_uuid', '=', 'categories.uuid')
+                ->get();
+
             return response()->json([
                 'message' => 'Success get data',
                 'blogs' => $blogs,
@@ -29,7 +35,11 @@ class BlogController extends Controller
 
     public function show(Request $request, $uuid){
         try{
-            $blog = Blog::select('uuid', 'title', 'slug', 'body', 'image', 'status', 'seo_title', 'seo_description', 'seo_keywords')->where(['uuid' => $uuid])->with(['user', 'category'])->first();
+            $blog = DB::table('blogs')
+                ->select('blogs.uuid', 'blogs.title', 'blogs.slug', 'blogs.body', 'blogs.image', 'blogs.status', 'blogs.seo_title', 'blogs.seo_description', 'blogs.seo_keywords', 'users.name as user_name', 'categories.name as category_name')
+                ->join('users', 'blogs.user_uuid', '=', 'users.uuid')
+                ->join('categories', 'blogs.category_uuid', '=', 'categories.uuid')
+                ->first();
 
             if(!$blog){
                 return response()->json([

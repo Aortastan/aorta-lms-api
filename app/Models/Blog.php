@@ -31,12 +31,12 @@ class Blog extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_uuid');
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
     public function category()
     {
-        return $this->belongsTo(Category::class, 'category_uuid');
+        return $this->belongsTo(Category::class, 'category_uuid', 'uuid');
     }
 
     protected static function boot()

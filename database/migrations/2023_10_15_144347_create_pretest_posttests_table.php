@@ -16,7 +16,7 @@ class CreatePretestPosttestsTable extends Migration
         Schema::create('pretest_posttests', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->string('package_uuid');
+            $table->string('course_uuid');
             $table->string('test_uuid');
             $table->integer('max_attempt');
             $table->timestamps();
