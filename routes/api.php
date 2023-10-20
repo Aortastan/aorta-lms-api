@@ -24,6 +24,10 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('logout', 'AuthController@logout');
 
     Route::group(['middleware' => ['auth', 'admin', 'verified'], 'prefix' => 'admin', 'as' => 'admin.',], function () {
+        // Dashboard
+        Route::get('', 'Admin\DashboardController@index')->name('get');
+        // end dashboard
+
         // User management
         Route::group(['prefix' => 'users', 'as' => 'users.',], function () {
             Route::group(['prefix' => 'admin', 'as' => 'admin.',], function () {
