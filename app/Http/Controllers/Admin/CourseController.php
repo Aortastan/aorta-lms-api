@@ -155,7 +155,6 @@ class CourseController extends Controller
                     'max_attempt' => $pretest_posttest->max_attempt,
                 ];
             }
-
             PretestPosttest::insert($validated_pretest_posttests);
         }
 

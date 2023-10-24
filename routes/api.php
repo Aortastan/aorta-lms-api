@@ -108,5 +108,15 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::delete('{uuid}', 'Admin\CourseLessonController@delete')->name('delete');
         });
         // end course lesson management
+
+        // test management
+        Route::group(['prefix' => 'tests', 'as' => 'tests.',], function () {
+            Route::get('', 'Admin\TestController@index')->name('get');
+            Route::get('{uuid}', 'Admin\TestController@show')->name('show');
+            Route::post('', 'Admin\TestController@store')->name('store');
+            Route::put('{uuid}', 'Admin\TestController@update')->name('update');
+            Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
+        });
+        // end test management
     });
 });

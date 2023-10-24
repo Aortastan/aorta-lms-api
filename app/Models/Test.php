@@ -23,6 +23,11 @@ class Test extends Model
         'test_category',
     ];
 
+    public function questions()
+    {
+        return $this->hasMany(QuestionTest::class);
+    }
+
     protected static function boot()
     {
         parent::boot();
