@@ -94,7 +94,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'Admin\CourseController@index')->name('get');
             Route::get('{uuid}', 'Admin\CourseController@show')->name('show');
             Route::post('', 'Admin\CourseController@store')->name('store');
-            Route::put('{uuid}', 'Admin\CourseController@update')->name('update');
+            Route::post('{uuid}', 'Admin\CourseController@update')->name('update');
             Route::delete('{uuid}', 'Admin\CourseController@delete')->name('delete');
         });
         // end course management
