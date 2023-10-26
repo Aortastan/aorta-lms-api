@@ -184,61 +184,65 @@ class PackageController extends Controller
             ], 404);
         }
 
-        $validate = [
-            'lists' => 'required|array',
-            'lists.*' => 'required',
-            'lists.*.uuid' => 'required',
-            'lists.*.test_uuid' => 'required',
-            'lists.*.attempt' => 'required',
-            'lists.*.passing_grade' => 'required|numeric',
-            'lists.*.duration' => 'required',
-        ];
+       if($type == 'course'){
 
-        $validator = Validator::make($request->all(), $validate);
+       }elseif($type == 'test'){
+            $validate = [
+                'lists' => 'required|array',
+                'lists.*' => 'required',
+                'lists.*.uuid' => 'required',
+                'lists.*.test_uuid' => 'required',
+                'lists.*.attempt' => 'required',
+                'lists.*.passing_grade' => 'required|numeric',
+                'lists.*.duration' => 'required',
+            ];
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ]);
-        }
+            $validator = Validator::make($request->all(), $validate);
 
-        $listsUuid = [];
-        $newLists = [];
-
-        foreach ($request->lists as $index => $list) {
-            $checkTest = Test::where(['uuid' => $list['test_uuid']])->first();
-            if(!$checkTest){
+            if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'Test not found',
-                ], 404);
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ]);
             }
-            $checkList = PackageTest::where('uuid', $list['uuid'])->first();
 
-            if(!$checkList){
-                    $newLists[]=[
-                        'uuid' => Uuid::uuid4()->toString(),
-                        'package_uuid' => $checkPackage->uuid,
-                        'test_uuid' => $list['test_uuid'],
+            $listsUuid = [];
+            $newLists = [];
+
+            foreach ($request->lists as $index => $list) {
+                $checkTest = Test::where(['uuid' => $list['test_uuid']])->first();
+                if(!$checkTest){
+                    return response()->json([
+                        'message' => 'Test not found',
+                    ], 404);
+                }
+                $checkList = PackageTest::where('uuid', $list['uuid'])->first();
+
+                if(!$checkList){
+                        $newLists[]=[
+                            'uuid' => Uuid::uuid4()->toString(),
+                            'package_uuid' => $checkPackage->uuid,
+                            'test_uuid' => $list['test_uuid'],
+                            'attempt' => $list['attempt'],
+                            'passing_grade' => $list['passing_grade'],
+                            'duration' => $list['duration'],
+                        ];
+                }else{
+                    $listsUuid[] = $list['uuid'];
+                    $validatedList=[
                         'attempt' => $list['attempt'],
                         'passing_grade' => $list['passing_grade'],
                         'duration' => $list['duration'],
                     ];
-            }else{
-                $listsUuid[] = $list['uuid'];
-                $validatedList=[
-                    'attempt' => $list['attempt'],
-                    'passing_grade' => $list['passing_grade'],
-                    'duration' => $list['duration'],
-                ];
-                PackageTest::where('uuid', $list['uuid'])->update($validatedList);
+                    PackageTest::where('uuid', $list['uuid'])->update($validatedList);
+                }
             }
-        }
 
-        PackageTest::where(['package_uuid' => $uuid])->whereNotIn('uuid', $listsUuid)->delete();
-        if(count($newLists) > 0){
-            PackageTest::insert($newLists);
-        }
+            PackageTest::where(['package_uuid' => $uuid])->whereNotIn('uuid', $listsUuid)->delete();
+            if(count($newLists) > 0){
+                PackageTest::insert($newLists);
+            }
+       }
 
         return response()->json([
             'message' => 'Success update data',
