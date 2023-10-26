@@ -10,6 +10,8 @@ use App\Models\Blog;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use File;
 
 class BlogController extends Controller
 {
@@ -58,7 +60,7 @@ class BlogController extends Controller
         }
     }
 
-    public function store(Request $request): JsonResponse{
+    public function store(Request $request){
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'category_uuid' => 'required',
@@ -108,7 +110,7 @@ class BlogController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, $uuid): JsonResponse{
+    public function update(Request $request, $uuid){
         $checkBlog = Blog::where(['uuid' => $uuid])->first();
         if(!$checkBlog){
             return response()->json([

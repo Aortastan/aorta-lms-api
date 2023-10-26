@@ -10,6 +10,7 @@ use App\Models\QuestionTest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Ramsey\Uuid\Uuid;
+use Illuminate\Support\Facades\Validator;
 
 class TestController extends Controller
 {
@@ -92,6 +93,9 @@ class TestController extends Controller
         }
         $validate = [
             'questions' => 'required|array',
+            'questions.*' => 'required',
+            'questions.*.uuid' => 'required',
+            'questions.*.question_uuid' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $validate);
@@ -103,27 +107,34 @@ class TestController extends Controller
             ], 422);
         }
 
-        $questions = Question::whereIn('uuid', $request->questions)->count();
-
-        if($questions != count($request->questions)){
-            return response()->json([
-                'message' => 'Question not found',
-                'errors' => $validator->errors(),
-            ], 404);
-        }
-
-        QuestionTest::where('test_uuid', $uuid)->delete();
-
-        $validated = [];
+        $newQuestions = [];
+        $allQuestionsUuid = [];
         foreach ($request->questions as $index => $question) {
-            $validated[] = [
-                'uuid' => Uuid::uuid4()->toString(),
-                'test_uuid' => $test->uuid,
-                'question_uuid' => $question,
-            ];
+            $checkQuestion = Question::where('uuid', $question['question_uuid'])->first();
+            if(!$checkQuestion){
+                return response()->json([
+                    'message' => 'Question not found'
+                ], 404);
+            }
+
+            $checkQuestionTest = QuestionTest::where('uuid', $question['uuid'])->first();
+
+            if(!$checkQuestionTest){
+                $newQuestions[] = [
+                    'uuid' => Uuid::uuid4()->toString(),
+                    'test_uuid' => $test->uuid,
+                    'question_uuid' => $question['question_uuid'],
+                ];
+            }else{
+                $allQuestionsUuid[] = $checkQuestionTest->uuid;
+            }
         }
 
-        QuestionTest::insert($validated);
+        QuestionTest::whereNotIn('uuid', $allQuestionsUuid)->delete();
+
+        if(count($newQuestions) > 0){
+            QuestionTest::insert($newQuestions);
+        }
 
         return response()->json([
             'message' => 'Success update questions'

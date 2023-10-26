@@ -54,7 +54,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'Admin\QuestionController@index')->name('get');
             Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
             Route::post('', 'Admin\QuestionController@store')->name('store');
-            Route::put('{uuid}', 'Admin\QuestionController@update')->name('update');
+            Route::post('{uuid}', 'Admin\QuestionController@update')->name('update');
             Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
         });
         // end question management
@@ -84,7 +84,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'Admin\BlogController@index')->name('get');
             Route::get('{uuid}', 'Admin\BlogController@show')->name('show');
             Route::post('', 'Admin\BlogController@store')->name('store');
-            Route::put('{uuid}', 'Admin\BlogController@update')->name('update');
+            Route::post('{uuid}', 'Admin\BlogController@update')->name('update');
             Route::delete('{uuid}', 'Admin\BlogController@delete')->name('delete');
         });
         // end blog management

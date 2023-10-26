@@ -10,6 +10,7 @@ use App\Models\Answer;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
+use File;
 
 class QuestionController extends Controller
 {
@@ -64,7 +65,7 @@ class QuestionController extends Controller
 
     }
 
-    public function store(Request $request): JsonResponse{
+    public function store(Request $request){
         $validate = [
             'question_type' => 'required|in:multiple,most point',
             'type' => 'required|in:video,youtube,text,image,pdf,slide document',
@@ -144,8 +145,8 @@ class QuestionController extends Controller
         $answers = [];
         foreach ($request->answers as $index => $answer) {
             $path = null;
-            if(isset($answer->image)){
-                $path = $answer->image->store('imagesAnswer', 'public');
+            if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
+                $path = $answer['image']->store('imagesAnswer', 'public');
             }
 
             $is_correct = null;
@@ -172,7 +173,7 @@ class QuestionController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, $uuid): JsonResponse{
+    public function update(Request $request, $uuid){
         $question = Question::where('uuid', $uuid)->with(['answers'])->first();
         if(!$question){
             return response()->json([
@@ -188,7 +189,7 @@ class QuestionController extends Controller
             'answers.*.answer' => 'required|string',
         ];
 
-        if($request->type){
+        if($request->type != null){
             if($request->type != 'text'){
                 if($request->type == 'youtube'){
                     $validate['url_path'] = 'required';
@@ -275,52 +276,76 @@ class QuestionController extends Controller
 
 
         $answersUuid = [];
+        $newAnswers = [];
 
         foreach ($request->answers as $index => $answer) {
             $checkAnswer = Answer::where('uuid', $answer['uuid'])->first();
-            $answersUuid[] = $checkAnswer->uuid;
+
             if(!$checkAnswer){
-                return response()->json([
-                    'message' => 'Data not found',
-                ], 404);
-            }
-            $path = $checkAnswer->image;
-            if(isset($answer->image)){
-                $path = $answer->image->store('imagesAnswer', 'public');
-                if(!is_string($answer->image)){
+                $newAnswer[] =
+                    $path = null;
+                    if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
+                        $path = $answer['image']->store('imagesAnswer', 'public');
+                    }
+
+                    $is_correct = null;
+                    $point = null;
+                    if($request->question_type == 'multiple'){
+                        $is_correct = $answer['is_correct'];
+                    }else{
+                        $point = $answer['point'];
+                    }
+                    $newAnswers[]=[
+                        'uuid' => Uuid::uuid4()->toString(),
+                        'question_uuid' => $question->uuid,
+                        'answer' => $answer['answer'],
+                        'image' => $path,
+                        'is_correct' => $is_correct,
+                        'point' => $point,
+                    ];
+            }else{
+                $answersUuid[] = $checkAnswer->uuid;
+                $path = $checkAnswer->image;
+                if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
+                    $path = $answer['image']->store('imagesAnswer', 'public');
+                    if(!is_string($answer['image'])){
+                        if($checkAnswer->image){
+                            if (File::exists(public_path('storage/'.$checkAnswer->image))) {
+                                File::delete(public_path('storage/'.$checkAnswer->image));
+                            }
+                        }
+                    }
+                }else{
+                    $path = null;
                     if($checkAnswer->image){
                         if (File::exists(public_path('storage/'.$checkAnswer->image))) {
                             File::delete(public_path('storage/'.$checkAnswer->image));
                         }
                     }
                 }
-            }else{
-                $path = null;
-                if($checkAnswer->image){
-                    if (File::exists(public_path('storage/'.$checkAnswer->image))) {
-                        File::delete(public_path('storage/'.$checkAnswer->image));
-                    }
+
+                $is_correct = null;
+                $point = null;
+                if($request->question_type == 'multiple'){
+                    $is_correct = $answer['is_correct'];
+                }else{
+                    $point = $answer['point'];
                 }
-            }
 
-            $is_correct = null;
-            $point = null;
-            if($request->question_type == 'multiple'){
-                $is_correct = $answer['is_correct'];
-            }else{
-                $point = $answer['point'];
+                $validatedAnswer=[
+                    'answer' => $answer['answer'],
+                    'image' => $path,
+                    'is_correct' => $is_correct,
+                    'point' => $point,
+                ];
+                Answer::where('uuid', $checkAnswer->uuid)->update($validatedAnswer);
             }
-
-            $validatedAnswer=[
-                'answer' => $answer['answer'],
-                'image' => $path,
-                'is_correct' => $is_correct,
-                'point' => $point,
-            ];
-            Answer::where('uuid', $checkAnswer->uuid)->update($validatedAnswer);
         }
         Question::where('uuid', $uuid)->update($validated);
         Answer::where(['question_uuid' => $uuid])->whereNotIn('uuid', $answersUuid)->delete();
+        if(count($newAnswers) > 0){
+            Answer::insert($newAnswers);
+        }
 
         return response()->json([
             'message' => 'Success update data',
