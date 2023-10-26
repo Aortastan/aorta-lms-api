@@ -31,6 +31,58 @@ class PackageController extends Controller
         }
     }
 
+    public function show($uuid){
+        $checkPackage = Package::where(['uuid' => $uuid])->with(['packageTests', 'packageTests.test', 'packageCourses', 'packageCourses.course'])->first();
+
+        if(!$checkPackage){
+            return response()->json([
+                'message' => 'Data not found'
+            ], 404);
+        }
+        $package=[
+            "name" => $checkPackage->name,
+            "package_type" => $checkPackage->package_type,
+            "price_lifetime" => $checkPackage->price_lifetime,
+            "price_one_month" => $checkPackage->price_one_month,
+            "price_three_months" => $checkPackage->price_three_months,
+            "price_six_months" => $checkPackage->price_six_months,
+            "price_one_year" => $checkPackage->price_one_year,
+            'learner_accesibility' => $checkPackage->learner_accesibility,
+            'image' => $checkPackage->image,
+            'discount' => $checkPackage->discount,
+            'is_membership' => $checkPackage->is_membership,
+            'status' => $checkPackage->status,
+        ];
+
+        if($checkPackage->package_type == "course"){
+            $package['package_courses'] = [];
+            foreach ($checkPackage->packageCourses as $index2 => $list) {
+                $package['package_courses'][] = [
+                    "title" => $list['course']['title'],
+                    "description" => $list['course']['description'],
+                    "status" => $list['status'],
+                    "image" => $list['course']['image'],
+                ];
+            }
+        }elseif($checkPackage->package_type == "test"){
+            $package['package_tests'] = [];
+            foreach ($checkPackage->packageTests as $index2 => $list) {
+                $package['package_tests'][] = [
+                    "name" => $list['test']['name'],
+                    "test_type" => $list['test']['test_type'],
+                    "attempt" => $list['attempt'],
+                    "passing_grade" => $list['passing_grade'],
+                    "duration" => $list['duration'],
+                ];
+            }
+        }
+
+        return response()->json([
+            'message' => 'Successful get data',
+            'package' => $package,
+        ], 200);
+    }
+
     public function store(Request $request){
         $validate = [
             'category_uuid' => 'required',
@@ -185,6 +237,67 @@ class PackageController extends Controller
         }
 
        if($type == 'course'){
+            $validate = [
+                'lists' => 'required|array',
+                'lists.*' => 'required',
+                'lists.*.uuid' => 'required',
+                'lists.*.course_uuid' => 'required',
+                'lists.*.status' => 'required',
+            ];
+
+            $validator = Validator::make($request->all(), $validate);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ]);
+            }
+
+            $listsUuid = [];
+            $newCourses = [];
+
+            foreach ($request->lists as $index => $list) {
+                $checkCourse = Course::where(['uuid' => $list['course_uuid']])->first();
+                if(!$checkCourse){
+                    return response()->json([
+                        'message' => 'Course not found',
+                    ], 404);
+                }
+                $checkList = PackageCourse::where('uuid', $list['uuid'])->first();
+
+                if(!$checkList){
+                        $newCourses[]=[
+                            'uuid' => Uuid::uuid4()->toString(),
+                            'package_uuid' => $checkPackage->uuid,
+                            'course_uuid' => $list['course_uuid'],
+                            'status' => $list['status'],
+                        ];
+                }else{
+                    $listsUuid[] = $list['uuid'];
+                    $validatedList=[
+                        'status' => $list['status'],
+                    ];
+                    PackageCourse::where('uuid', $list['uuid'])->update($validatedList);
+                }
+            }
+
+            PackageCourse::where(['package_uuid' => $uuid])->whereNotIn('uuid', $listsUuid)->delete();
+            if(count($newCourses) > 0){
+                PackageCourse::insert($newCourses);
+            }
+
+
+
+
+
+
+
+
+
+
+
+
 
        }elseif($type == 'test'){
             $validate = [

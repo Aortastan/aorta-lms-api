@@ -32,6 +32,16 @@ class Package extends Model
         'status',
     ];
 
+    public function packageTests()
+    {
+        return $this->hasMany(PackageTest::class);
+    }
+
+    public function packageCourses()
+    {
+        return $this->hasMany(PackageCourse::class);
+    }
+
     protected static function boot()
     {
         parent::boot();

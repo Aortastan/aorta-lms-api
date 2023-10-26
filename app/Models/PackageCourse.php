@@ -23,6 +23,11 @@ class PackageCourse extends Model
         'status',
     ];
 
+    public function course()
+    {
+        return $this->belongsTo(Course::class, 'course_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
