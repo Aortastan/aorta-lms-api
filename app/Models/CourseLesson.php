@@ -26,6 +26,22 @@ class CourseLesson extends Model
         'status',
     ];
 
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class, "lesson_uuid");
+    }
+
+    public function quizzes()
+    {
+        return $this->hasMany(LessonQuiz::class, "lesson_uuid");
+    }
+
+    public function lectures()
+    {
+        return $this->hasMany(LessonLecture::class, "lesson_uuid");
+    }
+
+
     protected static function boot()
     {
         parent::boot();

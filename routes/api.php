@@ -95,17 +95,14 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{uuid}', 'Admin\CourseController@show')->name('show');
             Route::post('', 'Admin\CourseController@store')->name('store');
             Route::post('{uuid}', 'Admin\CourseController@update')->name('update');
-            Route::delete('{uuid}', 'Admin\CourseController@delete')->name('delete');
         });
         // end course management
 
         // course lesson management
         Route::group(['prefix' => 'course-lessons', 'as' => 'lessons.',], function () {
-            Route::get('', 'Admin\CourseLessonController@index')->name('get');
             Route::get('{uuid}', 'Admin\CourseLessonController@show')->name('show');
             Route::post('', 'Admin\CourseLessonController@store')->name('store');
             Route::put('{uuid}', 'Admin\CourseLessonController@update')->name('update');
-            Route::delete('{uuid}', 'Admin\CourseLessonController@delete')->name('delete');
         });
         // end course lesson management
 
