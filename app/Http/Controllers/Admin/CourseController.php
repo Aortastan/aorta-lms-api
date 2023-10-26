@@ -103,7 +103,7 @@ class CourseController extends Controller
             ], 422);
         }
 
-        $checkInstructor = User::where(['uuid' => $request->istructor_uuid, 'role' => 'instructor'])->first();
+        $checkInstructor = User::where(['uuid' => $request->instructor_uuid, 'role' => 'instructor'])->first();
         if(!$checkInstructor){
             return response()->json([
                 'message' => 'Validation failed',

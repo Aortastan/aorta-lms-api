@@ -118,5 +118,15 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
         });
         // end test management
+
+        // packages management
+        Route::group(['prefix' => 'packages', 'as' => 'packages.'], function () {
+            Route::get('', 'Admin\PackageController@index')->name('get');
+            Route::get('{uuid}', 'Admin\PackageController@show')->name('show');
+            Route::post('', 'Admin\PackageController@store')->name('store');
+            Route::post('{type}/{uuid}', 'Admin\PackageController@update')->name('update');
+            Route::post('lists/{type}/{uuid}', 'Admin\PackageController@packageLists')->name('lists');
+        });
+        // end packages management
     });
 });

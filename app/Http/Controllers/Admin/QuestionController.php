@@ -282,7 +282,6 @@ class QuestionController extends Controller
             $checkAnswer = Answer::where('uuid', $answer['uuid'])->first();
 
             if(!$checkAnswer){
-                $newAnswer[] =
                     $path = null;
                     if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
                         $path = $answer['image']->store('imagesAnswer', 'public');
