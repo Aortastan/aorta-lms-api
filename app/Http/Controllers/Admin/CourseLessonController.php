@@ -10,7 +10,7 @@ use App\Models\Course;
 use App\Models\User;
 use App\Models\Test;
 use App\Models\Assignment;
-use App\Models\LessonLecture;
+use App\Models\CourseLesson;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -80,7 +80,7 @@ class CourseLessonController extends Controller
             'status' => 1
         ];
 
-        $lesson = LessonLecture::create($validated);
+        $lesson = CourseLesson::create($validated);
 
         if($request->is_have_quiz == 1){
             $validated_quizzes = [];
@@ -128,7 +128,7 @@ class CourseLessonController extends Controller
                 'message' => 'Course not found',
             ], 404);
         }
-        $checkLesson = LessonLecture::where(['uuid' => $uuid])->first();
+        $checkLesson = CourseLesson::where(['uuid' => $uuid])->first();
         if(!$checkLesson){
             return response()->json([
                 'message' => 'Lesson not found',
@@ -179,7 +179,7 @@ class CourseLessonController extends Controller
             'status' => $request->status,
         ];
 
-        LessonLecture::where(['uuid' => $uuid])->update($validated);
+        CourseLesson::where(['uuid' => $uuid])->update($validated);
 
         $validated_new_quizzes = [];
         $validated_new_assignments = [];

@@ -18,6 +18,7 @@ class CreateLessonLecturesTable extends Migration
             $table->uuid('uuid')->unique();
             $table->string('lesson_uuid');
             $table->string('title');
+            $table->text('body');
             $table->string('file_path')->nullable();
             $table->string('url_path')->nullable();
             $table->string('file_size')->nullable();

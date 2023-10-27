@@ -17,6 +17,7 @@ class CreateLessonQuizzesTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('lesson_uuid');
+            $table->string('test_uuid');
             $table->string('name');
             $table->text('description');
             $table->integer('duration');

@@ -106,6 +106,14 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // end course lesson management
 
+        // course lesson lecture management
+        Route::group(['prefix' => 'lessons-lectures', 'as' => 'lectures.',], function () {
+            Route::get('{uuid}', 'Admin\LessonLectureController@show')->name('show');
+            Route::post('', 'Admin\LessonLectureController@store')->name('store');
+            Route::post('{uuid}', 'Admin\LessonLectureController@update')->name('update');
+        });
+        // end course lesson lecture management
+
         // test management
         Route::group(['prefix' => 'tests', 'as' => 'tests.',], function () {
             Route::get('', 'Admin\TestController@index')->name('get');
