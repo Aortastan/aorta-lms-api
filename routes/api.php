@@ -92,7 +92,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // test management
         Route::group(['prefix' => 'tests', 'as' => 'tests.',], function () {
             Route::get('', 'Admin\TestController@index')->name('get');
-            Route::get('{uuid}', 'Admin\TestController@show')->name('show');
+            Route::get('{uuid}', 'Admin\TestController@show')->name('show'); // if uuid is quiz / tryout, its return list question quiz / tryout, if its not quiz/tryout, return spesific test
             Route::post('', 'Admin\TestController@store')->name('store');
             Route::put('{uuid}', 'Admin\TestController@update')->name('update');
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');

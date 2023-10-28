@@ -34,19 +34,30 @@ class TestController extends Controller
 
     public function show(Request $request, $uuid){
         try{
-            $test = Test::where([
-                'uuid' => $uuid
-            ])->with(['questions'])->first();
+            if($uuid == "quiz" || $uuid == "tryout"){
+                $tests = Test::where([
+                    'test_category' => $uuid
+                ])->with(['questions'])->get();
 
-            if(!$test){
                 return response()->json([
-                    'message' => 'Data not found',
-                ], 404);
+                    'message' => 'Success get data',
+                    'tests' => $tests,
+                ], 200);
+            }else{
+                $test = Test::where([
+                    'uuid' => $uuid
+                ])->with(['questions'])->first();
+
+                if(!$test){
+                    return response()->json([
+                        'message' => 'Data not found',
+                    ], 404);
+                }
+                return response()->json([
+                    'message' => 'Success get data',
+                    'test' => $test,
+                ], 200);
             }
-            return response()->json([
-                'message' => 'Success get data',
-                'test' => $test,
-            ], 200);
         }
         catch(\Exception $e){
             return response()->json([
@@ -58,7 +69,7 @@ class TestController extends Controller
     public function store(Request $request): JsonResponse{
         $validate = [
             'test_type' => 'required|in:classical,IRT',
-            'name' => 'required',
+            'name' => 'required|string',
             'test_category' => 'required|in:quiz,tryout',
         ];
 

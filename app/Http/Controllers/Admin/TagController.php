@@ -49,7 +49,7 @@ class TagController extends Controller
 
     public function store(Request $request): JsonResponse{
         $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:tags',
+            'name' => 'required|string|unique:tags',
         ]);
 
         if ($validator->fails()) {
@@ -78,7 +78,7 @@ class TagController extends Controller
 
         if($checkTag->name != $request->name){
             $validator = Validator::make($request->all(), [
-                'name' => 'required|unique:tags',
+                'name' => 'required|string|unique:tags',
             ]);
 
             if ($validator->fails()) {

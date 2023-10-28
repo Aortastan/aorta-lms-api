@@ -92,6 +92,7 @@ class PaymentGatewayController extends Controller
             'gateway_name' => 'required|string',
             'api_key' => 'required|string',
             'secret' => 'required|string',
+            'is_enabled' => 'required|boolean',
         ];
 
         $validator = Validator::make($request->all(), $validate);

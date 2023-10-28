@@ -67,8 +67,9 @@ class QuestionController extends Controller
 
     public function store(Request $request){
         $validate = [
+            'question' => 'required|string',
             'question_type' => 'required|in:multiple,most point',
-            'type' => 'required|in:video,youtube,text,image,pdf,slide document',
+            'type' => 'required|in:video,youtube,text,image,pdf,audio,slide document',
             'answers' => 'required|array',
             'answers.*' => 'array',
             'answers.*.answer' => 'required|string',
@@ -78,8 +79,10 @@ class QuestionController extends Controller
             if($request->type != 'text'){
                 if($request->type == 'youtube'){
                     $validate['url_path'] = 'required';
+                    $validate['file_duration'] = 'required';
+                    $validate['file_duration_seconds'] = 'required';
                 }else{
-                    if($request->type == 'video'){
+                    if($request->type == 'video' || $request->type == 'audio'){
                         $validate['file_duration'] = 'required';
                         $validate['file_duration_seconds'] = 'required';
                     }

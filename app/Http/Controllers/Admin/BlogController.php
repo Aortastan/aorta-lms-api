@@ -62,14 +62,14 @@ class BlogController extends Controller
 
     public function store(Request $request){
         $validator = Validator::make($request->all(), [
-            'title' => 'required',
-            'category_uuid' => 'required',
-            'slug' => 'required|unique:blogs',
-            'body' => 'required',
+            'title' => 'required|string',
+            'category_uuid' => 'required|string',
+            'slug' => 'required|string|unique:blogs',
+            'body' => 'required|string',
             'image' => 'required|image',
-            'seo_title' => 'required',
-            'seo_description' => 'required',
-            'seo_keywords' => 'required',
+            'seo_title' => 'required|string',
+            'seo_description' => 'required|string',
+            'seo_keywords' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -119,20 +119,20 @@ class BlogController extends Controller
         }
 
         $validate = [
-            'title' => 'required',
-            'category_uuid' => 'required',
-            'slug' => 'required',
-            'body' => 'required',
+            'title' => 'required|string',
+            'category_uuid' => 'required|string',
+            'slug' => 'required|string',
+            'body' => 'required|string',
             'image' => 'required',
-            'seo_title' => 'required',
-            'seo_description' => 'required',
-            'seo_keywords' => 'required',
+            'seo_title' => 'string',
+            'seo_description' => 'string',
+            'seo_keywords' => 'string',
             'status' => 'required|boolean'
         ];
 
         if(isset($request->slug)){
             if($request->slug != $checkBlog->slug){
-                $validate['slug'] = 'required|unique:blogs';
+                $validate['slug'] = 'required|string|unique:blogs';
             }
         }
 

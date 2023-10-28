@@ -49,7 +49,7 @@ class CategoryController extends Controller
 
     public function store(Request $request): JsonResponse{
         $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:categories',
+            'name' => 'required|string|unique:categories',
         ]);
 
         if ($validator->fails()) {
@@ -78,7 +78,7 @@ class CategoryController extends Controller
 
         if($checkCategory->name != $request->name){
             $validator = Validator::make($request->all(), [
-                'name' => 'required|unique:categories',
+                'name' => 'required|string|unique:categories',
             ]);
 
             if ($validator->fails()) {
