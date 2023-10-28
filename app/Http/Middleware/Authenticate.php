@@ -21,9 +21,16 @@ class Authenticate extends Middleware
         }
     }
 
-    public function handle($request, Closure $next, $guard = null)
+    public function handle($request, Closure $next, ...$guard)
     {
         try{
+            $headerSecretJWT = $request->header('secret');
+
+            if ($headerSecretJWT !== env('JWT_SECRET')) {
+                return response()->json([
+                    'message' => 'secret not valid',
+                ], 401);
+            }
             if(! $user = JWTAuth::parseToken()->authenticate()){
                 return response()->json([
                     'message' => 'user not found',

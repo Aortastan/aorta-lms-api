@@ -45,19 +45,9 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
                 Route::put('{uuid}', 'Admin\UserController@updateStudent')->name('update');
             });
 
-            Route::delete('users/{uuid}', 'Admin\UserController@delete')->name('delete');
+            Route::delete('{uuid}', 'Admin\UserController@delete')->name('delete');
         });
         // end user management
-
-        // question management
-        Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
-            Route::get('', 'Admin\QuestionController@index')->name('get');
-            Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
-            Route::post('', 'Admin\QuestionController@store')->name('store');
-            Route::post('{uuid}', 'Admin\QuestionController@update')->name('update');
-            Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
-        });
-        // end question management
 
         // category management
         Route::group(['prefix' => 'categories', 'as' => 'categories.',], function () {
@@ -89,6 +79,26 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // end blog management
 
+        // question management
+        Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
+            Route::get('', 'Admin\QuestionController@index')->name('get');
+            Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
+            Route::post('', 'Admin\QuestionController@store')->name('store');
+            Route::post('{uuid}', 'Admin\QuestionController@update')->name('update');
+            Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
+        });
+        // end question management
+
+        // test management
+        Route::group(['prefix' => 'tests', 'as' => 'tests.',], function () {
+            Route::get('', 'Admin\TestController@index')->name('get');
+            Route::get('{uuid}', 'Admin\TestController@show')->name('show');
+            Route::post('', 'Admin\TestController@store')->name('store');
+            Route::put('{uuid}', 'Admin\TestController@update')->name('update');
+            Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
+        });
+        // end test management
+
         // course management
         Route::group(['prefix' => 'courses', 'as' => 'courses.',], function () {
             Route::get('', 'Admin\CourseController@index')->name('get');
@@ -114,16 +124,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // end course lesson lecture management
 
-        // test management
-        Route::group(['prefix' => 'tests', 'as' => 'tests.',], function () {
-            Route::get('', 'Admin\TestController@index')->name('get');
-            Route::get('{uuid}', 'Admin\TestController@show')->name('show');
-            Route::post('', 'Admin\TestController@store')->name('store');
-            Route::put('{uuid}', 'Admin\TestController@update')->name('update');
-            Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
-        });
-        // end test management
-
         // packages management
         Route::group(['prefix' => 'packages', 'as' => 'packages.'], function () {
             Route::get('', 'Admin\PackageController@index')->name('get');
@@ -133,5 +133,25 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('lists/{type}/{uuid}', 'Admin\PackageController@packageLists')->name('lists');
         });
         // end packages management
+
+        // payment gateway management
+        Route::group(['prefix' => 'payment-gateway', 'as' => 'payments.',], function () {
+            Route::get('', 'Admin\PaymentGatewayController@index')->name('get');
+            Route::get('{uuid}', 'Admin\PaymentGatewayController@show')->name('show');
+            Route::post('', 'Admin\PaymentGatewayController@store')->name('store');
+            Route::put('{uuid}', 'Admin\PaymentGatewayController@update')->name('update');
+            Route::delete('{uuid}', 'Admin\PaymentGatewayController@delete')->name('delete');
+        });
+        // end payment gateway management
+
+        // coupon management
+        Route::group(['prefix' => 'coupons', 'as' => 'coupons.',], function () {
+            Route::get('', 'Admin\CouponController@index')->name('get');
+            Route::get('{uuid}', 'Admin\CouponController@show')->name('show');
+            Route::post('', 'Admin\CouponController@store')->name('store');
+            Route::put('{uuid}', 'Admin\CouponController@update')->name('update');
+            Route::delete('{uuid}', 'Admin\CouponController@delete')->name('delete');
+        });
+        // end coupon management
     });
 });
