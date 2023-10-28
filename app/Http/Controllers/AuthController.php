@@ -85,7 +85,15 @@ class AuthController extends Controller
         $token = JWTAuth::fromUser($user);
         return response()->json([
             'message' => 'Check your email',
-            'role' => $user->role,
+            'user' => [
+                'role'          => $user->role,
+                'name'          => $user->name,
+                'username'      => $user->username,
+                'email'         => $user->email,
+                'mobile_number' => $user->mobile_number,
+                'gender'        => $user->gender,
+                'avatar'        => $user->avatar,
+            ],
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60
@@ -136,7 +144,15 @@ class AuthController extends Controller
     protected function respondWithToken($token): JsonResponse
     {
         return response()->json([
-            'role' => auth()->user()->role,
+            'user' => [
+                'role'          => auth()->user()->role,
+                'name'          => auth()->user()->name,
+                'username'      => auth()->user()->username,
+                'email'         => auth()->user()->email,
+                'mobile_number' => auth()->user()->mobile_number,
+                'gender'        => auth()->user()->gender,
+                'avatar'        => auth()->user()->avatar,
+            ],
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60
