@@ -14,11 +14,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
 
-Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
 
+Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
+    Route::post('payments/webhook/xendit', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
     Route::post('authenticate', 'AuthController@authenticate')->name('authenticate');
     Route::post('register', 'AuthController@register')->name('register');
     Route::post('logout', 'AuthController@logout');
@@ -153,5 +155,15 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::delete('{uuid}', 'Admin\CouponController@delete')->name('delete');
         });
         // end coupon management
+    });
+
+    Route::group(['middleware' => ['auth', 'student', 'verified'], 'prefix' => 'student', 'as' => 'student.',], function () {
+        // Dashboard
+        Route::get('', 'Student\DashboardController@index')->name('get');
+        // end dashboard
+
+        Route::group(['prefix' => 'package', 'as' => 'package.',], function () {
+            Route::post('buy', 'API\Payment\XenditController@create')->name('buy');
+        });
     });
 });

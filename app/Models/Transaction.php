@@ -24,6 +24,7 @@ class Transaction extends Model
         'transaction_amount',
         'payment_method_uuid',
         'transaction_status',
+        'url',
     ];
 
     protected static function boot()
