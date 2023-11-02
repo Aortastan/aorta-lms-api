@@ -7,12 +7,17 @@ use Illuminate\Http\Request;
 use Xendit\Xendit;
 use App\Models\Transaction;
 use App\Models\Package;
+use App\Models\Coupon;
+use App\Models\ClaimedCoupon;
+use App\Models\PurchasedPackage;
+use App\Models\MembershipHistory;
 use App\Models\PaymentGatewaySetting;
 use Illuminate\Http\JsonResponse;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
-
+use DateTime;
+use DateInterval;
 
 class XenditController extends Controller
 {
@@ -67,6 +72,57 @@ class XenditController extends Controller
 
         Xendit::setApiKey($paymentGateway->api_key);
 
+        $coupon_uuid = "";
+        if(isset($request->coupon)){
+            if($request->coupon){
+                $coupon = Coupon::where([
+                    'code' => $request->coupon,
+                ])->first();
+
+
+                if(!$coupon){
+                    return response()->json([
+                        'message' => "Coupon not found",
+                    ], 404);
+                }
+                $coupon_uuid = $coupon['uuid'];
+
+
+                if($coupon->type_limit == 1){
+                    // check limit
+                    $checkClaimedCoupon = ClaimedCoupon::where([
+                        'coupon_uuid' => $coupon->uuid,
+                    ])->get();
+                    if(count($checkClaimedCoupon) >= $coupon->limit){
+                        return response()->json([
+                            'message' => "The coupon has run out of limit",
+                        ], 422);
+                    }
+                }
+                if($coupon->type_limit == 2){
+                    $today = new DateTime();
+                    $expiredDate = DateTime::createFromFormat('Y-m-d H:i:s', $coupon->expired_date);
+
+                    if ($today > $expiredDate) {
+                        return response()->json([
+                            'message' => "The coupon has expired",
+                        ], 422);
+                    }
+                }
+
+                if($coupon->type_coupon == 'discount amount'){
+                    $amount = $amount - $coupon->price;
+                    if($amount < 0){
+                        $amount = 0;
+                    }
+                }
+                if($coupon->type_coupon == 'percentage discount'){
+                    $amount = ((100 - $coupon->discount) / 100) * $amount;
+                }
+
+            }
+        }
+
         $params = [
             'external_id' => Uuid::uuid4()->toString(),
             'amount' => $amount,
@@ -85,18 +141,14 @@ class XenditController extends Controller
             ], 500);
         }
 
-        if($request->type_of_purchase == 'lifetime'){
-            $type_of_purchase = 'paid';
-        }else{
-            $type_of_purchase = 'membership';
-        }
-
         $user = JWTAuth::parseToken()->authenticate();
 
         $transaction = Transaction::create([
             'uuid' => $params['external_id'],
             'user_uuid' => $user->uuid,
-            'type_of_purchase' => $type_of_purchase,
+            'package_uuid' => $request->package_uuid,
+            'coupon_uuid' => $coupon_uuid,
+            'type_of_purchase' => $request->type_of_purchase,
             'transaction_type' => $package->package_type,
             'transaction_amount' => $amount,
             'payment_method_uuid' => $request->payment_method_uuid,
@@ -107,12 +159,11 @@ class XenditController extends Controller
         return response()->json([
             'message' => 'Success create invoice',
             'url' => $createInvoice['invoice_url'],
-            'id' => $createInvoice['id']
         ], 200);
     }
 
     public function webhook(Request $request){
-        $getInvoice = \Xendit\Invoice::retrieve($request->id);
+        // $getInvoice = \Xendit\Invoice::retrieve($request->id);
 
         $transaction = Transaction::where('uuid', $request->external_id)->first();
         if(!$transaction){
@@ -121,9 +172,41 @@ class XenditController extends Controller
             ], 404);
         }
 
-        Transaction::where('uuid', $request->external_id)->update([
-            'transaction_status' => 'settled'
-        ]);
+        if($transaction->transaction_status == 'settled'){
+            return response()->json([
+                'message' => 'Already updated data',
+            ], 200);
+        }else{
+            if($transaction->type_of_purchase == 'lifetime'){
+                PurchasedPackage::create([
+                    'transaction_uuid' => $transaction->uuid,
+                    'user_uuid' => $transaction->user_uuid,
+                    'package_uuid' => $transaction->package_uuid,
+                ]);
+            }else{
+                $now = new DateTime();
+                if($transaction->type_of_purchase == 'one month'){
+                    $now->add(new DateInterval('P1M'));
+                }elseif($transaction->type_of_purchase == 'three months'){
+                    $now->add(new DateInterval('P3M'));
+                }elseif($transaction->type_of_purchase == 'six months'){
+                    $now->add(new DateInterval('P6M'));
+                }
+                elseif($transaction->type_of_purchase == 'one year'){
+                    $now->add(new DateInterval('P1Y'));
+                }
+                MembershipHistory::create([
+                    'transaction_uuid' => $transaction->uuid,
+                    'user_uuid' => $transaction->user_uuid,
+                    'package_uuid' => $transaction->package_uuid,
+                    'expired_date' => $now->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            Transaction::where('uuid', $request->external_id)->update([
+                'transaction_status' => 'settled'
+            ]);
+        }
 
         return response()->json([
             'message' => 'Transaction success',

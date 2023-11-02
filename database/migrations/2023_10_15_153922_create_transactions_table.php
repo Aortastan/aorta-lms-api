@@ -17,7 +17,9 @@ class CreateTransactionsTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('user_uuid');
-            $table->string('type_of_purchase')->comment('membership, paid');
+            $table->string('package_uuid');
+            $table->string('coupon_uuid')->nullable();
+            $table->string('type_of_purchase')->comment('lifetime,one month,three months,six months,one year');
             $table->string('transaction_type')->comment('course, test');
             $table->integer('transaction_amount');
             $table->string('payment_method_uuid');

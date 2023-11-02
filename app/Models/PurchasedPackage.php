@@ -20,6 +20,7 @@ class PurchasedPackage extends Model
     protected $fillable = [
         'transaction_uuid',
         'package_uuid',
+        'user_uuid'
     ];
 
     protected static function boot()

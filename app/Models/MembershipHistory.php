@@ -20,6 +20,7 @@ class MembershipHistory extends Model
     protected $fillable = [
         'transaction_uuid',
         'package_uuid',
+        'user_uuid',
         'expired_date',
     ];
 

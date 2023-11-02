@@ -18,6 +18,7 @@ class CreateMembershipHistoriesTable extends Migration
             $table->uuid('uuid')->unique();
             $table->string('transaction_uuid');
             $table->string('package_uuid');
+            $table->string('user_uuid');
             $table->datetime('expired_date');
             $table->timestamps();
         });
