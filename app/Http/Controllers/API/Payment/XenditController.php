@@ -180,7 +180,7 @@ class XenditController extends Controller
     }
 
     public function webhook(Request $request){
-        $getInvoice = \Xendit\Invoice::retrieve($request->id);
+        // $getInvoice = \Xendit\Invoice::retrieve($request->id);
 
         $transaction = Transaction::where('uuid', $request->external_id)->first();
         if(!$transaction){
