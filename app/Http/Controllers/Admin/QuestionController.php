@@ -148,8 +148,10 @@ class QuestionController extends Controller
         $answers = [];
         foreach ($request->answers as $index => $answer) {
             $path = null;
-            if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
-                $path = $answer['image']->store('imagesAnswer', 'public');
+            if($answer['image']){
+                if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
+                    $path = $answer['image']->store('imagesAnswer', 'public');
+                }
             }
 
             $is_correct = null;

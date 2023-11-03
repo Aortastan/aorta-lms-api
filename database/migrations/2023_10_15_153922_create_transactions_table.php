@@ -23,7 +23,7 @@ class CreateTransactionsTable extends Migration
             $table->string('transaction_type')->comment('course, test');
             $table->integer('transaction_amount');
             $table->string('payment_method_uuid');
-            $table->string('transaction_status')->comment('pending, success, failed, canceled');
+            $table->string('transaction_status')->comment('pending,settled');
             $table->string('url')->nullable();
             $table->timestamps();
         });

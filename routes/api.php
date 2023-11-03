@@ -20,7 +20,7 @@ Route::get('email/resend', 'Auth\VerificationController@resend')->name('verifica
 
 
 Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
-    Route::post('payments/webhook/xendit', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
+    Route::post('payments/webhook/xendit/paid', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
     Route::post('authenticate', 'AuthController@authenticate')->name('authenticate');
     Route::post('register', 'AuthController@register')->name('register');
     Route::post('logout', 'AuthController@logout');

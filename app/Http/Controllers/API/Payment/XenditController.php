@@ -71,6 +71,7 @@ class XenditController extends Controller
         }
 
         Xendit::setApiKey($paymentGateway->api_key);
+        $user = JWTAuth::parseToken()->authenticate();
 
         $coupon_uuid = "";
         if(isset($request->coupon)){
@@ -79,6 +80,16 @@ class XenditController extends Controller
                     'code' => $request->coupon,
                 ])->first();
 
+                $checkClaimedCoupon = ClaimedCoupon::where([
+                    'coupon_uuid' => $coupon->uuid,
+                    'user_uuid' => $user->uuid,
+                ])->first();
+
+                if($checkClaimedCoupon){
+                    return response()->json([
+                        'message' => "You've already redeem this coupon",
+                    ], 422);
+                }
 
                 if(!$coupon){
                     return response()->json([
@@ -98,6 +109,12 @@ class XenditController extends Controller
                             'message' => "The coupon has run out of limit",
                         ], 422);
                     }
+
+                    ClaimedCoupon::create([
+                        'coupon_uuid' => $coupon->uuid,
+                        'user_uuid' => $user->uuid,
+                        'is_used' => 1,
+                    ]);
                 }
                 if($coupon->type_limit == 2){
                     $today = new DateTime();
@@ -123,6 +140,8 @@ class XenditController extends Controller
             }
         }
 
+        $amount = $amount + $paymentGateway->admin_fee;
+
         $params = [
             'external_id' => Uuid::uuid4()->toString(),
             'amount' => $amount,
@@ -140,8 +159,6 @@ class XenditController extends Controller
                 'message' => 'An Error Occured.',
             ], 500);
         }
-
-        $user = JWTAuth::parseToken()->authenticate();
 
         $transaction = Transaction::create([
             'uuid' => $params['external_id'],
@@ -163,7 +180,7 @@ class XenditController extends Controller
     }
 
     public function webhook(Request $request){
-        // $getInvoice = \Xendit\Invoice::retrieve($request->id);
+        $getInvoice = \Xendit\Invoice::retrieve($request->id);
 
         $transaction = Transaction::where('uuid', $request->external_id)->first();
         if(!$transaction){
