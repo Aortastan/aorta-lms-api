@@ -20,6 +20,7 @@ class CreateStudentProgressTable extends Migration
             $table->string('package_uuid');
             $table->string('course_uuid');
             $table->string('lesson_uuid');
+            $table->string('lecture_uuid');
             $table->timestamps();
         });
     }

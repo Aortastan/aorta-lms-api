@@ -169,5 +169,23 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{package_type}/{uuid}', 'Student\PackageController@show')->name('show');
         });
         // End Package
+
+        // Course
+        Route::group(['prefix' => 'courses', 'as' => 'course.',], function () {
+            Route::get('{package_uuid}/{course_uuid}', 'Student\CourseController@show')->name('show');
+        });
+        // End Course
+
+        // Lesson
+        Route::group(['prefix' => 'lessons', 'as' => 'lesson.',], function () {
+            Route::get('{package_uuid}/{course_uuid}/{lesson_uuid}', 'Student\CourseLessonController@show')->name('show');
+        });
+        // End Lesson
+
+        // Lecture
+        Route::group(['prefix' => 'lectures', 'as' => 'lecture.',], function () {
+            Route::get('{package_uuid}/{course_uuid}/{lesson_uuid}/{lecture_uuid}', 'Student\LessonLectureController@show')->name('show');
+        });
+        // End Lecture
     });
 });

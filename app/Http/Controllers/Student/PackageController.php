@@ -82,10 +82,28 @@ class PackageController extends Controller
         try{
             $user = JWTAuth::parseToken()->authenticate();
             if($package_type == 'test'){
+
                 $getPackage = Package::
                     where(['uuid' => $uuid, 'package_type' => $package_type])
                     ->with(['category', 'packageTests', 'packageTests.test'])
                     ->first();
+
+                $check_purchased_package = DB::table('purchased_packages')
+                    ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
+                    ->first();
+
+                if(!$check_purchased_package){
+                    $check_membership_history = DB::table('membership_histories')
+                        ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
+                        ->whereDate('membership_histories.expired_date', '>', now())
+                        ->first();
+
+                    if(!$check_membership_history){
+                        return response()->json([
+                            'message' => "You haven't purchased this package yet",
+                        ], 404);
+                    }
+                }
 
                 $package = [];
 
@@ -114,6 +132,23 @@ class PackageController extends Controller
                     where('packages.uuid', $uuid)
                     ->with(['category', 'packageCourses', 'packageCourses.course', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests'])
                     ->first();
+
+                    $check_purchased_package = DB::table('purchased_packages')
+                    ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
+                    ->first();
+
+                if(!$check_purchased_package){
+                    $check_membership_history = DB::table('membership_histories')
+                        ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
+                        ->whereDate('membership_histories.expired_date', '>', now())
+                        ->first();
+
+                    if(!$check_membership_history){
+                        return response()->json([
+                            'message' => "You haven't purchased this package yet",
+                        ], 404);
+                    }
+                }
 
                 $package = [];
 

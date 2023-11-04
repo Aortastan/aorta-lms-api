@@ -21,6 +21,7 @@ class StudentProgress extends Model
         'package_uuid',
         'course_uuid',
         'lesson_uuid',
+        'lecture_uuid',
     ];
 
     protected static function boot()
