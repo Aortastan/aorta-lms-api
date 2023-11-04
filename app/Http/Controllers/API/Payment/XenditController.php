@@ -233,7 +233,7 @@ class XenditController extends Controller
     public function webhook(Request $request){
         // $getInvoice = \Xendit\Invoice::retrieve($request->id);
 
-        $transaction = Transaction::where('external_id', $request->id)->first();
+        $transaction = Transaction::where('external_id', $request->external_id)->first();
         if(!$transaction){
             PaymentApiLog::create([
                 'endpoint_url' => $request->path(),
