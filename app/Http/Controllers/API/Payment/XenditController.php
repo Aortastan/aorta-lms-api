@@ -89,6 +89,19 @@ class XenditController extends Controller
         Xendit::setApiKey($paymentGateway->api_key);
         $user = JWTAuth::parseToken()->authenticate();
 
+        $purchasedPackage = PurchasedPackage::where(['package_uuid' => $package->uuid, 'user_uuid' => $user->uuid])->first();
+
+        if($purchasedPackage){
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "You've already bought this item",
+            ]);
+            return response()->json([
+                'message' => "You've already bought this item",
+            ], 422);
+        }
+
         $coupon_uuid = "";
         if(isset($request->coupon)){
             if($request->coupon){

@@ -163,8 +163,10 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // end dashboard
 
         // Package
-        Route::group(['prefix' => 'package', 'as' => 'package.',], function () {
+        Route::group(['prefix' => 'packages', 'as' => 'package.',], function () {
             Route::post('buy', 'API\Payment\XenditController@create')->name('buy');
+            Route::get('', 'Student\PackageController@index')->name('index');
+            Route::get('{package_type}/{uuid}', 'Student\PackageController@show')->name('show');
         });
         // End Package
     });

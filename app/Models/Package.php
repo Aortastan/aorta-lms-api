@@ -32,6 +32,11 @@ class Package extends Model
         'status',
     ];
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_uuid', 'uuid');
+    }
+
     public function packageTests()
     {
         return $this->hasMany(PackageTest::class);

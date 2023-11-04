@@ -38,6 +38,11 @@ class Course extends Model
         return $this->hasMany(CourseLesson::class);
     }
 
+    public function pretestPosttests()
+    {
+        return $this->hasMany(PretestPosttest::class, 'course_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
