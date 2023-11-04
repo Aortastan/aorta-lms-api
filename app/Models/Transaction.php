@@ -19,6 +19,7 @@ class Transaction extends Model
      */
     protected $fillable = [
         'user_uuid',
+        'external_id',
         'package_uuid',
         'coupon_uuid',
         'type_of_purchase',

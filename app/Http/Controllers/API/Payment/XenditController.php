@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Xendit\Xendit;
 use App\Models\Transaction;
 use App\Models\Package;
+use App\Models\PaymentApiLog;
 use App\Models\Coupon;
 use App\Models\ClaimedCoupon;
 use App\Models\PurchasedPackage;
@@ -31,6 +32,11 @@ class XenditController extends Controller
         $validator = Validator::make($request->all(), $validate);
 
         if ($validator->fails()) {
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => json_encode($validator->errors()),
+            ]);
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
@@ -42,6 +48,11 @@ class XenditController extends Controller
         ])->first();
 
         if(!$package){
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "Package not foud",
+            ]);
             return response()->json([
                 'message' => 'Package not found',
             ], 404);
@@ -65,6 +76,11 @@ class XenditController extends Controller
         ])->first();
 
         if(!$paymentGateway){
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "Payment gateway not found",
+            ]);
             return response()->json([
                 'message' => 'Payment gateway not found',
             ], 422);
@@ -86,12 +102,22 @@ class XenditController extends Controller
                 ])->first();
 
                 if($checkClaimedCoupon){
+                    PaymentApiLog::create([
+                        'endpoint_url' => $request->path(),
+                        'method' => $request->method(),
+                        'status' => "You've already redeem this coupon",
+                    ]);
                     return response()->json([
                         'message' => "You've already redeem this coupon",
                     ], 422);
                 }
 
                 if(!$coupon){
+                    PaymentApiLog::create([
+                        'endpoint_url' => $request->path(),
+                        'method' => $request->method(),
+                        'status' => "Coupon not found",
+                    ]);
                     return response()->json([
                         'message' => "Coupon not found",
                     ], 404);
@@ -105,6 +131,11 @@ class XenditController extends Controller
                         'coupon_uuid' => $coupon->uuid,
                     ])->get();
                     if(count($checkClaimedCoupon) >= $coupon->limit){
+                        PaymentApiLog::create([
+                            'endpoint_url' => $request->path(),
+                            'method' => $request->method(),
+                            'status' => "The coupon has run out of limit",
+                        ]);
                         return response()->json([
                             'message' => "The coupon has run out of limit",
                         ], 422);
@@ -121,6 +152,11 @@ class XenditController extends Controller
                     $expiredDate = DateTime::createFromFormat('Y-m-d H:i:s', $coupon->expired_date);
 
                     if ($today > $expiredDate) {
+                        PaymentApiLog::create([
+                            'endpoint_url' => $request->path(),
+                            'method' => $request->method(),
+                            'status' => "The coupon has expired",
+                        ]);
                         return response()->json([
                             'message' => "The coupon has expired",
                         ], 422);
@@ -150,18 +186,28 @@ class XenditController extends Controller
         try {
             $createInvoice = \Xendit\Invoice::create($params);
         } catch (\Xendit\Exceptions\ApiException $e) {
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => json_encode($e->getMessage()),
+            ]);
             return response()->json([
                 'message' => $e->getMessage(),
             ], 500);
 
         } catch (\Exception $e) {
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "An error Occured.",
+            ]);
             return response()->json([
                 'message' => 'An Error Occured.',
             ], 500);
         }
 
         $transaction = Transaction::create([
-            'uuid' => $params['external_id'],
+            'external_id' => $createInvoice['id'],
             'user_uuid' => $user->uuid,
             'package_uuid' => $request->package_uuid,
             'coupon_uuid' => $coupon_uuid,
@@ -173,6 +219,11 @@ class XenditController extends Controller
             'url' => $createInvoice['invoice_url'],
         ]);
 
+        PaymentApiLog::create([
+            'endpoint_url' => $request->path(),
+            'method' => $request->method(),
+            'status' => 'Success create invoice',
+        ]);
         return response()->json([
             'message' => 'Success create invoice',
             'url' => $createInvoice['invoice_url'],
@@ -182,14 +233,24 @@ class XenditController extends Controller
     public function webhook(Request $request){
         // $getInvoice = \Xendit\Invoice::retrieve($request->id);
 
-        $transaction = Transaction::where('uuid', $request->external_id)->first();
+        $transaction = Transaction::where('external_id', $request->id)->first();
         if(!$transaction){
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "Transaction not found",
+            ]);
             return response()->json([
                 'message' => 'Transaction not found',
             ], 404);
         }
 
         if($transaction->transaction_status == 'settled'){
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "Already updated data",
+            ]);
             return response()->json([
                 'message' => 'Already updated data',
             ], 200);
@@ -220,11 +281,18 @@ class XenditController extends Controller
                 ]);
             }
 
-            Transaction::where('uuid', $request->external_id)->update([
-                'transaction_status' => 'settled'
-            ]);
+            $transaction->transaction_status = 'settled';
+            $transaction->save();
+            // Transaction::where('external_id', $request->external_id)->update([
+            //     'transaction_status' => 'settled'
+            // ]);
         }
 
+        PaymentApiLog::create([
+            'endpoint_url' => $request->path(),
+            'method' => $request->method(),
+            'status' => "Transaction success",
+        ]);
         return response()->json([
             'message' => 'Transaction success',
         ], 200);

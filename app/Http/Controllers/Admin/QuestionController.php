@@ -73,6 +73,8 @@ class QuestionController extends Controller
             'answers' => 'required|array',
             'answers.*' => 'array',
             'answers.*.answer' => 'required|string',
+            'answers.*.is_correct' => 'required|boolean',
+            'answers.*.point' => 'required|numeric',
         ];
 
         if($request->type){
@@ -96,17 +98,6 @@ class QuestionController extends Controller
             ], 422);
         }
 
-        if($request->question_type){
-            if($request->question_type == 'multiple'){
-                $validate['answers.*.is_correct'] = 'required|boolean';
-            }else{
-                $validate['answers.*.point'] = 'required|numeric';
-            }
-        }else{
-            return response()->json([
-                'message' => 'Validation failed',
-            ], 422);
-        }
 
         $validator = Validator::make($request->all(), $validate);
 
@@ -154,20 +145,13 @@ class QuestionController extends Controller
                 }
             }
 
-            $is_correct = null;
-            $point = null;
-            if($request->question_type == 'multiple'){
-                $is_correct = $answer['is_correct'];
-            }else{
-                $point = $answer['point'];
-            }
             $answers[]=[
                 'uuid' => Uuid::uuid4()->toString(),
                 'question_uuid' => $question->uuid,
                 'answer' => $answer['answer'],
                 'image' => $path,
-                'is_correct' => $is_correct,
-                'point' => $point,
+                'is_correct' => $answer['is_correct'],
+                'point' => $answer['point'],
             ];
         }
 
@@ -192,6 +176,8 @@ class QuestionController extends Controller
             'answers' => 'required|array',
             'answers.*' => 'array',
             'answers.*.answer' => 'required|string',
+            'answers.*.is_correct' => 'required|boolean',
+            'answers.*.point' => 'required|numeric',
         ];
 
         if($request->type != null){
@@ -206,18 +192,6 @@ class QuestionController extends Controller
                     $validate['file'] = "required";
                     $validate['file_size'] = "required";
                 }
-            }
-        }else{
-            return response()->json([
-                'message' => 'Validation failed',
-            ], 422);
-        }
-
-        if($request->question_type){
-            if($request->question_type == 'multiple'){
-                $validate['answers.*.is_correct'] = 'required|boolean';
-            }else{
-                $validate['answers.*.point'] = 'required|numeric';
             }
         }else{
             return response()->json([
@@ -292,20 +266,13 @@ class QuestionController extends Controller
                         $path = $answer['image']->store('imagesAnswer', 'public');
                     }
 
-                    $is_correct = null;
-                    $point = null;
-                    if($request->question_type == 'multiple'){
-                        $is_correct = $answer['is_correct'];
-                    }else{
-                        $point = $answer['point'];
-                    }
                     $newAnswers[]=[
                         'uuid' => Uuid::uuid4()->toString(),
                         'question_uuid' => $question->uuid,
                         'answer' => $answer['answer'],
                         'image' => $path,
-                        'is_correct' => $is_correct,
-                        'point' => $point,
+                        'is_correct' => $answer['is_correct'],
+                        'point' => $answer['point'],
                     ];
             }else{
                 $answersUuid[] = $checkAnswer->uuid;
@@ -328,19 +295,11 @@ class QuestionController extends Controller
                     }
                 }
 
-                $is_correct = null;
-                $point = null;
-                if($request->question_type == 'multiple'){
-                    $is_correct = $answer['is_correct'];
-                }else{
-                    $point = $answer['point'];
-                }
-
                 $validatedAnswer=[
                     'answer' => $answer['answer'],
                     'image' => $path,
-                    'is_correct' => $is_correct,
-                    'point' => $point,
+                    'is_correct' => $answer['is_correct'],
+                    'point' => $answer['point'],
                 ];
                 Answer::where('uuid', $checkAnswer->uuid)->update($validatedAnswer);
             }
