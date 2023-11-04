@@ -20,6 +20,7 @@ class LessonLecture extends Model
     protected $fillable = [
         'lesson_uuid',
         'title',
+        'body',
         'file_path',
         'url_path',
         'file_size',

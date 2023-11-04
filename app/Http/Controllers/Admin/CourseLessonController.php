@@ -9,6 +9,7 @@ use App\Models\PretestPosttest;
 use App\Models\Course;
 use App\Models\User;
 use App\Models\Test;
+use App\Models\LessonQuiz;
 use App\Models\Assignment;
 use App\Models\CourseLesson;
 use Illuminate\Support\Facades\Validator;
@@ -20,11 +21,45 @@ class CourseLessonController extends Controller
 {
     public function show(Request $request, $uuid){
         try{
-            $lessons = CourseLesson::where(['uuid' => $uuid])->with(['assignments', 'quizzes', 'lectures'])->first();
+            $checkLesson = CourseLesson::where(['uuid' => $uuid])->with(['assignments', 'quizzes', 'lectures'])->first();
+
+            $lesson = [];
+            if($checkLesson){
+                $lesson = [
+                    "uuid" => $checkLesson->uuid,
+                    "course_uuid" => $checkLesson->course_uuid,
+                    "name" => $checkLesson->name,
+                    "description" => $checkLesson->description,
+                    "assignments" => [],
+                    "quizzes" => [],
+                    "lectures" => [],
+                ];
+
+                foreach ($checkLesson->assignments as $index => $assignment) {
+                    $lesson['assignments'][] = [
+                        "uuid" => $assignment['uuid'],
+                        "name" => $assignment['name']
+                    ];
+                }
+
+                foreach ($checkLesson->quizzes as $index => $quiz) {
+                    $lesson['quizzes'][] = [
+                        "uuid" => $quiz['uuid'],
+                        "name" => $quiz['name']
+                    ];
+                }
+
+                foreach ($checkLesson->lectures as $index => $lecture) {
+                    $lesson['lectures'][] = [
+                        "uuid" => $lecture['uuid'],
+                        "title" => $lecture['title']
+                    ];
+                }
+            }
 
             return response()->json([
                 'message' => 'Success get data',
-                'lessons' => $lessons,
+                'lesson' => $lesson,
             ], 200);
         }
         catch(\Exception $e){
@@ -42,24 +77,25 @@ class CourseLessonController extends Controller
             ], 404);
         }
         $validate = [
-            'course_uuid' => 'required',
-            'name' => 'required',
-            'is_have_quiz' => 'required',
-            'is_have_assignment' => 'required',
+            'course_uuid' => 'required|string',
+            'name' => 'required|string',
+            'is_have_quiz' => 'required|boolean',
+            'is_have_assignment' => 'required|boolean',
         ];
 
         if($request->is_have_quiz == 1){
             $validate['quizzes'] = 'required|array';
-            $validate['quizzes.*.name'] = 'required';
-            $validate['quizzes.*.description'] = 'required';
+            $validate['quizzes.*.name'] = 'required|string';
+            $validate['quizzes.*.description'] = 'required|string';
             $validate['quizzes.*.max_attempt'] = 'required|numeric';
-            $validate['assignments.*.test_uuid'] = 'required';
+            $validate['quizzes.*.duration'] = 'required|numeric';
+            $validate['quizzes.*.test_uuid'] = 'required|string';
         }
 
         if($request->is_have_assignment == 1){
             $validate['assignments'] = 'required|array';
-            $validate['assignments.*.name'] = 'required';
-            $validate['assignments.*.description'] = 'required';
+            $validate['assignments.*.name'] = 'required|string';
+            $validate['assignments.*.description'] = 'required|string';
         }
 
         $validator = Validator::make($request->all(), $validate);
@@ -95,6 +131,7 @@ class CourseLessonController extends Controller
                 $validated_quizzes[] = [
                     'uuid' => Uuid::uuid4()->toString(),
                     'lesson_uuid' => $lesson->uuid,
+                    'test_uuid' => $quiz['test_uuid'],
                     'name' => $quiz['name'],
                     'description' => $quiz['description'],
                     'duration' => $quiz['duration'],
@@ -106,15 +143,18 @@ class CourseLessonController extends Controller
         }
         if($request->is_have_assignment == 1){
             $validated_assignments = [];
-            $validated_assignments[] = [
-                'uuid' => Uuid::uuid4()->toString(),
-                'lesson_uuid' => $lesson->uuid,
-                'name' => $quiz['name'],
-                'description' => $quiz['description'],
-                'status'=> 1,
-            ];
+            foreach ($request->assignments as $index => $assignnment) {
+                $validated_assignments[] = [
+                    'uuid' => Uuid::uuid4()->toString(),
+                    'lesson_uuid' => $lesson->uuid,
+                    'name' => $assignnment['name'],
+                    'description' => $assignnment['description'],
+                    'status'=> 1,
+                ];
+            }
+            Assignment::insert($validated_assignments);
         }
-        Assignment::insert($validated_assignments);
+
         return response()->json([
             'message' => 'Success create new lesson'
         ], 200);
@@ -122,12 +162,12 @@ class CourseLessonController extends Controller
     }
 
     public function update(Request $request, $uuid): JsonResponse{
-        $checkCourse = Course::where(['uuid' => $request->course_uuid])->first();
-        if(!$checkCourse){
-            return response()->json([
-                'message' => 'Course not found',
-            ], 404);
-        }
+        // $checkCourse = Course::where(['uuid' => $request->course_uuid])->first();
+        // if(!$checkCourse){
+        //     return response()->json([
+        //         'message' => 'Course not found',
+        //     ], 404);
+        // }
         $checkLesson = CourseLesson::where(['uuid' => $uuid])->first();
         if(!$checkLesson){
             return response()->json([
@@ -136,21 +176,21 @@ class CourseLessonController extends Controller
         }
 
         $validate = [
-            'course_uuid' => 'required',
-            'name' => 'required',
-            'is_have_quiz' => 'required',
-            'is_have_assignment' => 'required',
-            'status' => 'required',
+            // 'course_uuid' => 'required',
+            'name' => 'required|string',
+            'is_have_quiz' => 'required|boolean',
+            'is_have_assignment' => 'required|boolean',
+            // 'status' => 'required|boolean',
         ];
 
         if($request->is_have_quiz == 1){
             $validate['quizzes'] = 'required|array';
-            $validate['quizzes.*.name'] = 'required';
             $validate['quizzes.*.uuid'] = 'required';
-            $validate['quizzes.*.description'] = 'required';
+            $validate['quizzes.*.name'] = 'required|string';
+            $validate['quizzes.*.description'] = 'required|string';
             $validate['quizzes.*.max_attempt'] = 'required|numeric';
-            $validate['quizzes.*.test_uuid'] = 'required';
-            $validate['quizzes.*.status'] = 'required';
+            $validate['quizzes.*.duration'] = 'required|numeric';
+            $validate['quizzes.*.test_uuid'] = 'required|string';
         }
 
         if($request->is_have_assignment == 1){
@@ -158,7 +198,6 @@ class CourseLessonController extends Controller
             $validate['assignments.*.name'] = 'required';
             $validate['assignments.*.uuid'] = 'required';
             $validate['assignments.*.description'] = 'required';
-            $validate['assignments.*.status'] = 'required';
         }
 
         $validator = Validator::make($request->all(), $validate);
@@ -171,12 +210,10 @@ class CourseLessonController extends Controller
         }
 
         $validated = [
-            'course_uuid' => $request->course_uuid,
             'name' => $request->name,
             'description' => $request->description,
             'is_have_quiz' => $request->is_have_quiz,
             'is_have_assignment' => $request->is_have_assignment,
-            'status' => $request->status,
         ];
 
         CourseLesson::where(['uuid' => $uuid])->update($validated);
@@ -200,13 +237,13 @@ class CourseLessonController extends Controller
                 if(!$checkquiz){
                     $validated_new_quizzes[] = [
                         'uuid' => Uuid::uuid4()->toString(),
-                        'lesson_uuid' => $checkLesson->uuid,
+                        'lesson_uuid' => $uuid,
                         'test_uuid' => $quiz['test_uuid'],
                         'name' => $quiz['name'],
                         'description' => $quiz['description'],
                         'duration' => $quiz['duration'],
                         'max_attempt' => $quiz['max_attempt'],
-                        'status'=> $quiz['status'],
+                        'status' => 1,
                     ];
                 }else{
                     $quiz_uuid[] = $checkquiz->uuid;
@@ -216,7 +253,6 @@ class CourseLessonController extends Controller
                         'description' => $quiz['description'],
                         'duration' => $quiz['duration'],
                         'max_attempt' => $quiz['max_attempt'],
-                        'status'=> $quiz['status'],
                     ];
 
                     LessonQuiz::where(['uuid' => $checkquiz->uuid])->update($validate);
@@ -236,20 +272,19 @@ class CourseLessonController extends Controller
                 if(!$checkAssignment){
                     $validated_new_assignments[] = [
                         'uuid' => Uuid::uuid4()->toString(),
-                        'lesson_uuid' => $lesson->uuid,
-                        'name' => $quiz['name'],
-                        'description' => $quiz['description'],
-                        'status'=> $quiz['status'],
+                        'lesson_uuid' => $uuid,
+                        'name' => $assignment['name'],
+                        'description' => $assignment['description'],
+                        'status'=> 1,
                     ];
                 }else{
-                    $assignment_uuid[] = $assignment->uuid;
+                    $assignment_uuid[] = $assignment['uuid'];
                     $validate = [
-                        'name' => $quiz['name'],
-                        'description' => $quiz['description'],
-                        'status'=> $quiz['status'],
+                        'name' => $assignment['name'],
+                        'description' => $assignment['description'],
                     ];
 
-                    Assignment::where(['uuid' => $assignment->uuid])->update($validate);
+                    Assignment::where(['uuid' => $assignment['uuid']])->update($validate);
                 }
 
             }

@@ -44,18 +44,15 @@ class LessonLectureController extends Controller
             'type' => 'required|in:video,youtube,text,image,pdf,slide document,audio',
         ];
 
-        if($request->type != "text"){
-            $validate['file'] = "required";
-        }
         if($request->type == "youtube"){
             $validate['url_path'] = "required";
         }
 
         if($request->type != "youtube" && $request->type != "text"){
-            $validate['file_size'] = "required";
+            $validate['file'] = "required";
         }
 
-        if($request->type == "youtube" && $request->type == "video" || $request->type == "audio"){
+        if($request->type == "youtube" || $request->type == "video" || $request->type == "audio"){
             $validate['file_duration'] = "required";
             $validate['file_duration_seconds'] = "required";
         }
@@ -75,18 +72,16 @@ class LessonLectureController extends Controller
         $file_duration = null;
         $file_duration_seconds = null;
 
-        if($request->type != "text"){
+        if($request->type != "youtube" && $request->type != "text"){
+            $file_size = $request->file->getSize();
             $file_path = $request->file->store('lectures', 'public');
+            $file_size = round($file_size / (1024 * 1024), 2);
         }
         if($request->type == "youtube"){
             $url_path = $request->url_path;
         }
 
-        if($request->type != "youtube" && $request->type != "text"){
-            $file_size = $request->file_size;
-        }
-
-        if($request->type == "youtube" && $request->type == "video" || $request->type == "audio"){
+        if($request->type == "youtube" || $request->type == "video" || $request->type == "audio"){
             $file_duration = $request->file_duration;
             $file_duration_seconds = $request->file_duration_seconds;
         }
@@ -112,13 +107,6 @@ class LessonLectureController extends Controller
     }
 
     public function update(Request $request, $uuid){
-        $checkLesson = CourseLesson::where(['uuid' => $request->lesson_uuid])->first();
-        if(!$checkLesson){
-            return response()->json([
-                'message' => 'Lesson not found',
-            ], 404);
-        }
-
         $checkLecture = LessonLecture::where(['uuid' => $uuid])->first();
         if(!$checkLecture){
             return response()->json([
@@ -127,23 +115,19 @@ class LessonLectureController extends Controller
         }
 
         $validate = [
-            'title' => 'required',
-            'body' => 'required',
+            'title' => 'required|string',
+            'body' => 'required|string',
             'type' => 'required|in:video,youtube,text,image,pdf,slide document,audio',
         ];
 
-        if($request->type != "text"){
+        if($request->type != "youtube" && $request->type != "text"){
             $validate['file'] = "required";
         }
         if($request->type == "youtube"){
             $validate['url_path'] = "required";
         }
 
-        if($request->type != "youtube" && $request->type != "text"){
-            $validate['file_size'] = "required";
-        }
-
-        if($request->type == "youtube" && $request->type == "video" || $request->type == "audio"){
+        if($request->type == "youtube" || $request->type == "video" || $request->type == "audio"){
             $validate['file_duration'] = "required";
             $validate['file_duration_seconds'] = "required";
         }
@@ -169,25 +153,24 @@ class LessonLectureController extends Controller
             }
         }
 
-        if($request->type != "text"){
+        if($request->type != "youtube" && $request->type != "text"){
             if(!is_string($request->file)){
+                $file_size = $request->file->getSize();
                 $file_path = $request->file->store('lectures', 'public');
+                $file_size = round($file_size / (1024 * 1024), 2);
                 if (File::exists(public_path('storage/'.$checkLecture->file_path))) {
                     File::delete(public_path('storage/'.$checkLecture->file_path));
                 }
             }else{
                 $file_path = $checkLecture->file_path;
+                $file_size = $checkLecture->file_size;
             }
         }
         if($request->type == "youtube"){
             $url_path = $request->url_path;
         }
 
-        if($request->type != "youtube" && $request->type != "text"){
-            $file_size = $request->file_size;
-        }
-
-        if($request->type == "youtube" && $request->type == "video" || $request->type == "audio"){
+        if($request->type == "youtube" || $request->type == "video" || $request->type == "audio"){
             $file_duration = $request->file_duration;
             $file_duration_seconds = $request->file_duration_seconds;
         }
@@ -206,7 +189,7 @@ class LessonLectureController extends Controller
         $lecture = LessonLecture::where(['uuid' => $uuid])->update($validated);
 
         return response()->json([
-            'message' => 'Success create new lecture'
+            'message' => 'Success update lecture'
         ], 200);
 
     }
