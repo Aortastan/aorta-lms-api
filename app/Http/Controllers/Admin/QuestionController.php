@@ -23,7 +23,6 @@ class QuestionController extends Controller
             ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
             ->get();
 
-            // $questions = Question::select('uuid', 'question_type', 'question', 'file_path', 'url_path', 'file_size', 'file_duration', 'file_duration_seconds', 'type')->with(['answers', 'subject'])->get();
             return response()->json([
                 'message' => 'Success get data',
                 'questions' => $questions,
