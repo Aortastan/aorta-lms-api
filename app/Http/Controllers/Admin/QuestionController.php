@@ -15,13 +15,30 @@ use File;
 
 class QuestionController extends Controller
 {
-    public function index(){
+    public function index(Request $request){
         try{
+
+            $search = "";
+
             $questions = Question::
-            with('answers')
-            ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
-            ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
-            ->get();
+                with('answers')
+                ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
+                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid');
+
+            if(isset($_GET['search'])){
+                $questions->where('questions.question', 'LIKE', '%'.$_GET['search'].'%');
+            }
+
+            if(isset($_GET['orderBy']) && isset($_GET['order'])){
+                $orderBy = ['question_type', 'question', 'type'];
+                $order = ['asc', 'desc'];
+
+                if(in_array($_GET['orderBy'], $orderBy) && in_array($_GET['order'], $order)){
+                    $questions->orderBy('questions.' . $_GET['orderBy'], $_GET['order']);
+                }
+            }
+
+            $questions = $questions->get();
 
             return response()->json([
                 'message' => 'Success get data',
