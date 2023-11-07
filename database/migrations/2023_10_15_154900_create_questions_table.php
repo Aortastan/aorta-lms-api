@@ -16,6 +16,7 @@ class CreateQuestionsTable extends Migration
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
+            $table->uuid('subject_uuid');
             $table->string('question_type')->comment('multiple, most point');
             $table->string('question');
             $table->string('file_path')->nullable();

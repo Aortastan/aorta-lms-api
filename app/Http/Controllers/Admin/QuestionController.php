@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Models\Question;
 use App\Models\Answer;
+use App\Models\Subject;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -16,7 +17,13 @@ class QuestionController extends Controller
 {
     public function index(){
         try{
-            $questions = Question::select('uuid', 'question_type', 'question', 'file_path', 'url_path', 'file_size', 'file_duration', 'file_duration_seconds', 'type')->with(['answers'])->get();
+            $questions = Question::
+            with('answers')
+            ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
+            ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
+            ->get();
+
+            // $questions = Question::select('uuid', 'question_type', 'question', 'file_path', 'url_path', 'file_size', 'file_duration', 'file_duration_seconds', 'type')->with(['answers', 'subject'])->get();
             return response()->json([
                 'message' => 'Success get data',
                 'questions' => $questions,
@@ -67,6 +74,7 @@ class QuestionController extends Controller
 
     public function store(Request $request){
         $validate = [
+            'subject_uuid' => 'required|string',
             'question' => 'required|string',
             'question_type' => 'required|in:multiple,most point',
             'type' => 'required|in:video,youtube,text,image,pdf,audio,slide document',
@@ -89,7 +97,6 @@ class QuestionController extends Controller
                         $validate['file_duration_seconds'] = 'required';
                     }
                     $validate['file'] = "required";
-                    $validate['file_size'] = "required";
                 }
             }
         }else{
@@ -108,6 +115,16 @@ class QuestionController extends Controller
             ], 422);
         }
 
+        $checkSubject = Subject::where([
+            'uuid' => $request->subject_uuid,
+        ])->first();
+
+        if(!$checkSubject){
+            return response()->json([
+                'message' => 'Subject not found',
+            ], 404);
+        }
+
         $path = null;
         $url_path = null;
         $file_size = null;
@@ -117,14 +134,16 @@ class QuestionController extends Controller
             if($request->type == 'youtube'){
                 $url_path = $request->url_path;
             }else{
+                $file_size = $request->file->getSize();
                 $path = $request->file->store('questions', 'public');
-                $file_size = $request->file_size;
+                $file_size = round($file_size / (1024 * 1024), 2); //Megabytes
                 $file_duration = $request->file_duration;
                 $file_duration_seconds = $request->file_duration_seconds;
             }
         }
 
         $validated=[
+            'subject_uuid' => $request->subject_uuid,
             'question_type' => $request->question_type,
             'question' => $request->question,
             'url_path' => $url_path,
@@ -171,6 +190,7 @@ class QuestionController extends Controller
         }
 
         $validate = [
+            'subject_uuid' => 'required|string',
             'question_type' => 'required|in:multiple,most point',
             'type' => 'required|in:video,youtube,text,image,pdf,slide document',
             'answers' => 'required|array',
@@ -190,7 +210,6 @@ class QuestionController extends Controller
                         $validate['file_duration_seconds'] = 'required';
                     }
                     $validate['file'] = "required";
-                    $validate['file_size'] = "required";
                 }
             }
         }else{
@@ -206,6 +225,16 @@ class QuestionController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
+        }
+
+        $checkSubject = Subject::where([
+            'uuid' => $request->subject_uuid,
+        ])->first();
+
+        if(!$checkSubject){
+            return response()->json([
+                'message' => 'Subject not found',
+            ], 404);
         }
 
         $path = null;
@@ -228,21 +257,24 @@ class QuestionController extends Controller
                 $url_path = $request->url_path;
             }else{
                 $path = $question->file_path;
+                $file_size = $question->file_path;
                 if(!is_string($request->file)){
                     if($question->file_path){
                         if (File::exists(public_path('storage/'.$question->file_path))) {
                             File::delete(public_path('storage/'.$question->file_path));
                         }
                     }
+                    $file_size = $request->file->getSize();
+                    $file_size = round($file_size / (1024 * 1024), 2);
                     $path = $request->file->store('questions', 'public');
                 }
-                $file_size = $request->file_size;
                 $file_duration = $request->file_duration;
                 $file_duration_seconds = $request->file_duration_seconds;
             }
         }
 
         $validated=[
+            'subject_uuid' => $request->subject_uuid,
             'question_type' => $request->question_type,
             'question' => $request->question,
             'url_path' => $url_path,

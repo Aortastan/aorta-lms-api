@@ -18,6 +18,7 @@ class Question extends Model
      * @var array
      */
     protected $fillable = [
+        'subject_uuid',
         'question_type',
         'question',
         'file_path',
@@ -27,6 +28,11 @@ class Question extends Model
         'file_duration_seconds',
         'type',
     ];
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class, 'subject_uuid', 'uuid');
+    }
 
     public function answers()
     {
