@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Xendit\Xendit;
 use App\Models\Transaction;
 use App\Models\Package;
+use App\Models\User;
 use App\Models\PaymentApiLog;
 use App\Models\Coupon;
 use App\Models\ClaimedCoupon;
@@ -244,8 +245,6 @@ class XenditController extends Controller
     }
 
     public function webhook(Request $request){
-        // $getInvoice = \Xendit\Invoice::retrieve($request->id);
-
         $transaction = Transaction::where('external_id', $request->external_id)->first();
         if(!$transaction){
             PaymentApiLog::create([
@@ -296,9 +295,15 @@ class XenditController extends Controller
 
             $transaction->transaction_status = 'settled';
             $transaction->save();
-            // Transaction::where('external_id', $request->external_id)->update([
-            //     'transaction_status' => 'settled'
-            // ]);
+
+            $package = Package::where(['uuid' => $transaction->package_uuid])->first();
+            $user = User::where(['uuid' => $transaction->user_uuid])->first();
+            $data = [
+                "transaction_id" => $transaction->uuid,
+                "transaction_name" => $package->name,
+                "amount" => $transaction->transaction_amount,
+            ];
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\PackagePurchased($data));
         }
 
         PaymentApiLog::create([
