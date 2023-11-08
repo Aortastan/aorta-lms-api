@@ -25,6 +25,16 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('register', 'AuthController@register')->name('register');
     Route::post('logout', 'AuthController@logout');
 
+    Route::group(['middleware' => ['auth', 'verified']], function () {
+       // profile management
+       Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
+            Route::get('', 'AllRole\ProfileController@index')->name('get');
+            Route::post('', 'AllRole\ProfileController@update')->name('update');
+            Route::put('change-password', 'AllRole\ProfileController@changePassword')->name('changePassword');
+    });
+    // end profile management
+    });
+
     Route::group(['middleware' => ['auth', 'admin', 'verified'], 'prefix' => 'admin', 'as' => 'admin.',], function () {
         // Dashboard
         Route::get('', 'Admin\DashboardController@index')->name('get');
