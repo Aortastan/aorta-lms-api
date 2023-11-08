@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Password;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +24,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('payments/webhook/xendit/paid', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
     Route::post('authenticate', 'AuthController@authenticate')->name('authenticate');
     Route::post('register', 'AuthController@register')->name('register');
+    Route::post('forgot-password', 'AuthController@forgotPassword')->name('forgotPassword');
+    Route::post('reset-password', 'AuthController@resetPassword')->name('resetPassword');
     Route::post('logout', 'AuthController@logout');
 
     Route::group(['middleware' => ['auth', 'verified']], function () {
@@ -31,8 +34,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'AllRole\ProfileController@index')->name('get');
             Route::post('', 'AllRole\ProfileController@update')->name('update');
             Route::put('change-password', 'AllRole\ProfileController@changePassword')->name('changePassword');
-    });
-    // end profile management
+        });
+        // end profile management
     });
 
     Route::group(['middleware' => ['auth', 'admin', 'verified'], 'prefix' => 'admin', 'as' => 'admin.',], function () {

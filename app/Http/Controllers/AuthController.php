@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -21,7 +22,7 @@ class AuthController extends Controller
     public function __construct()
     {
         # except for authenticate/login & register
-        $this->middleware(['auth:api'], ['except' => ['authenticate','register']]);
+        // $this->middleware(['auth:api'], ['except' => ['authenticate','register', 'forgotPassword']]);
     }
 
     /**
@@ -99,6 +100,72 @@ class AuthController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 4320
         ], 200);
 
+
+    }
+
+    public function forgotPassword(Request $request): JsonResponse{
+        $validate = [
+            'email' => 'required|email',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return response()->json([
+            'message' => 'Success send email',
+        ], 200);
+    }
+
+    public function resetPassword(Request $request){
+        $validate = [
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|same:password_confirmation',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $checkToken = PasswordReset::where([
+            'token' => $request->token,
+            'email' => $request->email,
+        ])->first();
+
+        if(!$checkToken){
+            return response()->json([
+                'message' => 'Credential not valid',
+            ], 422);
+        }
+
+        User::where([
+            'email' => $request->email,
+        ])->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        PasswordReset::where([
+            'token' => $request->token,
+        ])->delete();
+
+        return response()->json([
+            'message' => 'Success',
+        ], 422);
 
     }
 

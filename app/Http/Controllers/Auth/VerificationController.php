@@ -53,7 +53,7 @@ class VerificationController extends Controller
         if(!$user->hasVerifiedEmail()){
             $user->markEmailAsVerified();
         }
-        return  redirect()->route('home');
+        return redirect(env("FRONTEND_DOMAIN") . 'login');
     }
 
     public function resend(){
