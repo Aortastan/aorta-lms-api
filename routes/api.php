@@ -210,5 +210,12 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{package_uuid}/{course_uuid}/{lesson_uuid}/{lecture_uuid}', 'Student\LessonLectureController@show')->name('show');
         });
         // End Lecture
+
+        // Assignments
+        Route::group(['prefix' => 'assignments', 'as' => 'assignment.',], function () {
+            Route::get('{package_uuid}/{assignment_uuid}', 'Student\AssignmentController@index')->name('index');
+            Route::post('{package_uuid}/{assignment_uuid}', 'Student\AssignmentController@store')->name('store');
+        });
+        // End Assignments
     });
 });
