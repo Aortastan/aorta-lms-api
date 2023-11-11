@@ -217,5 +217,14 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('{package_uuid}/{assignment_uuid}', 'Student\AssignmentController@store')->name('store');
         });
         // End Assignments
+
+        // Quiz
+        Route::group(['prefix' => 'quizzes', 'as' => 'quiz.',], function () {
+            Route::get('detail-student-quiz/{student_quiz_uuid}', 'Student\QuizController@show')->name('show');
+            Route::get('take-quiz/{package_uuid}/{quiz_uuid}', 'Student\QuizController@takeQuiz')->name('takeQuiz');
+            Route::get('{package_uuid}/{quiz_uuid}', 'Student\QuizController@index')->name('index');
+            Route::post('{package_uuid}/{quiz_uuid}', 'Student\QuizController@store')->name('store');
+        });
+        // End Quiz
     });
 });

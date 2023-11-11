@@ -21,6 +21,11 @@ class QuestionTest extends Model
         'question_uuid',
     ];
 
+    public function question()
+    {
+        return $this->belongsTo(Question::class, 'question_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
