@@ -19,7 +19,11 @@ use Illuminate\Support\Facades\Password;
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
 
-
+use Ramsey\Uuid\Uuid;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Question;
+use App\Models\Answer;
+use App\Models\Subject;
 Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
     Route::post('payments/webhook/xendit/paid', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
     Route::post('authenticate', 'AuthController@authenticate')->name('authenticate');
@@ -109,6 +113,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'Admin\QuestionController@index')->name('get');
             Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
             Route::post('', 'Admin\QuestionController@store')->name('store');
+            Route::post('upload/csv', 'Admin\QuestionController@uploadCSV')->name('upload.csv');
             Route::post('{uuid}', 'Admin\QuestionController@update')->name('update');
             Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
         });

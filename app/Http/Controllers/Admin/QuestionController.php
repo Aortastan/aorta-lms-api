@@ -370,4 +370,141 @@ class QuestionController extends Controller
             'message' => "Success delete data",
         ], 200);
     }
+
+    public function uploadCSV(Request $request){
+        $validate = [
+            'file' => 'required|file|mimes:csv,txt',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Membaca isi file CSV
+        $file = fopen($request->file, 'r');
+        fgetcsv($file);
+        // Mendefinisikan array untuk menyimpan data
+        $questions = [];
+        $answers = [];
+
+        // Membaca baris-baris file CSV
+        while (($line = fgetcsv($file)) !== false) {
+
+            // validasi
+            if($line[0] != 'multiple' && $line[0] != 'most point'){
+                return response()->json([
+                    'message' => 'Question type must multiple or most point',
+                ], 422);
+            }
+            if ($line[2] == null){
+                return response()->json([
+                    'message' => 'Question required',
+                ], 422);
+            }
+            if (!is_string($line[2])){
+                return response()->json([
+                    'message' => 'Question must string type',
+                ], 422);
+            }
+            if($line[4] != 'text' && $line[4] != 'youtube'){
+                return response()->json([
+                    'message' => 'Only text / youtube allowed',
+                ], 422);
+            }
+
+            if($line[4] == 'youtube'){
+                if ($line[3] == null){
+                    return response()->json([
+                        'message' => 'If type is youtube, url_path is required',
+                    ], 422);
+                }
+            }
+            $check_subject = Subject::where([
+                'name' => $line[1],
+            ])->first();
+
+            if(!$check_subject){
+                return response()->json([
+                    'message' => 'Subject not found',
+                ], 422);
+            }
+
+            $question_uuid = Uuid::uuid4()->toString();
+            // Membuat array asosiatif untuk setiap baris data
+            $questionData = [
+                "uuid" => $question_uuid,
+                "subject_uuid" => $check_subject->uuid,
+                'question_type' => $line[0],
+                'question' => $line[2],
+                'url_path' => $line[3],
+                'type' => $line[4],
+            ];
+
+            $questions[] = $questionData;
+
+            // Menambahkan setiap jawaban ke dalam array answers
+            for ($i = 0; $i < (count($line) - 5) / 3; $i++) {
+                $answerIndex = 5 + ($i * 3);
+
+                if ($line[$answerIndex] == null && $line[$answerIndex + 1] == null && $line[$answerIndex + 2] == null){
+                    continue;
+                }
+
+                if ($line[$answerIndex] == null){
+                    return response()->json([
+                        'message' => 'Answer is required',
+                    ], 422);
+                }
+                if (!is_string($line[$answerIndex])){
+                    return response()->json([
+                        'message' => 'Answer must string type',
+                    ], 422);
+                }
+                if ($line[$answerIndex + 1] == null){
+                    return response()->json([
+                        'message' => 'is_correct is required',
+                    ], 422);
+                }
+                if ($line[$answerIndex + 1] != "0" && $line[$answerIndex + 1] != "1"){
+                    return response()->json([
+                        'message' => 'is_correct must boolean type',
+                    ], 422);
+                }
+                if ($line[$answerIndex + 2] == null){
+                    return response()->json([
+                        'message' => 'Point is required',
+                    ], 422);
+                }
+                if (!is_numeric($line[$answerIndex + 2])){
+                    return response()->json([
+                        'message' => 'Point must number type',
+                    ], 422);
+                }
+
+                $answerData = [
+                    'uuid' => Uuid::uuid4()->toString(),
+                    'question_uuid' => $question_uuid,
+                    'answer' => $line[$answerIndex],
+                    'is_correct' => $line[$answerIndex + 1],
+                    'point' => $line[$answerIndex + 2],
+                ];
+                $answers[] = $answerData;
+            }
+        }
+
+        // Menutup file CSV
+        fclose($file);
+
+        Question::insert($questions);
+        Answer::insert($answers);
+
+        return response()->json([
+            'message' => 'Success post data',
+        ], 200);
+    }
 }
