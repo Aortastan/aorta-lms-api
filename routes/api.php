@@ -186,6 +186,14 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // end dashboard
 
         // Package
+        Route::group(['prefix' => 'carts', 'as' => 'cart.',], function () {
+            Route::get('', 'Student\CartController@index')->name('index');
+            Route::post('', 'Student\CartController@store')->name('store');
+            Route::delete('{cart_uuid}', 'Student\CartController@delete')->name('delete');
+        });
+        // End Package
+
+        // Package
         Route::group(['prefix' => 'packages', 'as' => 'package.',], function () {
             Route::post('buy', 'API\Payment\XenditController@create')->name('buy');
             Route::get('', 'Student\PackageController@index')->name('index');

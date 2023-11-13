@@ -24,6 +24,11 @@ class Cart extends Model
         'qty',
     ];
 
+    public function package()
+    {
+        return $this->belongsTo(Package::class, 'package_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

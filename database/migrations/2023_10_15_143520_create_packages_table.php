@@ -17,7 +17,7 @@ class CreatePackagesTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('category_uuid');
-            $table->string('package_type')->comment('class, test');
+            $table->string('package_type')->comment('course, test');
             $table->string('name');
             $table->string('price_lifetime');
             $table->string('price_one_month');
