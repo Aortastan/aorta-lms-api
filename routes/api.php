@@ -19,11 +19,6 @@ use Illuminate\Support\Facades\Password;
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
 
-use Ramsey\Uuid\Uuid;
-use Illuminate\Support\Facades\Validator;
-use App\Models\Question;
-use App\Models\Answer;
-use App\Models\Subject;
 Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
     Route::post('payments/webhook/xendit/paid', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
     Route::post('authenticate', 'AuthController@authenticate')->name('authenticate');

@@ -24,7 +24,7 @@ class ProfileController extends Controller
     public function index(){
         try{
             $profile = User::
-            select('name', 'username', 'email', 'mobile_number', 'gender', 'avatar')
+            select('name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar')
             ->where([
                 'uuid' => $this->user->uuid,
             ])->first();
