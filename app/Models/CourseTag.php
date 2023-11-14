@@ -21,6 +21,11 @@ class CourseTag extends Model
         'tag_uuid',
     ];
 
+    public function tag()
+    {
+        return $this->belongsTo(Tag::class, 'tag_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

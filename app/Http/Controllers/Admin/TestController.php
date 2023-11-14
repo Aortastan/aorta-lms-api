@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Test;
 use App\Models\Question;
 use App\Models\QuestionTest;
+use App\Models\Tag;
+use App\Models\TestTag;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Ramsey\Uuid\Uuid;
@@ -53,6 +55,21 @@ class TestController extends Controller
                         'message' => 'Data not found',
                     ], 404);
                 }
+
+                $getTestTags = TestTag::where([
+                    'test_uuid' => $test->uuid,
+                ])->with(['tag'])->get();
+
+                $testTags = [];
+                foreach ($getTestTags as $index => $tag) {
+                    $testTags[] = [
+                        'tag_uuid' => $tag->tag->uuid,
+                        'name' => $tag->tag->name,
+                    ];
+                }
+
+                $test->test_tags = $testTags;
+
                 return response()->json([
                     'message' => 'Success get data',
                     'test' => $test,
@@ -183,5 +200,58 @@ class TestController extends Controller
         return response()->json([
             'message' => 'Success update test'
         ], 200);
+    }
+
+    public function updateTag(Request $request, $uuid){
+        $checkTest = Test::where(['uuid' => $uuid])->first();
+        if(!$checkTest){
+            return response()->json([
+                'message' => 'Test not found',
+            ], 404);
+        }
+        $validate = [
+            'tags' => 'required|array',
+            'tags.*.uuid' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $test_tags = [];
+        foreach ($request->tags as $index => $tag_uuid) {
+            $checkTag = Tag::where([
+                'uuid' => $tag_uuid,
+            ])->first();
+
+            if(!$checkTag){
+                return response()->json([
+                    'message' => 'Tag not found',
+                ], 404);
+            }
+            $test_tags[] = [
+                'uuid' => Uuid::uuid4()->toString(),
+                'test_uuid' => $checkTest->uuid,
+                'tag_uuid' => $checkTag->uuid,
+            ];
+        }
+
+        TestTag::where([
+            'test_uuid' => $checkTest->uuid,
+        ])->delete();
+
+        if(count($test_tags) > 0){
+            TestTag::insert($test_tags);
+        }
+
+        return response()->json([
+            'message' => 'Success update tag',
+        ], 200);
+
     }
 }

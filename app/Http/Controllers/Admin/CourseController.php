@@ -9,6 +9,8 @@ use App\Models\PretestPosttest;
 use App\Models\Course;
 use App\Models\User;
 use App\Models\Test;
+use App\Models\Tag;
+use App\Models\CourseTag;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -46,8 +48,20 @@ class CourseController extends Controller
                     ->select('uuid', 'name', 'status')
                     ->where('course_uuid', $uuid)
                     ->get();
+            $getCourseTags = CourseTag::where([
+                'course_uuid' => $course->uuid,
+            ])->with(['tag'])->get();
+
+            $courseTags = [];
+            foreach ($getCourseTags as $index => $tag) {
+                $courseTags[] = [
+                    'tag_uuid' => $tag->tag->uuid,
+                    'name' => $tag->tag->name,
+                ];
+            }
 
             $course->course_lessons = $courseLessons;
+            $course->course_tags = $courseTags;
 
             $coursePretestPosttest =  DB::table('pretest_posttests')
                                     ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.name as test_name')
@@ -294,5 +308,61 @@ class CourseController extends Controller
         return response()->json([
             'message' => 'Success update course'
         ], 200);
+    }
+
+    public function updateTag(Request $request, $uuid){
+        $checkCourse = Course::where([
+            'uuid' => $uuid
+        ])->first();
+
+        if(!$checkCourse){
+            return response()->json([
+                'message' => 'Course not found'
+            ], 404);
+        }
+        $validate = [
+            'tags' => 'required|array',
+            'tags.*.uuid' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $course_tags = [];
+        foreach ($request->tags as $index => $tag_uuid) {
+            $checkTag = Tag::where([
+                'uuid' => $tag_uuid,
+            ])->first();
+
+            if(!$checkTag){
+                return response()->json([
+                    'message' => 'Tag not found',
+                ], 404);
+            }
+            $course_tags[] = [
+                'uuid' => Uuid::uuid4()->toString(),
+                'course_uuid' => $checkCourse->uuid,
+                'tag_uuid' => $checkTag->uuid,
+            ];
+        }
+
+        CourseTag::where([
+            'course_uuid' => $checkCourse->uuid,
+        ])->delete();
+
+        if(count($course_tags) > 0){
+            CourseTag::insert($course_tags);
+        }
+
+        return response()->json([
+            'message' => 'Success update tag',
+        ], 200);
+
     }
 }

@@ -121,6 +121,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('', 'Admin\TestController@store')->name('store');
             Route::put('{uuid}', 'Admin\TestController@update')->name('update');
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
+            Route::post('update-tags/{uuid}', 'Admin\TestController@updateTag')->name('update.tag');
         });
         // end test management
 
@@ -130,6 +131,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{uuid}', 'Admin\CourseController@show')->name('show');
             Route::post('', 'Admin\CourseController@store')->name('store');
             Route::post('{uuid}', 'Admin\CourseController@update')->name('update');
+            Route::post('update-tags/{uuid}', 'Admin\CourseController@updateTag')->name('update.tag');
         });
         // end course management
 
