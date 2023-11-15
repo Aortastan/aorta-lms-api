@@ -46,15 +46,42 @@ class TestController extends Controller
                     'tests' => $tests,
                 ], 200);
             }else{
-                $test = Test::where([
+                $test = Test::select('uuid', 'test_type', 'name', 'test_category')
+                ->where([
                     'uuid' => $uuid
-                ])->with(['questions'])->first();
+                ])->with(['questions.question.subject'])->first();
 
                 if(!$test){
                     return response()->json([
                         'message' => 'Data not found',
                     ], 404);
                 }
+
+                $getQuestion = [];
+                foreach ($test->questions as $key => $data) {
+                    $getQuestion[] = [
+                        'question_uuid' => $data['question']['uuid'],
+                        'question_type' => $data['question']['question_type'],
+                        'subject' => $data['question']['subject']['name'],
+                        'type' => $data['question']['type'],
+                        'question' => $data['question']['question'],
+                        'file_path' => $data['question']['file_path'],
+                        'url_path' => $data['question']['url_path'],
+                        'file_size' => $data['question']['file_size'] . " MB",
+                        'file_duration' => $data['question']['file_duration'],
+                        'file_duration_seconds' => $data['question']['file_duration_seconds'],
+                    ];
+                }
+
+                $response_test = [
+                    'uuid' => $test['uuid'],
+                    'test_type' => $test['test_type'],
+                    'name' => $test['name'],
+                    'test_category' => $test['test_category'],
+                    'questions' => $getQuestion,
+                ];
+
+
 
                 $getTestTags = TestTag::where([
                     'test_uuid' => $test->uuid,
@@ -68,11 +95,12 @@ class TestController extends Controller
                     ];
                 }
 
-                $test->test_tags = $testTags;
+
+                $response_test['test_tags'] = $testTags;
 
                 return response()->json([
                     'message' => 'Success get data',
-                    'test' => $test,
+                    'test' => $response_test,
                 ], 200);
             }
         }
