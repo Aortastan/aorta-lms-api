@@ -52,6 +52,27 @@ class QuestionController extends Controller
         }
     }
 
+    public function getBySubject($subject_uuid){
+        try{
+            $questions = Question::
+                with('answers')
+                ->where(['subject_uuid' => $subject_uuid])
+                ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
+                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
+                ->get();
+
+            return response()->json([
+                'message' => 'Success get data',
+                'questions' => $questions,
+            ], 200);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
+
     public function show(Request $request, $detail){
         if($detail == 'multiple' || $detail == 'most point'){
             try{

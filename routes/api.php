@@ -107,6 +107,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
             Route::get('', 'Admin\QuestionController@index')->name('get');
             Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
+            Route::get('subject/{subject_uuid}', 'Admin\QuestionController@getBySubject')->name('get.bySubject');
             Route::post('', 'Admin\QuestionController@store')->name('store');
             Route::post('upload/csv', 'Admin\QuestionController@uploadCSV')->name('upload.csv');
             Route::post('{uuid}', 'Admin\QuestionController@update')->name('update');
