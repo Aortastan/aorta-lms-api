@@ -64,7 +64,7 @@ class CourseController extends Controller
             $course->course_tags = $courseTags;
 
             $coursePretestPosttest =  DB::table('pretest_posttests')
-                                    ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.name as test_name')
+                                    ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.test_type as test_type', 'tests.name as test_name', 'tests.test_category as test_category', 'tests.uuid as test_uuid')
                                     ->join('tests', 'pretest_posttests.test_uuid', '=', 'tests.uuid')
                                     ->where('course_uuid', $uuid)
                                     ->get();
@@ -196,14 +196,14 @@ class CourseController extends Controller
                 $validate['video'] = 'required|mimetypes:video/*';
             }
         }else{
-            $validate['video'] = 'required';
+            // $validate['video'] = 'required';
         }
         if(isset($request->image)){
             if(!is_string($request->image)){
                 $validate['image'] = 'required|image';
             }
         }else{
-            $validate['image'] = 'required';
+            // $validate['image'] = 'required';
         }
 
         if($request->is_have_pretest_posttest == 1){
