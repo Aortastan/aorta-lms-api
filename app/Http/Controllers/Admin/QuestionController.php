@@ -76,7 +76,22 @@ class QuestionController extends Controller
     public function show(Request $request, $detail){
         if($detail == 'multiple' || $detail == 'most point'){
             try{
-                $questions = Question::select('uuid', 'question_type', 'question', 'file_path', 'url_path', 'file_size', 'file_duration', 'file_duration_seconds', 'type')->where(['question_type' => $detail])->with(['answers'])->get();
+                $getQuestions = Question::select('uuid', 'question_type', 'question', 'file_path', 'url_path', 'file_size', 'file_duration', 'file_duration_seconds', 'type')->where(['question_type' => $detail])->with(['answers', 'subject'])->get();
+                $questions = [];
+                foreach ($getQuestions as $index => $question) {
+                    $questions[] = [
+                        'uuid' => $question->uuid,
+                        'subject' => $question->subject->name,
+                        'question_type' => $question->question_type,
+                        'file_path' => $question->file_path,
+                        'url_path' => $question->url_path,
+                        'file_size' => $question->file_size,
+                        'file_duration' => $question->file_duration,
+                        'file_duration_seconds' => $question->file_duration_seconds,
+                        'type' => $question->type,
+                        'answers' => $question->answers,
+                    ];
+                }
                 return response()->json([
                     'message' => 'Success get data',
                     'questions' => $questions,
