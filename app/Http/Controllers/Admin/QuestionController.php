@@ -151,10 +151,6 @@ class QuestionController extends Controller
                     $validate['file'] = "required";
                 }
             }
-        }else{
-            return response()->json([
-                'message' => 'Validation failed',
-            ], 422);
         }
 
 
