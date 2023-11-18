@@ -76,12 +76,19 @@ class QuestionController extends Controller
     public function show(Request $request, $detail){
         if($detail == 'multiple' || $detail == 'most point'){
             try{
-                $getQuestions = Question::select('uuid', 'question_type', 'question', 'file_path', 'url_path', 'file_size', 'file_duration', 'file_duration_seconds', 'type')->where(['question_type' => $detail])->with(['answers', 'subject'])->get();
+
+                $getQuestions = Question::
+                select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
+                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
+                ->where(['questions.question_type' => $detail])
+                ->with(['answers'])
+                ->get();
+
                 $questions = [];
                 foreach ($getQuestions as $index => $question) {
                     $questions[] = [
                         'uuid' => $question->uuid,
-                        'subject' => $question->subject->name,
+                        'subject_name' => $question->subject_name,
                         'question_type' => $question->question_type,
                         'file_path' => $question->file_path,
                         'url_path' => $question->url_path,
@@ -104,12 +111,32 @@ class QuestionController extends Controller
             }
         }else{
             try{
-                $question = Question::select('uuid', 'question_type', 'question', 'file_path', 'url_path', 'file_size', 'file_duration', 'file_duration_seconds', 'type')->where(['uuid' => $detail])->with(['answers'])->first();
-                if($question == null){
+                $getQuestion = Question::where(['uuid' => $detail])->with(['answers'])->first();
+
+                if($getQuestion == null){
                     return response()->json([
                         'message' => 'Data not found',
                     ], 404);
                 }
+
+                $getSubject = Subject::where([
+                    'uuid' => $getQuestion->subject_uuid,
+                ])->first();
+
+                $question = [
+                    'uuid' => $getQuestion->uuid,
+                    'question_type' => $getQuestion->question_type,
+                    'question' => $getQuestion->question,
+                    'subject_name' => $getSubject->name,
+                    'file_path' => $getQuestion->file_path,
+                    'url_path' => $getQuestion->url_path,
+                    'file_size' => $getQuestion->file_size,
+                    'file_duration' => $getQuestion->file_duration,
+                    'file_duration_seconds' => $getQuestion->file_duration_seconds,
+                    'type' => $getQuestion->type,
+                    'answers' => $getQuestion->answers,
+                ];
+
                 return response()->json([
                     'message' => 'Success get data',
                     'questions' => $question,
