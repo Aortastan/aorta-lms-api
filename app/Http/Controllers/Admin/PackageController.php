@@ -54,7 +54,7 @@ class PackageController extends Controller
     }
 
     public function show($uuid){
-        $checkPackage = Package::where(['uuid' => $uuid])->with(['packageTests', 'packageTests.test', 'packageCourses', 'packageCourses.course'])->first();
+        $checkPackage = Package::where(['uuid' => $uuid])->with(['packageTests', 'packageTests.test', 'packageCourses', 'packageCourses.course', 'category'])->first();
 
         if(!$checkPackage){
             return response()->json([
@@ -64,6 +64,7 @@ class PackageController extends Controller
         $package=[
             "name" => $checkPackage->name,
             "package_type" => $checkPackage->package_type,
+            "category_name" => $checkPackage->category->name,
             "price_lifetime" => $checkPackage->price_lifetime,
             "price_one_month" => $checkPackage->price_one_month,
             "price_three_months" => $checkPackage->price_three_months,

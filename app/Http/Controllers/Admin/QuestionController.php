@@ -89,6 +89,7 @@ class QuestionController extends Controller
                     $questions[] = [
                         'uuid' => $question->uuid,
                         'subject_name' => $question->subject_name,
+                        'question' => $question->question,
                         'question_type' => $question->question_type,
                         'file_path' => $question->file_path,
                         'url_path' => $question->url_path,
@@ -284,7 +285,6 @@ class QuestionController extends Controller
                         $validate['file_duration'] = 'required';
                         $validate['file_duration_seconds'] = 'required';
                     }
-                    $validate['file'] = "required";
                 }
             }
         }else{
