@@ -20,7 +20,27 @@ class PackageController extends Controller
 {
     public function index(){
         try{
-            $packages = Package::select('uuid', 'package_type', 'name', 'price_lifetime', 'price_one_month', 'price_three_months', 'price_six_months', 'price_one_year', 'learner_accesibility', 'image', 'discount', 'is_membership', 'status')->get();
+            $getPackages = Package::with(['category'])->get();
+            $packages = [];
+
+            foreach ($getPackages as $index => $package) {
+                $packages[] = [
+                    'uuid' => $package->uuid,
+                    'package_type' => $package->package_type,
+                    'category_name' => $package->category->name,
+                    'name' => $package->name,
+                    'price_lifetime' => $package->price_lifetime,
+                    'price_one_month' => $package->price_one_month,
+                    'price_three_months' => $package->price_three_months,
+                    'price_six_months' => $package->price_six_months,
+                    'price_one_year' => $package->price_one_year,
+                    'learner_accesibility' => $package->learner_accesibility,
+                    'image' => $package->image,
+                    'discount' => $package->discount,
+                    'is_membership' => $package->is_membership,
+                ];
+            }
+
             return response()->json([
                 'message' => 'Success get data',
                 'packages' => $packages,
