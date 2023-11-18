@@ -30,6 +30,8 @@ class CourseLessonController extends Controller
                     "course_uuid" => $checkLesson->course_uuid,
                     "name" => $checkLesson->name,
                     "description" => $checkLesson->description,
+                    "is_have_quiz" => $checkLesson->is_have_quiz,
+                    "is_have_assignment" => $checkLesson->is_have_assignment,
                     "assignments" => [],
                     "quizzes" => [],
                     "lectures" => [],
@@ -38,6 +40,7 @@ class CourseLessonController extends Controller
                 foreach ($checkLesson->assignments as $index => $assignment) {
                     $lesson['assignments'][] = [
                         "uuid" => $assignment['uuid'],
+                        "description" => $assignment['description'],
                         "name" => $assignment['name']
                     ];
                 }
@@ -45,6 +48,10 @@ class CourseLessonController extends Controller
                 foreach ($checkLesson->quizzes as $index => $quiz) {
                     $lesson['quizzes'][] = [
                         "uuid" => $quiz['uuid'],
+                        "test_uuid" => $quiz['test_uuid'],
+                        "description" => $quiz['description'],
+                        "duration" => $quiz['duration'],
+                        "max_attempt" => $quiz['max_attempt'],
                         "name" => $quiz['name']
                     ];
                 }
@@ -52,7 +59,8 @@ class CourseLessonController extends Controller
                 foreach ($checkLesson->lectures as $index => $lecture) {
                     $lesson['lectures'][] = [
                         "uuid" => $lecture['uuid'],
-                        "title" => $lecture['title']
+                        "title" => $lecture['title'],
+                        "type" => $lecture['type'],
                     ];
                 }
             }
