@@ -111,16 +111,19 @@ class PackageController extends Controller
             'category_uuid' => 'required',
             'package_type' => 'required|in:course,test',
             'name' => 'required',
-            'price_lifetime' => 'required|numeric',
-            'price_one_month' => 'required|numeric',
-            'price_three_months' => 'required|numeric',
-            'price_six_months' => 'required|numeric',
-            'price_one_year' => 'required|numeric',
             'learner_accesibility' => 'required|in:paid,free',
             'image' => 'required|image',
-            'discount' => 'required|numeric',
-            'is_membership' => 'required',
         ];
+
+        if($request->learner_accesibility == 'paid'){
+            $validate['price_lifetime'] = 'required|numeric';
+            $validate['price_one_month'] = 'required|numeric';
+            $validate['price_three_months'] = 'required|numeric';
+            $validate['price_six_months'] = 'required|numeric';
+            $validate['price_one_year'] = 'required|numeric';
+            $validate['discount'] = 'requied|numeric';
+            $validate['is_membership'] = 'required|boolean';
+        }
 
         $validator = Validator::make($request->all(), $validate);
 
@@ -144,18 +147,29 @@ class PackageController extends Controller
         $validated = [
             'category_uuid' => $request->category_uuid,
             'package_type' => $request->package_type,
-            'name' => $request->name,
-            'price_lifetime' => $request->price_lifetime,
-            'price_one_month' => $request->price_one_month,
-            'price_three_months' => $request->price_three_months,
-            'price_six_months' => $request->price_six_months,
-            'price_one_year' => $request->price_one_year,
             'learner_accesibility' => $request->learner_accesibility,
-            'image' => $path,
-            'discount' => $request->discount,
-            'is_membership' => $request->is_membership,
+            'name' => $request->name,
             'status' => true,
+            'image' => $path,
         ];
+
+        if($request->learner_accesibility == 'paid'){
+            $validated['price_lifetime'] = $request->price_lifetime;
+            $validated['price_one_month'] = $request->price_one_month;
+            $validated['price_three_months'] = $request->price_three_months;
+            $validated['price_six_months'] = $request->price_six_months;
+            $validated['price_one_year'] = $request->price_one_year;
+            $validated['discount'] = $request->discount;
+            $validated['is_membership'] = $request->is_membership;
+        }else{
+            $validated['price_lifetime'] = 0;
+            $validated['price_one_month'] = 0;
+            $validated['price_three_months'] = 0;
+            $validated['price_six_months'] = 0;
+            $validated['price_one_year'] = 0;
+            $validated['discount'] = 0;
+            $validated['is_membership'] = 0;
+        }
 
         Package::create($validated);
 
@@ -181,17 +195,18 @@ class PackageController extends Controller
         $validate = [
             'category_uuid' => 'required',
             'name' => 'required',
-            'price_lifetime' => 'required|numeric',
-            'price_one_month' => 'required|numeric',
-            'price_three_months' => 'required|numeric',
-            'price_six_months' => 'required|numeric',
-            'price_one_year' => 'required|numeric',
             'learner_accesibility' => 'required|in:paid,free',
-            'image' => 'required',
-            'discount' => 'required|numeric',
-            'is_membership' => 'required',
-            'status' => 'required'
         ];
+
+        if($request->learner_accesibility == 'paid'){
+            $validate['price_lifetime'] = 'required|numeric';
+            $validate['price_one_month'] = 'required|numeric';
+            $validate['price_three_months'] = 'required|numeric';
+            $validate['price_six_months'] = 'required|numeric';
+            $validate['price_one_year'] = 'required|numeric';
+            $validate['discount'] = 'required|numeric';
+            $validate['is_membership'] = 'required|boolean';
+        }
 
         if($request->image instanceof \Illuminate\Http\UploadedFile && $request->image->isValid()){
             $validate['image'] = "required|image";
@@ -226,17 +241,27 @@ class PackageController extends Controller
         $validated = [
             'category_uuid' => $request->category_uuid,
             'name' => $request->name,
-            'price_lifetime' => $request->price_lifetime,
-            'price_one_month' => $request->price_one_month,
-            'price_three_months' => $request->price_three_months,
-            'price_six_months' => $request->price_six_months,
-            'price_one_year' => $request->price_one_year,
             'learner_accesibility' => $request->learner_accesibility,
             'image' => $path,
-            'discount' => $request->discount,
-            'is_membership' => $request->is_membership,
-            'status' => $request->status,
         ];
+
+        if($request->learner_accesibility == 'paid'){
+            $validated['price_lifetime'] = $request->price_lifetime;
+            $validated['price_one_month'] = $request->price_one_month;
+            $validated['price_three_months'] = $request->price_three_months;
+            $validated['price_six_months'] = $request->price_six_months;
+            $validated['price_one_year'] = $request->price_one_year;
+            $validated['discount'] = $request->discount;
+            $validated['is_membership'] = $request->is_membership;
+        }else{
+            $validated['price_lifetime'] = 0;
+            $validated['price_one_month'] = 0;
+            $validated['price_three_months'] = 0;
+            $validated['price_six_months'] = 0;
+            $validated['price_one_year'] = 0;
+            $validated['discount'] = 0;
+            $validated['is_membership'] = 0;
+        }
 
         Package::where(['uuid' => $uuid])->update($validated);
 

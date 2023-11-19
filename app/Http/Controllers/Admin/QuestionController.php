@@ -332,16 +332,19 @@ class QuestionController extends Controller
                 $url_path = $request->url_path;
             }else{
                 $path = $question->file_path;
-                $file_size = $question->file_path;
+                $file_size = $question->file_size;
                 if(!is_string($request->file)){
                     if($question->file_path){
                         if (File::exists(public_path('storage/'.$question->file_path))) {
                             File::delete(public_path('storage/'.$question->file_path));
                         }
                     }
-                    $file_size = $request->file->getSize();
-                    $file_size = round($file_size / (1024 * 1024), 2);
-                    $path = $request->file->store('questions', 'public');
+                    if($request->file){
+                        $file_size = $request->file->getSize();
+                        $file_size = round($file_size / (1024 * 1024), 2);
+                        $path = $request->file->store('questions', 'public');
+                    }
+
                 }
                 $file_duration = $request->file_duration;
                 $file_duration_seconds = $request->file_duration_seconds;
