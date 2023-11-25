@@ -19,6 +19,7 @@ class CreatePackagesTable extends Migration
             $table->string('category_uuid');
             $table->string('package_type')->comment('course, test');
             $table->string('name');
+            $table->text('description');
             $table->string('price_lifetime');
             $table->string('price_one_month');
             $table->string('price_three_months');

@@ -29,6 +29,7 @@ class PackageController extends Controller
                     'package_type' => $package->package_type,
                     'category_name' => $package->category->name,
                     'name' => $package->name,
+                    'description' => $package->description,
                     'price_lifetime' => $package->price_lifetime,
                     'price_one_month' => $package->price_one_month,
                     'price_three_months' => $package->price_three_months,
@@ -63,6 +64,7 @@ class PackageController extends Controller
         }
         $package=[
             "name" => $checkPackage->name,
+            "description" => $checkPackage->description,
             "package_type" => $checkPackage->package_type,
             "category_name" => $checkPackage->category->name,
             "price_lifetime" => $checkPackage->price_lifetime,
@@ -111,6 +113,7 @@ class PackageController extends Controller
             'category_uuid' => 'required',
             'package_type' => 'required|in:course,test',
             'name' => 'required',
+            'description' => 'required',
             'learner_accesibility' => 'required|in:paid,free',
             'image' => 'required|image',
         ];
@@ -121,7 +124,7 @@ class PackageController extends Controller
             $validate['price_three_months'] = 'required|numeric';
             $validate['price_six_months'] = 'required|numeric';
             $validate['price_one_year'] = 'required|numeric';
-            $validate['discount'] = 'requied|numeric';
+            $validate['discount'] = 'required|numeric';
             $validate['is_membership'] = 'required|boolean';
         }
 
@@ -149,6 +152,7 @@ class PackageController extends Controller
             'package_type' => $request->package_type,
             'learner_accesibility' => $request->learner_accesibility,
             'name' => $request->name,
+            'description' => $request->description,
             'status' => true,
             'image' => $path,
         ];
@@ -193,8 +197,9 @@ class PackageController extends Controller
         }
 
         $validate = [
-            'category_uuid' => 'required',
-            'name' => 'required',
+            'category_uuid' => 'required|string',
+            'name' => 'required|string',
+            'description' => 'required|string',
             'learner_accesibility' => 'required|in:paid,free',
         ];
 
@@ -241,6 +246,7 @@ class PackageController extends Controller
         $validated = [
             'category_uuid' => $request->category_uuid,
             'name' => $request->name,
+            'description' => $request->description,
             'learner_accesibility' => $request->learner_accesibility,
             'image' => $path,
         ];

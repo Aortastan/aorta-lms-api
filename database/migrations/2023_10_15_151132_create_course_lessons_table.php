@@ -17,11 +17,10 @@ class CreateCourseLessonsTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('course_uuid');
-            $table->string('name');
+            $table->string('title');
             $table->text('description')->nullable();
-            $table->boolean('is_have_quiz');
-            $table->boolean('is_have_assignment');
-            $table->boolean('status');
+            $table->boolean('is_have_quiz')->nullable();
+            $table->boolean('is_have_assignment')->nullable();
             $table->timestamps();
         });
     }

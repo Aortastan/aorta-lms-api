@@ -106,6 +106,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // question management
         Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
             Route::get('', 'Admin\QuestionController@index')->name('get');
+            Route::post('update-status/{uuid}', 'Admin\QuestionController@updateStatus')->name('update.status');
             Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
             Route::get('subject/{subject_uuid}', 'Admin\QuestionController@getBySubject')->name('get.bySubject');
             Route::post('', 'Admin\QuestionController@store')->name('store');
@@ -183,6 +184,16 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // end coupon management
     });
 
+
+    // Course
+    Route::group(['prefix' => 'student', 'as' => 'student.',], function () {
+        Route::get('courses/{package_uuid}/{course_uuid}', 'Student\CourseController@show')->name('course.show');
+        Route::get('tests/{package_uuid}/{course_uuid}', 'Student\TestController@show')->name('test.show');
+        Route::get('packages/all', 'Student\PackageController@allPackage')->name('all.packages');
+        Route::get('packages/{package_type}/{uuid}', 'Student\PackageController@show')->name('show');
+    });
+    // End Course
+
     Route::group(['middleware' => ['auth', 'student', 'verified'], 'prefix' => 'student', 'as' => 'student.',], function () {
         // Dashboard
         Route::get('', 'Student\DashboardController@index')->name('get');
@@ -200,15 +211,9 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::group(['prefix' => 'packages', 'as' => 'package.',], function () {
             Route::post('buy', 'API\Payment\XenditController@create')->name('buy');
             Route::get('', 'Student\PackageController@index')->name('index');
-            Route::get('{package_type}/{uuid}', 'Student\PackageController@show')->name('show');
+
         });
         // End Package
-
-        // Course
-        Route::group(['prefix' => 'courses', 'as' => 'course.',], function () {
-            Route::get('{package_uuid}/{course_uuid}', 'Student\CourseController@show')->name('show');
-        });
-        // End Course
 
         // Lesson
         Route::group(['prefix' => 'lessons', 'as' => 'lesson.',], function () {

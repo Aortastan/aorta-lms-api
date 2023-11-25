@@ -25,7 +25,6 @@ class LessonLecture extends Model
         'url_path',
         'file_size',
         'file_duration',
-        'file_duration_seconds',
         'type',
     ];
 

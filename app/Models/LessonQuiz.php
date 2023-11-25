@@ -20,7 +20,7 @@ class LessonQuiz extends Model
     protected $fillable = [
         'test_uuid',
         'lesson_uuid',
-        'name',
+        'title',
         'description',
         'duration',
         'max_attempt',

@@ -6,12 +6,16 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Models\Question;
+use App\Models\QuestionTest;
 use App\Models\Answer;
 use App\Models\Subject;
+use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use File;
+use Illuminate\Support\Str;
 
 class QuestionController extends Controller
 {
@@ -20,17 +24,28 @@ class QuestionController extends Controller
 
             $search = "";
 
-            $questions = Question::
-                with('answers')
-                ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
+            $questions = DB::table('questions')->select('questions.uuid', 'questions.title', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.type', 'questions.status', 'subjects.name as subject_name', 'users.name as author_name', 'users.avatar as author_image')
+                ->join('users', 'questions.author_uuid', '=', 'users.uuid')
                 ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid');
 
             if(isset($_GET['search'])){
-                $questions->where('questions.question', 'LIKE', '%'.$_GET['search'].'%');
+                $questions->where('questions.title', 'LIKE', '%'.$_GET['search'].'%');
+            }
+
+            if(isset($_GET['question_type'])){
+                $questions->where('questions.question_type', $_GET['question_type']);
+            }
+
+            if(isset($_GET['type'])){
+                $questions->where('questions.type', $_GET['type']);
+            }
+
+            if(isset($_GET['status'])){
+                $questions->where('questions.status', $_GET['status']);
             }
 
             if(isset($_GET['orderBy']) && isset($_GET['order'])){
-                $orderBy = ['question_type', 'question', 'type'];
+                $orderBy = ['question_type', 'question', 'type', 'title', 'status'];
                 $order = ['asc', 'desc'];
 
                 if(in_array($_GET['orderBy'], $orderBy) && in_array($_GET['order'], $order)){
@@ -52,117 +67,18 @@ class QuestionController extends Controller
         }
     }
 
-    public function getBySubject($subject_uuid){
-        try{
-            $questions = Question::
-                with('answers')
-                ->where(['subject_uuid' => $subject_uuid])
-                ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
-                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
-                ->get();
-
-            return response()->json([
-                'message' => 'Success get data',
-                'questions' => $questions,
-            ], 200);
-        }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
-        }
-    }
-
-    public function show(Request $request, $detail){
-        if($detail == 'multiple' || $detail == 'most point'){
-            try{
-
-                $getQuestions = Question::
-                select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.file_duration_seconds', 'questions.type', 'subjects.name as subject_name')
-                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
-                ->where(['questions.question_type' => $detail])
-                ->with(['answers'])
-                ->get();
-
-                $questions = [];
-                foreach ($getQuestions as $index => $question) {
-                    $questions[] = [
-                        'uuid' => $question->uuid,
-                        'subject_name' => $question->subject_name,
-                        'question' => $question->question,
-                        'question_type' => $question->question_type,
-                        'file_path' => $question->file_path,
-                        'url_path' => $question->url_path,
-                        'file_size' => $question->file_size,
-                        'file_duration' => $question->file_duration,
-                        'file_duration_seconds' => $question->file_duration_seconds,
-                        'type' => $question->type,
-                        'answers' => $question->answers,
-                    ];
-                }
-                return response()->json([
-                    'message' => 'Success get data',
-                    'questions' => $questions,
-                ], 200);
-            }
-            catch(\Exception $e){
-                return response()->json([
-                    'message' => $e,
-                ], 404);
-            }
-        }else{
-            try{
-                $getQuestion = Question::where(['uuid' => $detail])->with(['answers'])->first();
-
-                if($getQuestion == null){
-                    return response()->json([
-                        'message' => 'Data not found',
-                    ], 404);
-                }
-
-                $getSubject = Subject::where([
-                    'uuid' => $getQuestion->subject_uuid,
-                ])->first();
-
-                $question = [
-                    'uuid' => $getQuestion->uuid,
-                    'question_type' => $getQuestion->question_type,
-                    'question' => $getQuestion->question,
-                    'subject_name' => $getSubject->name,
-                    'file_path' => $getQuestion->file_path,
-                    'url_path' => $getQuestion->url_path,
-                    'file_size' => $getQuestion->file_size,
-                    'file_duration' => $getQuestion->file_duration,
-                    'file_duration_seconds' => $getQuestion->file_duration_seconds,
-                    'type' => $getQuestion->type,
-                    'answers' => $getQuestion->answers,
-                ];
-
-                return response()->json([
-                    'message' => 'Success get data',
-                    'questions' => $question,
-                ], 200);
-            }
-            catch(\Exception $e){
-                return response()->json([
-                    'message' => $e,
-                ], 404);
-            }
-        }
-
-    }
-
     public function store(Request $request){
         $validate = [
             'subject_uuid' => 'required|string',
+            'title' => 'required|string',
             'question' => 'required|string',
-            'question_type' => 'required|in:multiple,most point',
+            'question_type' => 'required|in:multi choice,most point,single choice,fill in blank,true false',
             'type' => 'required|in:video,youtube,text,image,pdf,audio,slide document',
+            'status' => 'required|in:Published,Waiting for review,Draft',
+            'different_point' => 'required|in:1,0',
             'answers' => 'required|array',
             'answers.*' => 'array',
             'answers.*.answer' => 'required|string',
-            'answers.*.is_correct' => 'required|boolean',
-            'answers.*.point' => 'required|numeric',
         ];
 
         if($request->type){
@@ -170,15 +86,38 @@ class QuestionController extends Controller
                 if($request->type == 'youtube'){
                     $validate['url_path'] = 'required';
                     $validate['file_duration'] = 'required';
-                    $validate['file_duration_seconds'] = 'required';
                 }else{
                     if($request->type == 'video' || $request->type == 'audio'){
                         $validate['file_duration'] = 'required';
-                        $validate['file_duration_seconds'] = 'required';
                     }
-                    $validate['file'] = "required";
+                    if($request->type == 'pdf'){
+                        $validate['file'] = "required|mimes:pdf";
+                    }elseif($request->type == 'video'){
+                        $validate['file'] = "required|mimes:mp4,avi,mov,wmv";
+                    }elseif($request->type == 'audio'){
+                        $validate['file'] = "required|mimes:mp3,wav,ogg";
+                    }elseif($request->type == 'image'){
+                        $validate['file'] = "required|mimes:jpeg,png,jpg,gif";
+                    }elseif($request->type == 'slide document'){
+                        $validate['file'] = "required|mimes:ppt,pptx";
+                    }
                 }
             }
+        }
+
+        if($request->hint){
+            $validate['hint'] = 'required|string';
+        }
+
+        if($request->question_type != 'fill in blank'){
+            $validate['answers.*.is_correct'] = 'required|in:1,0';
+            $validate['answers.*.have_image'] = 'required|in:1,0';
+        }
+
+        if($request->different_point == 1){
+            $validate['answers.*.point'] = 'required|integer';
+        }else{
+            $validate['point'] = 'required|integer';
         }
 
 
@@ -197,15 +136,20 @@ class QuestionController extends Controller
 
         if(!$checkSubject){
             return response()->json([
-                'message' => 'Subject not found',
-            ], 404);
+                'message' => 'Validation failed',
+                'errors' => [
+                    'subject_uuid' => [
+                        "Subject not found",
+                    ],
+                ],
+            ], 422);
         }
 
         $path = null;
         $url_path = null;
         $file_size = null;
         $file_duration = null;
-        $file_duration_seconds = null;
+
         if($request->type != 'text'){
             if($request->type == 'youtube'){
                 $url_path = $request->url_path;
@@ -214,29 +158,58 @@ class QuestionController extends Controller
                 $path = $request->file->store('questions', 'public');
                 $file_size = round($file_size / (1024 * 1024), 2); //Megabytes
                 $file_duration = $request->file_duration;
-                $file_duration_seconds = $request->file_duration_seconds;
             }
         }
 
+        $point = null;
+        if($request->different_point == 0){
+            $point = $request->point;
+        }
+
+        $user = JWTAuth::parseToken()->authenticate();
+
         $validated=[
+            'author_uuid' => $user->uuid,
             'subject_uuid' => $request->subject_uuid,
+            'title' => $request->title,
             'question_type' => $request->question_type,
             'question' => $request->question,
+            'file_path' => $path,
             'url_path' => $url_path,
             'file_size' => $file_size,
             'file_duration' => $file_duration,
-            'file_duration_seconds' => $file_duration_seconds,
             'type' => $request->type,
-            'file_path' => $path,
+            'different_point' => $request->different_point,
+            'point' => $point,
+            'hint' => $request->hint,
+            'status' => $request->status,
         ];
 
         $question = Question::create($validated);
+
         $answers = [];
         foreach ($request->answers as $index => $answer) {
             $path = null;
-            if($answer['image']){
-                if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
-                    $path = $answer['image']->store('imagesAnswer', 'public');
+            if($answer['have_image'] == 1){
+                if($answer['image']){
+                    $mime = $answer['image']->getMimeType();
+                    // Pengecekan apakah tipe MIME adalah tipe gambar
+                    if (Str::startsWith($mime, 'image/')) {
+                        // Tipe MIME sesuai dengan gambar, lanjutkan penyimpanan
+                        $path = $answer['image']->store('imagesAnswer', 'public');
+                    }
+                }
+            }
+            $point = null;
+            $is_correct = null;
+
+            if($request->question_type == 'most point'){
+                $is_correct = 1;
+                $point = $answer['point'];
+            }else{
+                $is_correct = $answer['is_correct'];
+                if($request->different_point == 1){
+                    $point = $answer['point'];
                 }
             }
 
@@ -245,8 +218,8 @@ class QuestionController extends Controller
                 'question_uuid' => $question->uuid,
                 'answer' => $answer['answer'],
                 'image' => $path,
-                'is_correct' => $answer['is_correct'],
-                'point' => $answer['point'],
+                'is_correct' => $is_correct,
+                'point' => $point,
             ];
         }
 
@@ -265,32 +238,72 @@ class QuestionController extends Controller
             ], 404);
         }
 
+        if($question->status == 'Published'){
+            $checkQuestion = QuestionTest::where([
+                'question_uuid' => $question->uuid,
+            ])->first();
+
+            if($checkQuestion){
+                return response()->json([
+                'message' => 'Cannot change status, because this question is already used in test',
+                ]);
+            }
+        }
+
         $validate = [
             'subject_uuid' => 'required|string',
-            'question_type' => 'required|in:multiple,most point',
-            'type' => 'required|in:video,youtube,text,image,pdf,slide document',
+            'title' => 'required|string',
+            'question' => 'required|string',
+            'question_type' => 'required|in:multi choice,most point,single choice,fill in blank,true false',
+            'type' => 'required|in:video,youtube,text,image,pdf,audio,slide document',
+            'status' => 'required|in:Published,Waiting for review,Draft',
+            'different_point' => 'required|in:1,0',
             'answers' => 'required|array',
             'answers.*' => 'array',
             'answers.*.answer' => 'required|string',
-            'answers.*.is_correct' => 'required|boolean',
-            'answers.*.point' => 'required|numeric',
         ];
 
-        if($request->type != null){
+        if($request->type){
             if($request->type != 'text'){
                 if($request->type == 'youtube'){
                     $validate['url_path'] = 'required';
+                    $validate['file_duration'] = 'required';
                 }else{
-                    if($request->type == 'video'){
+                    if($request->type == 'video' || $request->type == 'audio'){
                         $validate['file_duration'] = 'required';
-                        $validate['file_duration_seconds'] = 'required';
+                    }
+                    if($request->type != $question->type){
+                        if($request->file){
+                            if($request->type == 'pdf'){
+                                $validate['file'] = "required|mimes:pdf";
+                            }elseif($request->type == 'video'){
+                                $validate['file'] = "required|mimes:mp4,avi,mov,wmv";
+                            }elseif($request->type == 'audio'){
+                                $validate['file'] = "required|mimes:mp3,wav,ogg";
+                            }elseif($request->type == 'image'){
+                                $validate['file'] = "required|mimes:jpeg,png,jpg,gif";
+                            }elseif($request->type == 'slide document'){
+                                $validate['file'] = "required|mimes:ppt,pptx";
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        if($request->hint){
+            $validate['hint'] = 'required|string';
+        }
+
+        if($request->question_type != 'fill in blank'){
+            $validate['answers.*.is_correct'] = 'required|in:1,0';
+            $validate['answers.*.have_image'] = 'required|in:1,0';
+        }
+
+        if($request->different_point == 1){
+            $validate['answers.*.point'] = 'required|integer';
         }else{
-            return response()->json([
-                'message' => 'Validation failed',
-            ], 422);
+            $validate['point'] = 'required|integer';
         }
 
         $validator = Validator::make($request->all(), $validate);
@@ -308,17 +321,20 @@ class QuestionController extends Controller
 
         if(!$checkSubject){
             return response()->json([
-                'message' => 'Subject not found',
-            ], 404);
+                'message' => 'Validation failed',
+                'errors' => [
+                    'subject_uuid' => [
+                        "Subject not found",
+                    ],
+                ],
+            ], 422);
         }
 
         $path = null;
         $url_path = null;
         $file_size = null;
         $file_duration = null;
-        $file_duration_seconds = null;
 
-        // jika berupa text dan youtube (bukan file)=> hapus file
         if($request->type == 'text' || $request->type == 'youtube'){
             if($question->file_path){
                 if (File::exists(public_path('storage/'.$question->file_path))) {
@@ -347,19 +363,26 @@ class QuestionController extends Controller
 
                 }
                 $file_duration = $request->file_duration;
-                $file_duration_seconds = $request->file_duration_seconds;
             }
+        }
+
+        $point = null;
+        if($request->different_point == 0){
+            $point = $request->point;
         }
 
         $validated=[
             'subject_uuid' => $request->subject_uuid,
             'question_type' => $request->question_type,
+            'title' => $request->title,
             'question' => $request->question,
             'url_path' => $url_path,
             'file_size' => $file_size,
             'file_duration' => $file_duration,
-            'file_duration_seconds' => $file_duration_seconds,
             'type' => $request->type,
+            'different_point' => $request->different_point,
+            'point' => $point,
+            'hint' => $request->hint,
             'file_path' => $path,
         ];
 
@@ -372,8 +395,10 @@ class QuestionController extends Controller
 
             if(!$checkAnswer){
                     $path = null;
-                    if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
-                        $path = $answer['image']->store('imagesAnswer', 'public');
+                    if($answer['have_image'] == 1){
+                        if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
+                            $path = $answer['image']->store('imagesAnswer', 'public');
+                        }
                     }
 
                     $newAnswers[]=[
@@ -387,9 +412,9 @@ class QuestionController extends Controller
             }else{
                 $answersUuid[] = $checkAnswer->uuid;
                 $path = $checkAnswer->image;
-                if($answer['image'] instanceof \Illuminate\Http\UploadedFile && $answer['image']->isValid()){
-                    $path = $answer['image']->store('imagesAnswer', 'public');
+                if($answer['have_image'] == 1){
                     if(!is_string($answer['image'])){
+                        $path = $answer['image']->store('imagesAnswer', 'public');
                         if($checkAnswer->image){
                             if (File::exists(public_path('storage/'.$checkAnswer->image))) {
                                 File::delete(public_path('storage/'.$checkAnswer->image));
@@ -405,11 +430,24 @@ class QuestionController extends Controller
                     }
                 }
 
+                $point = null;
+                $is_correct = null;
+
+                if($request->question_type == 'most point'){
+                    $is_correct = 1;
+                    $point = $answer['point'];
+                }else{
+                    $is_correct = $answer['is_correct'];
+                    if($request->different_point == 1){
+                        $point = $answer['point'];
+                    }
+                }
+
                 $validatedAnswer=[
                     'answer' => $answer['answer'],
                     'image' => $path,
-                    'is_correct' => $answer['is_correct'],
-                    'point' => $answer['point'],
+                    'is_correct' => $is_correct,
+                    'point' => $point,
                 ];
                 Answer::where('uuid', $checkAnswer->uuid)->update($validatedAnswer);
             }
@@ -425,7 +463,194 @@ class QuestionController extends Controller
         ], 200);
     }
 
+    public function updateStatus(Request $request, $uuid){
+        $question = Question::where('uuid', $uuid)->with(['answers'])->first();
+        if(!$question){
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        $validate = [
+            'status' => 'required|string|in:Published,Waiting for review,Draft',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $checkQuestionTest = QuestionTest::where([
+            'question_uuid' => $question->uuid,
+        ])->first();
+
+        if($checkQuestionTest){
+            return response()->json([
+                'message' => 'This question has published and used in tests',
+            ], 200);
+        }
+
+        Question::where('uuid', $uuid)->update([
+            'status' => $request->status,
+        ]);
+
+        return response()->json([
+            'message' => 'Status changed',
+        ], 200);
+    }
+
+    public function getBySubject($subject_uuid){
+        try{
+            $questions = Question::
+                with('answers')
+                ->where(['subject_uuid' => $subject_uuid])
+                ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.type', 'subjects.name as subject_name')
+                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
+                ->get();
+
+            return response()->json([
+                'message' => 'Success get data',
+                'questions' => $questions,
+            ], 200);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
+
+    public function show(Request $request, $detail){
+        if($detail == 'multi choice' || $detail == 'most point' || $detail == 'single choice' || $detail == 'fill in blank' || $detail == 'true false'){
+            try{
+
+                $getQuestions = Question::
+                select('questions.uuid', 'questions.question_type', 'questions.title', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.type', 'questions.different_point', 'questions.point', 'questions.hint', 'questions.status', 'subjects.name as subject_name', 'users.name as author_name')
+                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
+                ->join('users', 'users.author_uuid', '=', 'users.uuid')
+                ->where(['questions.question_type' => $detail])
+                ->with(['answers'])
+                ->get();
+
+                $questions = [];
+                foreach ($getQuestions as $index => $question) {
+                    $questions[] = [
+                        'uuid' => $question->uuid,
+                        'subject_name' => $question->subject_name,
+                        'author_name' => $question->author_name,
+                        'title' => $question->title,
+                        'question' => $question->question,
+                        'question_type' => $question->question_type,
+                        'file_path' => $question->file_path,
+                        'url_path' => $question->url_path,
+                        'file_size' => $question->file_size,
+                        'file_duration' => $question->file_duration,
+                        'type' => $question->type,
+                        'status' => $question->status,
+                        'different_point' => $question->different_point,
+                        'point' => $question->point,
+                        'hint' => $question->hint,
+                        'answers' => $question->answers,
+                    ];
+                }
+                return response()->json([
+                    'message' => 'Success get data',
+                    'questions' => $questions,
+                ], 200);
+            }
+            catch(\Exception $e){
+                return response()->json([
+                    'message' => $e,
+                ], 404);
+            }
+        }else{
+            try{
+                $getQuestion = Question::where(['uuid' => $detail])->with(['answers'])->first();
+
+                if($getQuestion == null){
+                    return response()->json([
+                        'message' => 'Data not found',
+                    ], 404);
+                }
+
+                $getSubject = Subject::where([
+                    'uuid' => $getQuestion->subject_uuid,
+                ])->first();
+                $getAuthor = User::where([
+                    'uuid' => $getQuestion->author_uuid,
+                ])->first();
+
+                $answers = [];
+
+                foreach ($getQuestion->answers as $index => $answer) {
+                    $have_image = 0;
+                    if($answer['image']){
+                        $have_image = 1;
+                    }
+                    $answers[] = [
+                        'uuid' => $answer['uuid'],
+                        'answer' => $answer['answer'],
+                        'is_correct' => $answer['is_correct'],
+                        'point' => $answer['point'],
+                        'have_image' => $have_image,
+                        'image' => $answer['image'],
+                    ];
+                }
+
+                $question = [
+                    'uuid' => $getQuestion->uuid,
+                    'question_type' => $getQuestion->question_type,
+                    'title' => $getQuestion->title,
+                    'question' => $getQuestion->question,
+                    'subject_name' => $getSubject->name,
+                    'author_name' => $getAuthor->author_name,
+                    'file_path' => $getQuestion->file_path,
+                    'url_path' => $getQuestion->url_path,
+                    'file_size' => $getQuestion->file_size,
+                    'file_duration' => $getQuestion->file_duration,
+                    'type' => $getQuestion->type,
+                    'status' => $getQuestion->status,
+                    'different_point' => $getQuestion->different_point,
+                    'point' => $getQuestion->point,
+                    'hint' => $getQuestion->hint,
+                    'answers' => $getQuestion->answers,
+                ];
+
+                return response()->json([
+                    'message' => 'Success get data',
+                    'questions' => $question,
+                ], 200);
+            }
+            catch(\Exception $e){
+                return response()->json([
+                    'message' => $e,
+                ], 404);
+            }
+        }
+
+    }
+
     public function delete(Request $request, $uuid){
+        $question = Question::where('uuid', $uuid)->first();
+        if($question == null){
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        $checkQuestionTest = QuestionTest::where([
+            'question_uuid' => $question->uuid,
+        ])->first();
+
+        if($checkQuestionTest){
+            return response()->json([
+                'message' => 'This question has published and used in tests. You can\'t delete it',
+            ], 200);
+        }
         Question::where(['uuid' => $uuid])->delete();
         Answer::where(['question_uuid' => $uuid])->delete();
         return response()->json([

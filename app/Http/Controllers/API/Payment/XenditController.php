@@ -245,28 +245,31 @@ class XenditController extends Controller
     }
 
     public function webhook(Request $request){
-        $transaction = Transaction::where('external_id', $request->external_id)->first();
-        if(!$transaction){
-            PaymentApiLog::create([
-                'endpoint_url' => $request->path(),
-                'method' => $request->method(),
-                'status' => "Transaction not found",
-            ]);
-            return response()->json([
-                'message' => 'Transaction not found',
-            ], 404);
-        }
+        try{
+            $transaction = Transaction::where('external_id', $request->id)->first();
 
-        if($transaction->transaction_status == 'settled'){
-            PaymentApiLog::create([
-                'endpoint_url' => $request->path(),
-                'method' => $request->method(),
-                'status' => "Already updated data",
-            ]);
-            return response()->json([
-                'message' => 'Already updated data',
-            ], 200);
-        }else{
+            if($transaction == null){
+                PaymentApiLog::create([
+                    'endpoint_url' => $request->path(),
+                    'method' => $request->method(),
+                    'status' => "Transaction not found",
+                ]);
+                return response()->json([
+                    'message' => 'Transaction not found',
+                ], 404);
+            }
+
+            if($transaction->transaction_status == 'settled'){
+                PaymentApiLog::create([
+                    'endpoint_url' => $request->path(),
+                    'method' => $request->method(),
+                    'status' => "Already updated data",
+                ]);
+                return response()->json([
+                    'message' => 'Already updated data',
+                ], 200);
+            }
+
             if($transaction->type_of_purchase == 'lifetime'){
                 PurchasedPackage::create([
                     'transaction_uuid' => $transaction->uuid,
@@ -303,16 +306,28 @@ class XenditController extends Controller
                 "transaction_name" => $package->name,
                 "amount" => $transaction->transaction_amount,
             ];
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\PackagePurchased($data));
+
+            \Illuminate\Support\Facades\Mail::to("alifnaufalrizki27@gmail.com")->send(new \App\Mail\PackagePurchased($data));
+
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "Transaction success",
+            ]);
+            return response()->json([
+                'message' => 'Transaction success',
+            ], 200);
         }
 
-        PaymentApiLog::create([
-            'endpoint_url' => $request->path(),
-            'method' => $request->method(),
-            'status' => "Transaction success",
-        ]);
-        return response()->json([
-            'message' => 'Transaction success',
-        ], 200);
+        catch(\Exception $e){
+            PaymentApiLog::create([
+                'endpoint_url' => "tes",
+                'method' => "tes",
+                'status' => $e,
+            ]);
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
     }
 }

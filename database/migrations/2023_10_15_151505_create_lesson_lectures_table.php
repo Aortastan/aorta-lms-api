@@ -18,13 +18,12 @@ class CreateLessonLecturesTable extends Migration
             $table->uuid('uuid')->unique();
             $table->string('lesson_uuid');
             $table->string('title');
-            $table->text('body');
+            $table->text('body')->nullable();
             $table->string('file_path')->nullable();
             $table->string('url_path')->nullable();
             $table->string('file_size')->nullable();
             $table->string('file_duration')->nullable();
-            $table->string('file_duration_seconds')->nullable();
-            $table->string('type')->comment('video, youtube, video, text, image, pdf, slide document, audio');
+            $table->string('type')->comment('video, youtube, video, text, image, pdf, slide document, audio')->nullable();
             $table->timestamps();
         });
     }

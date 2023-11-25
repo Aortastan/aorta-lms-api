@@ -20,6 +20,7 @@ class Package extends Model
         'category_uuid',
         'package_type',
         'name',
+        'description',
         'price_lifetime',
         'price_one_month',
         'price_three_months',

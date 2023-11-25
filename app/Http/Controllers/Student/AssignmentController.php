@@ -30,7 +30,7 @@ class AssignmentController extends Controller
             }
 
             $getAssignment = Assignment::
-                select('uuid', 'name', 'description')
+                select('uuid', 'title', 'description')
                 ->where(['uuid' => $assignment_uuid])
                 ->first();
 
@@ -126,7 +126,7 @@ class AssignmentController extends Controller
             }
 
             $getAssignment = Assignment::
-                select('uuid', 'name', 'description')
+                select('uuid', 'title', 'description')
                 ->where(['uuid' => $assignment_uuid])
                 ->first();
 

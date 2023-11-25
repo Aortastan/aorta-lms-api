@@ -17,7 +17,7 @@ class CreateTestsTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('test_type')->comment('classical, IRT');
-            $table->string('name');
+            $table->string('title');
             $table->string('test_category')->comment('quiz, tryout');
             $table->timestamps();
         });

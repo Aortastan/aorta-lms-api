@@ -19,7 +19,7 @@ class Test extends Model
      */
     protected $fillable = [
         'test_type',
-        'name',
+        'title',
         'test_category',
     ];
 

@@ -19,7 +19,7 @@ class TestController extends Controller
     public function index(){
         try{
             $tests = DB::table('tests')
-                ->select('tests.uuid', 'tests.test_type', 'tests.name', 'tests.test_category')
+                ->select('tests.uuid', 'tests.test_type', 'tests.title', 'tests.test_category')
                 ->get();
 
             return response()->json([
@@ -46,7 +46,7 @@ class TestController extends Controller
                     'tests' => $tests,
                 ], 200);
             }else{
-                $test = Test::select('uuid', 'test_type', 'name', 'test_category')
+                $test = Test::select('uuid', 'test_type', 'title', 'test_category')
                 ->where([
                     'uuid' => $uuid
                 ])->with(['questions.question.subject'])->first();
@@ -62,6 +62,7 @@ class TestController extends Controller
                     $getQuestion[] = [
                         'question_uuid' => $data['question']['uuid'],
                         'question_type' => $data['question']['question_type'],
+                        'title' => $data['question']['title'],
                         'subject' => $data['question']['subject']['name'],
                         'type' => $data['question']['type'],
                         'question' => $data['question']['question'],
@@ -69,14 +70,13 @@ class TestController extends Controller
                         'url_path' => $data['question']['url_path'],
                         'file_size' => $data['question']['file_size'] . " MB",
                         'file_duration' => $data['question']['file_duration'],
-                        'file_duration_seconds' => $data['question']['file_duration_seconds'],
                     ];
                 }
 
                 $response_test = [
                     'uuid' => $test['uuid'],
                     'test_type' => $test['test_type'],
-                    'name' => $test['name'],
+                    'title' => $test['title'],
                     'test_category' => $test['test_category'],
                     'questions' => $getQuestion,
                 ];
@@ -114,7 +114,7 @@ class TestController extends Controller
     public function store(Request $request): JsonResponse{
         $validate = [
             'test_type' => 'required|in:classical,IRT',
-            'name' => 'required|string',
+            'title' => 'required|string',
             'test_category' => 'required|in:quiz,tryout',
         ];
 
@@ -129,7 +129,7 @@ class TestController extends Controller
 
         $validated = [
             'test_type' => $request->test_type,
-            'name' => $request->name,
+            'title' => $request->title,
             'test_category' => $request->test_category,
         ];
 
@@ -206,7 +206,7 @@ class TestController extends Controller
         }
         $validate = [
             'test_type' => 'required|in:classical,IRT',
-            'name' => 'required',
+            'title' => 'required',
             'test_category' => 'required|in:quiz,tryout',
         ];
 
@@ -221,7 +221,7 @@ class TestController extends Controller
 
         Test::where(['uuid' => $uuid])->update([
             'test_type' => $request->test_type,
-            'name' => $request->name,
+            'title' => $request->title,
             'test_category' => $request->test_category,
         ]);
 

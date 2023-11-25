@@ -19,11 +19,10 @@ class CourseLesson extends Model
      */
     protected $fillable = [
         'course_uuid',
-        'name',
+        'title',
         'description',
         'is_have_quiz',
         'is_have_assignment',
-        'status',
     ];
 
     public function assignments()

@@ -18,9 +18,10 @@ class Assignment extends Model
      */
     protected $fillable = [
         'lesson_uuid',
-        'name',
+        'title',
         'description',
-        'status',
+        'point',
+        'grading_type',
     ];
 
     protected static function boot()

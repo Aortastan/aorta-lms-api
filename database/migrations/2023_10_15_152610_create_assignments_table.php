@@ -17,9 +17,10 @@ class CreateAssignmentsTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('lesson_uuid');
-            $table->string('name');
-            $table->text('description');
-            $table->boolean('status');
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->integer('point')->nullable();
+            $table->string('grading_type')->comment('auto,manual');
             $table->timestamps();
         });
     }

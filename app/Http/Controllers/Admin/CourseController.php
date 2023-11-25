@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Test;
 use App\Models\Tag;
 use App\Models\CourseTag;
+use App\Models\CourseLesson;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -44,10 +45,35 @@ class CourseController extends Controller
                     ->join('users', 'courses.instructor_uuid', '=', 'users.uuid')
                     ->where(['courses.uuid' => $uuid])
                     ->first();
-            $courseLessons = DB::table('course_lessons')
-                    ->select('uuid', 'name', 'status')
+
+            if($course == null){
+                return response()->json([
+                    'message' => "Course not found",
+                ], 404);
+            }
+
+            $getCourseLessons = CourseLesson::
+                    select('uuid', 'title')
                     ->where('course_uuid', $uuid)
+                    ->with(['lectures'])
                     ->get();
+
+            $courseLessons = [];
+            foreach ($getCourseLessons as $index => $lesson) {
+                $lectures = [];
+                foreach ($lesson->lectures as $index1 => $lecture) {
+                    $lectures[] = [
+                        'lecture_uuid' => $lecture->uuid,
+                        'title' => $lecture->title,
+                    ];
+                }
+                $courseLessons[] = [
+                    'lesson_uuid' => $lesson->uuid,
+                    'title' => $lesson->title,
+                    'lectures' => $lectures,
+                ];
+            }
+
             $getCourseTags = CourseTag::where([
                 'course_uuid' => $course->uuid,
             ])->with(['tag'])->get();
@@ -64,18 +90,13 @@ class CourseController extends Controller
             $course->course_tags = $courseTags;
 
             $coursePretestPosttest =  DB::table('pretest_posttests')
-                                    ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.test_type as test_type', 'tests.name as test_name', 'tests.test_category as test_category', 'tests.uuid as test_uuid')
+                                    ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.test_type as test_type', 'tests.title as test_title', 'tests.test_category as test_category', 'tests.uuid as test_uuid')
                                     ->join('tests', 'pretest_posttests.test_uuid', '=', 'tests.uuid')
                                     ->where('course_uuid', $uuid)
                                     ->get();
 
                                     $course->course_pretest_posttests = $coursePretestPosttest;
 
-            if(!$course){
-                return response()->json([
-                    'message' => 'Data not found',
-                ], 404);
-            }
             return response()->json([
                 'message' => 'Success get data',
                 'course' => $course,
@@ -189,21 +210,20 @@ class CourseController extends Controller
             'is_have_pretest_posttest' => 'required',
             'instructor_uuid' => 'required',
             'status' => 'required|in:pending,published,waiting for review,hold,draft',
+            'have_image' => 'required|boolean',
+            'have_video' => 'required|boolean',
         ];
 
         if(isset($request->video)){
-            if(!is_string($request->video)){
+            if($request->video){
                 $validate['video'] = 'required|mimetypes:video/*';
             }
-        }else{
-            // $validate['video'] = 'required';
         }
+
         if(isset($request->image)){
-            if(!is_string($request->image)){
+            if($request->image){
                 $validate['image'] = 'required|image';
             }
-        }else{
-            // $validate['image'] = 'required';
         }
 
         if($request->is_have_pretest_posttest == 1){
@@ -229,24 +249,33 @@ class CourseController extends Controller
             ], 422);
         }
 
-        $pathImage = $checkCourse->image;
-        $pathVideo = $checkCourse->video;
-        if(!is_string($request->image)){
-            $pathImage = $request->image->store('courses', 'public');
+        $pathImage = "";
+        $pathVideo = "";
+        if($request->have_image == 1){
+            $pathImage = $checkCourse->image;
+            if(!is_string($request->image)){
+                $pathImage = $request->image->store('courses', 'public');
+                if (File::exists(public_path('storage/'.$checkCourse->image))) {
+                    File::delete(public_path('storage/'.$checkCourse->image));
+                }
+            }
+        }else{
             if (File::exists(public_path('storage/'.$checkCourse->image))) {
                 File::delete(public_path('storage/'.$checkCourse->image));
             }
         }
-        if($request->video == null){
-            if (File::exists(public_path('storage/'.$checkCourse->video))) {
-                File::delete(public_path('storage/'.$checkCourse->video));
-            }
-        }else{
+
+        if($request->have_video == 1){
+            $pathVideo = $checkCourse->video;
             if(!is_string($request->video)){
                 $pathVideo = $request->video->store('courses', 'public');
                 if (File::exists(public_path('storage/'.$checkCourse->video))) {
                     File::delete(public_path('storage/'.$checkCourse->video));
                 }
+            }
+        }else{
+            if (File::exists(public_path('storage/'.$checkCourse->video))) {
+                File::delete(public_path('storage/'.$checkCourse->video));
             }
         }
 

@@ -14,7 +14,7 @@ class PackageController extends Controller
         try{
             $user = JWTAuth::parseToken()->authenticate();
             $purchased_packages = DB::table('purchased_packages')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.package_type', 'packages.image', 'categories.name as category')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category')
                 ->where('purchased_packages.user_uuid', $user->uuid)
                 ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
@@ -28,7 +28,7 @@ class PackageController extends Controller
             }
 
             $membership_histories = DB::table('membership_histories')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.package_type', 'packages.image', 'categories.name as category', 'membership_histories.expired_date')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'membership_histories.expired_date')
                 ->where('membership_histories.user_uuid', $user->uuid)
                 ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
@@ -43,6 +43,7 @@ class PackageController extends Controller
                     'package_uuid' => $package->package_uuid,
                     'package_type' => $package->package_type,
                     'name' => $package->name,
+                    'description' => $package->description,
                     'image' => $package->image,
                     'category' => $package->category,
                     'expired_date' => null,
@@ -54,6 +55,7 @@ class PackageController extends Controller
                     'package_uuid' => $package->package_uuid,
                     'package_type' => $package->package_type,
                     'name' => $package->name,
+                    'description' => $package->description,
                     'image' => $package->image,
                     'category' => $package->category,
                     'expired_date' => $package->expired_date,
@@ -72,46 +74,73 @@ class PackageController extends Controller
         }
     }
 
+    public function allPackage(){
+        try{
+            $packages = DB::table('packages')
+                ->select('packages.uuid as package_uuid', 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership')
+                ->where('packages.status', 1)
+                ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+                ->get();
+
+            return response()->json([
+                'message' => 'Success get data',
+                'packages' => $packages,
+            ], 200);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
+
     public function show($package_type, $uuid){
-        if($package_type != 'test' && $package_type != 'class'){
+        if($package_type != 'test' && $package_type != 'course'){
             return response()->json([
                 'message' => 'Package type not valid',
             ], 404);
         }
 
         try{
-            $user = JWTAuth::parseToken()->authenticate();
+            // $user = JWTAuth::parseToken()->authenticate();
             if($package_type == 'test'){
-
                 $getPackage = Package::
                     where(['uuid' => $uuid, 'package_type' => $package_type])
                     ->with(['category', 'packageTests', 'packageTests.test'])
                     ->first();
 
-                $check_purchased_package = DB::table('purchased_packages')
-                    ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                    ->first();
-
-                if(!$check_purchased_package){
-                    $check_membership_history = DB::table('membership_histories')
-                        ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                        ->whereDate('membership_histories.expired_date', '>', now())
-                        ->first();
-
-                    if(!$check_membership_history){
-                        return response()->json([
-                            'message' => "You haven't purchased this package yet",
-                        ], 404);
-                    }
+                if($getPackage == null){
+                    return response()->json([
+                        'message' => 'Package not found',
+                    ], 404);
                 }
 
+                // $check_purchased_package = DB::table('purchased_packages')
+                //     ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
+                //     ->first();
+
+                // if(!$check_purchased_package){
+                //     $check_membership_history = DB::table('membership_histories')
+                //         ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
+                //         ->whereDate('membership_histories.expired_date', '>', now())
+                //         ->first();
+
+                //     if(!$check_membership_history){
+                //         return response()->json([
+                //             'message' => "You haven't purchased this package yet",
+                //         ], 404);
+                //     }
+                // }
+
                 $package = [];
+
 
                 if($getPackage){
                     $package= [
                         "uuid" => $getPackage->uuid,
                         "package_type" => $getPackage->package_type,
                         "name" => $getPackage->name,
+                        "description" => $getPackage->description,
                         "image" => $getPackage->image,
                         "category" => $getPackage->category->name,
                         "package_tests" => [],
@@ -127,28 +156,35 @@ class PackageController extends Controller
                         ];
                     }
                 }
-            }elseif($package_type == 'class'){
+            }elseif($package_type == 'course'){
                 $getPackage = Package::
                     where('packages.uuid', $uuid)
                     ->with(['category', 'packageCourses', 'packageCourses.course', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests'])
                     ->first();
 
-                    $check_purchased_package = DB::table('purchased_packages')
-                    ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                    ->first();
-
-                if(!$check_purchased_package){
-                    $check_membership_history = DB::table('membership_histories')
-                        ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                        ->whereDate('membership_histories.expired_date', '>', now())
-                        ->first();
-
-                    if(!$check_membership_history){
-                        return response()->json([
-                            'message' => "You haven't purchased this package yet",
-                        ], 404);
-                    }
+                if($getPackage == null){
+                    return response()->json([
+                        'message' => 'Package not found',
+                    ], 404);
                 }
+
+
+                //     $check_purchased_package = DB::table('purchased_packages')
+                //     ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
+                //     ->first();
+
+                // if(!$check_purchased_package){
+                //     $check_membership_history = DB::table('membership_histories')
+                //         ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
+                //         ->whereDate('membership_histories.expired_date', '>', now())
+                //         ->first();
+
+                //     if(!$check_membership_history){
+                //         return response()->json([
+                //             'message' => "You haven't purchased this package yet",
+                //         ], 404);
+                //     }
+                // }
 
                 $package = [];
 
@@ -157,6 +193,7 @@ class PackageController extends Controller
                         "uuid" => $getPackage->uuid,
                         "package_type" => $getPackage->package_type,
                         "name" => $getPackage->name,
+                        "description" => $getPackage->description,
                         "image" => $getPackage->image,
                         "category" => $getPackage->category->name,
                         "package_courses" => [],

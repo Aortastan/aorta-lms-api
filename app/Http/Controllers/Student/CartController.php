@@ -29,6 +29,7 @@ class CartController extends Controller
             foreach ($getCarts as $index => $cart) {
                 $carts[] = [
                     'uuid' => $cart->uuid,
+                    'package_uuid' => $cart->package->uuid,
                     'product_type' => $cart->product_type,
                     'qty' => $cart->qty,
                     'package' => $cart->package->name,
@@ -93,7 +94,7 @@ class CartController extends Controller
 
         return response()->json([
             'message' => 'Success add package to cart',
-        ], 422);
+        ], 200);
     }
 
     public function delete($cart_uuid){
