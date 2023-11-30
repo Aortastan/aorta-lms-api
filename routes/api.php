@@ -26,6 +26,30 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('forgot-password', 'AuthController@forgotPassword')->name('forgotPassword');
     Route::post('reset-password', 'AuthController@resetPassword')->name('resetPassword');
     Route::post('logout', 'AuthController@logout');
+    Route::get('payment-methods', 'AllRole\PaymentMethodController@index');
+    Route::get('admin-fee', "AllRole\PaymentMethodController@adminFee");
+
+    // Blog for all role
+    Route::group(['prefix' => 'blogs', 'as' => 'blogs.',], function () {
+        Route::get('', 'AllRole\BlogController@index')->name('index');
+        Route::get('limit/{number_of_limit}', 'AllRole\BlogController@limit')->name('limit');
+        Route::get('{blog_uuid}', 'AllRole\BlogController@show')->name('show');
+    });
+    // end Blog for all role
+
+    Route::group(['prefix' => 'coupons', 'as' => 'coupons.',], function () {
+        Route::get('', 'AllRole\CouponController@index')->name('index');
+        Route::get('{coupon_uuid}', 'AllRole\CouponController@show')->name('show');
+    });
+
+    // Course
+    Route::group(['prefix' => 'student', 'as' => 'student.',], function () {
+        Route::get('courses/{package_uuid}/{course_uuid}', 'Student\CourseController@show')->name('course.show');
+        Route::get('tests/{package_uuid}/{course_uuid}', 'Student\TestController@show')->name('test.show');
+        Route::get('packages/all', 'Student\PackageController@allPackage')->name('all.packages');
+        Route::get('packages/{package_type}/{uuid}', 'Student\PackageController@show')->name('show');
+    });
+    // End Course
 
     Route::group(['middleware' => ['auth', 'verified']], function () {
        // profile management
@@ -106,10 +130,10 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // question management
         Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
             Route::get('', 'Admin\QuestionController@index')->name('get');
-            Route::post('update-status/{uuid}', 'Admin\QuestionController@updateStatus')->name('update.status');
             Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
             Route::get('subject/{subject_uuid}', 'Admin\QuestionController@getBySubject')->name('get.bySubject');
             Route::post('', 'Admin\QuestionController@store')->name('store');
+            Route::post('duplicate', 'Admin\QuestionController@duplicate')->name('duplicate');
             Route::post('upload/csv', 'Admin\QuestionController@uploadCSV')->name('upload.csv');
             Route::post('{uuid}', 'Admin\QuestionController@update')->name('update');
             Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
@@ -121,6 +145,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'Admin\TestController@index')->name('get');
             Route::get('{uuid}', 'Admin\TestController@show')->name('show'); // if uuid is quiz / tryout, its return list question quiz / tryout, if its not quiz/tryout, return spesific test
             Route::post('', 'Admin\TestController@store')->name('store');
+            Route::post('duplicate/{uuid}', 'Admin\TestController@duplicate')->name('duplicate');
             Route::put('{uuid}', 'Admin\TestController@update')->name('update');
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
             Route::post('update-tags/{uuid}', 'Admin\TestController@updateTag')->name('update.tag');
@@ -158,6 +183,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'Admin\PackageController@index')->name('get');
             Route::get('{uuid}', 'Admin\PackageController@show')->name('show');
             Route::post('', 'Admin\PackageController@store')->name('store');
+            Route::post('duplicate/{uuid}', 'Admin\PackageController@duplicate')->name('duplicate');
             Route::post('{type}/{uuid}', 'Admin\PackageController@update')->name('update');
             Route::post('lists/{type}/{uuid}', 'Admin\PackageController@packageLists')->name('lists');
         });
@@ -184,20 +210,38 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // end coupon management
     });
 
-
-    // Course
-    Route::group(['prefix' => 'student', 'as' => 'student.',], function () {
-        Route::get('courses/{package_uuid}/{course_uuid}', 'Student\CourseController@show')->name('course.show');
-        Route::get('tests/{package_uuid}/{course_uuid}', 'Student\TestController@show')->name('test.show');
-        Route::get('packages/all', 'Student\PackageController@allPackage')->name('all.packages');
-        Route::get('packages/{package_type}/{uuid}', 'Student\PackageController@show')->name('show');
-    });
-    // End Course
-
     Route::group(['middleware' => ['auth', 'student', 'verified'], 'prefix' => 'student', 'as' => 'student.',], function () {
         // Dashboard
         Route::get('', 'Student\DashboardController@index')->name('get');
         // end dashboard
+
+        // Redeem Coupon
+        Route::group(['prefix' => 'coupon', 'as' => 'coupon.',], function () {
+            Route::post('redeem', 'Student\CouponController@redeem')->name('redeem');
+        });
+        // End Redeem Coupon
+
+        // Manage Course
+        Route::group(['prefix' => 'transactions', 'as' => 'transactions.',], function () {
+            Route::get('', 'Student\TransactionController@index');
+        });
+        // End Manage Course
+
+        // Manage Course
+        Route::group(['prefix' => 'courses', 'as' => 'course.',], function () {
+            Route::get('', 'Student\CourseController@getStudentCourses');
+            Route::get('{course_uuid}', 'Student\CourseController@detailPurchasedCourse')->name('detailPurchasedCourse');
+            Route::post('', 'Student\CartController@store')->name('store');
+            Route::delete('{cart_uuid}', 'Student\CartController@delete')->name('delete');
+        });
+        // End Manage Course
+
+        // Manage Test
+        Route::group(['prefix' => 'tests', 'as' => 'test.',], function () {
+            Route::get('', 'Student\TestController@getStudentTests');
+            Route::get('{test_uuid}', 'Student\TestController@detailPurchasedTest')->name('detailPurchasedTest');
+        });
+        // End Manage Test
 
         // Package
         Route::group(['prefix' => 'carts', 'as' => 'cart.',], function () {

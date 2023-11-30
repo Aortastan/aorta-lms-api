@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Models\Category;
+use App\Models\Blog;
+use App\Models\Package;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -105,6 +107,20 @@ class CategoryController extends Controller
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
+        }
+
+        $checkCategoryBlog = Blog::where([
+            'category_uuid' => $checkCategory->uuid
+        ])->first();
+
+        $checkPackageBlog = Package::where([
+            'category_uuid' => $checkCategory->uuid
+        ])->first();
+
+        if($checkPackageBlog || $checkCategoryBlog){
+            return response()->json([
+                'message' => 'You can\'t delete it, the category already used in blog / package'
+            ], 422);
         }
 
         Category::where(['uuid' => $uuid])->delete();

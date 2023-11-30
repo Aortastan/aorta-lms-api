@@ -52,6 +52,15 @@ class CourseController extends Controller
                 ], 404);
             }
 
+            $course->have_image = 0;
+            $course->have_video = 0;
+            if($course->image){
+                $course->have_image = 1;
+            }
+            if($course->video){
+                $course->have_video = 1;
+            }
+
             $getCourseLessons = CourseLesson::
                     select('uuid', 'title')
                     ->where('course_uuid', $uuid)
@@ -117,14 +126,20 @@ class CourseController extends Controller
             'number_of_meeting' => 'required|numeric',
             'is_have_pretest_posttest' => 'required',
             'instructor_uuid' => 'required',
+            'have_image' => 'required|boolean',
+            'have_video' => 'required|boolean',
         ];
 
-        if(isset($request->video)){
-            if($request->video != null){
+        if(isset($request->have_video)){
+            if($request->have_video == 1){
                 $validate['video'] = 'required|mimetypes:video/*';
             }
-        }else{
-            $validate['video'] = 'required';
+        }
+
+        if(isset($request->have_image)){
+            if($request->have_image == 1){
+                $validate['image'] = 'required|image';
+            }
         }
 
         if($request->is_have_pretest_posttest == 1){
@@ -152,6 +167,16 @@ class CourseController extends Controller
         $pathVideo = null;
         $pathImage = $request->image->store('courses', 'public');
         if($request->video != null){
+            $pathVideo = $request->video->store('courses', 'public');
+        }
+
+        $pathImage = "";
+        $pathVideo = "";
+        if($request->have_image == 1){
+            $pathImage = $request->image->store('courses', 'public');
+        }
+
+        if($request->have_video == 1){
             $pathVideo = $request->video->store('courses', 'public');
         }
 
@@ -209,20 +234,24 @@ class CourseController extends Controller
             'number_of_meeting' => 'required|numeric',
             'is_have_pretest_posttest' => 'required',
             'instructor_uuid' => 'required',
-            'status' => 'required|in:pending,published,waiting for review,hold,draft',
+            'status' => 'required|in:Published,Waiting for review,hold,Draft',
             'have_image' => 'required|boolean',
             'have_video' => 'required|boolean',
         ];
 
-        if(isset($request->video)){
-            if($request->video){
-                $validate['video'] = 'required|mimetypes:video/*';
+        if(isset($request->have_video)){
+            if($request->have_video == 1){
+                if(!is_string($request->video)){
+                    $validate['video'] = 'required|mimetypes:video/*';
+                }
             }
         }
 
-        if(isset($request->image)){
-            if($request->image){
-                $validate['image'] = 'required|image';
+        if(isset($request->have_image)){
+            if($request->have_image == 1){
+                if(!is_string($request->image)){
+                    $validate['image'] = 'required|image';
+                }
             }
         }
 

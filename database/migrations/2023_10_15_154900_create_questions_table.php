@@ -20,7 +20,7 @@ class CreateQuestionsTable extends Migration
             $table->string('author_uuid');
             $table->string('title');
             $table->string('question_type')->comment('multi choice, most point, single choice, fill in blank, true false');
-            $table->string('question');
+            $table->longText('question');
             $table->string('file_path')->nullable();
             $table->string('url_path')->nullable();
             $table->string('file_size')->nullable();
@@ -28,7 +28,7 @@ class CreateQuestionsTable extends Migration
             $table->string('type')->comment('video, youtube, text, image, pdf, slide document, audio');
             $table->boolean('different_point');
             $table->integer('point')->nullable();
-            $table->string('hint')->nullable();
+            $table->longText('hint')->nullable();
             $table->string('status')->comment('Published, Waiting for review, Draft');
             $table->timestamps();
         });

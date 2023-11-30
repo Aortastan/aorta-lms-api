@@ -3,10 +3,9 @@
 namespace App\Models;
 
 use Ramsey\Uuid\Uuid;
-
 use Illuminate\Database\Eloquent\Model;
 
-class PretestPosttest extends Model
+class DetailTransaction extends Model
 {
     public $incrementing = false; // Non-incrementing primary key
     protected $keyType = 'string'; // Primary key type is string
@@ -18,14 +17,16 @@ class PretestPosttest extends Model
      * @var array
      */
     protected $fillable = [
-       'test_uuid',
-       'course_uuid',
-       'max_attempt',
+        'transaction_uuid',
+        'package_uuid',
+        'type_of_purchase',
+        'transaction_type',
+        'detail_amount',
     ];
 
-    public function test()
+    public function package()
     {
-        return $this->belongsTo(Test::class, 'test_uuid', 'uuid');
+        return $this->belongsTo(Package::class, 'package_uuid', 'uuid');
     }
 
     protected static function boot()

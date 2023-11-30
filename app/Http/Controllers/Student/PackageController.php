@@ -8,8 +8,11 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Package;
 
+use App\Traits\Package\PackageTrait;
+
 class PackageController extends Controller
 {
+    use PackageTrait;
     public function index(){
         try{
             $user = JWTAuth::parseToken()->authenticate();
@@ -75,23 +78,7 @@ class PackageController extends Controller
     }
 
     public function allPackage(){
-        try{
-            $packages = DB::table('packages')
-                ->select('packages.uuid as package_uuid', 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership')
-                ->where('packages.status', 1)
-                ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
-                ->get();
-
-            return response()->json([
-                'message' => 'Success get data',
-                'packages' => $packages,
-            ], 200);
-        }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
-        }
+        return $this->getAllPackages(false);
     }
 
     public function show($package_type, $uuid){
@@ -101,137 +88,6 @@ class PackageController extends Controller
             ], 404);
         }
 
-        try{
-            // $user = JWTAuth::parseToken()->authenticate();
-            if($package_type == 'test'){
-                $getPackage = Package::
-                    where(['uuid' => $uuid, 'package_type' => $package_type])
-                    ->with(['category', 'packageTests', 'packageTests.test'])
-                    ->first();
-
-                if($getPackage == null){
-                    return response()->json([
-                        'message' => 'Package not found',
-                    ], 404);
-                }
-
-                // $check_purchased_package = DB::table('purchased_packages')
-                //     ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                //     ->first();
-
-                // if(!$check_purchased_package){
-                //     $check_membership_history = DB::table('membership_histories')
-                //         ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                //         ->whereDate('membership_histories.expired_date', '>', now())
-                //         ->first();
-
-                //     if(!$check_membership_history){
-                //         return response()->json([
-                //             'message' => "You haven't purchased this package yet",
-                //         ], 404);
-                //     }
-                // }
-
-                $package = [];
-
-
-                if($getPackage){
-                    $package= [
-                        "uuid" => $getPackage->uuid,
-                        "package_type" => $getPackage->package_type,
-                        "name" => $getPackage->name,
-                        "description" => $getPackage->description,
-                        "image" => $getPackage->image,
-                        "category" => $getPackage->category->name,
-                        "package_tests" => [],
-                    ];
-                    foreach ($getPackage->packageTests as $index => $test) {
-                        $package['package_tests'][] = [
-                            "test_uuid" => $test->test->uuid,
-                            "name" => $test->test->name,
-                            "test_category" => $test->test->test_category,
-                            "attempt" => $test->attempt,
-                            "passing_grade" => $test->passing_grade,
-                            "duration" => $test->duration,
-                        ];
-                    }
-                }
-            }elseif($package_type == 'course'){
-                $getPackage = Package::
-                    where('packages.uuid', $uuid)
-                    ->with(['category', 'packageCourses', 'packageCourses.course', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests'])
-                    ->first();
-
-                if($getPackage == null){
-                    return response()->json([
-                        'message' => 'Package not found',
-                    ], 404);
-                }
-
-
-                //     $check_purchased_package = DB::table('purchased_packages')
-                //     ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                //     ->first();
-
-                // if(!$check_purchased_package){
-                //     $check_membership_history = DB::table('membership_histories')
-                //         ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                //         ->whereDate('membership_histories.expired_date', '>', now())
-                //         ->first();
-
-                //     if(!$check_membership_history){
-                //         return response()->json([
-                //             'message' => "You haven't purchased this package yet",
-                //         ], 404);
-                //     }
-                // }
-
-                $package = [];
-
-                if($getPackage){
-                    $package= [
-                        "uuid" => $getPackage->uuid,
-                        "package_type" => $getPackage->package_type,
-                        "name" => $getPackage->name,
-                        "description" => $getPackage->description,
-                        "image" => $getPackage->image,
-                        "category" => $getPackage->category->name,
-                        "package_courses" => [],
-                    ];
-
-                    foreach ($getPackage->packageCourses as $index => $course) {
-                        $pretestPosttests = [];
-
-                        foreach ($course->course->pretestPosttests as $index1 => $pretestPosttest)  {
-                            $pretestPosttests[] = [
-                                'pretestpostest_uuid' => $pretestPosttest->uuid,
-                                "max_attempt" => $pretestPosttest->max_attempt,
-                            ];
-                        }
-                        $package['package_courses'][] = [
-                            "course_uuid" => $course->course->uuid,
-                            "title" => $course->course->title,
-                            "description" => $course->course->description,
-                            "image" => $course->course->image,
-                            "video" => $course->course->video,
-                            "number_of_meeting" => $course->course->number_of_meeting,
-                            "instructor_name" => $course->course->instructor->name,
-                            "pretest_posttests" => $pretestPosttests,
-                        ];
-                    }
-                }
-            }
-
-
-            return response()->json([
-                'message' => 'Success get data',
-                'package' => $package,
-            ], 200);
-        }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
-        }
+        return $this->getOnePackage(false, $uuid, $package_type);
     }
 }

@@ -27,6 +27,11 @@ class Coupon extends Model
         'expired_date',
     ];
 
+    public function claimed()
+    {
+        return $this->hasMany(ClaimedCoupon::class, "coupon_uuid");
+    }
+
     protected static function boot()
     {
         parent::boot();

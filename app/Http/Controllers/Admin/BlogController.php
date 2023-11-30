@@ -12,52 +12,18 @@ use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use File;
+use App\Traits\Blog\BlogManagementTrait;
 
 class BlogController extends Controller
 {
-    public function index(){
-        try{
-            $blogs = DB::table('blogs')
-                ->select('blogs.uuid', 'blogs.title', 'blogs.slug', 'blogs.body', 'blogs.image', 'blogs.status', 'blogs.seo_title', 'blogs.seo_description', 'blogs.seo_keywords', 'users.name as user_name', 'categories.name as category_name')
-                ->join('users', 'blogs.user_uuid', '=', 'users.uuid')
-                ->join('categories', 'blogs.category_uuid', '=', 'categories.uuid')
-                ->get();
+    use BlogManagementTrait;
 
-            return response()->json([
-                'message' => 'Success get data',
-                'blogs' => $blogs,
-            ], 200);
-        }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
-        }
+    public function index(){
+        return $this->getAllBlogs(true);
     }
 
     public function show(Request $request, $uuid){
-        try{
-            $blog = DB::table('blogs')
-                ->select('blogs.uuid', 'blogs.title', 'blogs.slug', 'blogs.body', 'blogs.image', 'blogs.status', 'blogs.seo_title', 'blogs.seo_description', 'blogs.seo_keywords', 'users.name as user_name', 'categories.name as category_name')
-                ->join('users', 'blogs.user_uuid', '=', 'users.uuid')
-                ->join('categories', 'blogs.category_uuid', '=', 'categories.uuid')
-                ->first();
-
-            if(!$blog){
-                return response()->json([
-                    'message' => 'Data not found',
-                ], 404);
-            }
-            return response()->json([
-                'message' => 'Success get data',
-                'blog' => $blog,
-            ], 200);
-        }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
-        }
+        return $this->getBlog(true, $uuid);
     }
 
     public function store(Request $request){

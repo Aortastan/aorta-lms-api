@@ -17,7 +17,7 @@ class CreateAnswersTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('question_uuid');
-            $table->text('answer');
+            $table->longText('answer');
             $table->string('image')->nullable();
             $table->boolean('is_correct')->nullable();
             $table->integer('point')->nullable();

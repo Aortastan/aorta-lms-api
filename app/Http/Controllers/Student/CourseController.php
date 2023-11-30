@@ -10,6 +10,7 @@ use App\Models\Package;
 use App\Models\CourseLesson;
 use App\Models\CourseTag;
 use App\Models\Course;
+use App\Models\PackageCourse;
 
 class CourseController extends Controller
 {
@@ -162,5 +163,204 @@ class CourseController extends Controller
                 'message' => $e,
             ], 404);
         }
+    }
+
+    public function getStudentCourses(){
+        $user = JWTAuth::parseToken()->authenticate();
+            $purchased_packages = DB::table('purchased_packages')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image')
+                ->where('purchased_packages.user_uuid', $user->uuid)
+                ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
+                // ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+                ->distinct('package_uuid')
+                ->get();
+
+            $uuid_packages = [];
+
+            foreach ($purchased_packages as $package) {
+                $uuid_packages[] = $package->package_uuid;
+            }
+
+            $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
+
+            $my_courses = [];
+            $course_uuids = [];
+            foreach ($get_course_purchased as $index => $student_course) {
+                if (!in_array($student_course->course_uuid, $course_uuids)) {
+                    $course_uuids[] = $student_course->course_uuid;
+                    $my_courses[] = [
+                        "course_uuid" => $student_course->course_uuid,
+                        "type" => "lifetime",
+                        "title" => $student_course->course->title,
+                        'description' => $student_course->course->description,
+                        'image' => $student_course->course->image,
+                        'video' => $student_course->course->video,
+                        'number_of_meeting' => $student_course->course->number_of_meeting,
+                        'instructor_uuid' => $student_course->course->instructor->name,
+                    ];
+                }
+            }
+
+            $membership_histories = DB::table('membership_histories')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image',  'membership_histories.expired_date')
+                ->where('membership_histories.user_uuid', $user->uuid)
+                ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
+                ->whereNotIn('membership_histories.package_uuid', $uuid_packages)
+                ->whereDate('membership_histories.expired_date', '>', now())
+                ->distinct('package_uuid')
+                ->get();
+
+            $uuid_packages = [];
+
+            foreach ($membership_histories as $package) {
+                $uuid_packages[] = $package->package_uuid;
+            }
+
+            $get_course_membership = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
+
+
+            foreach ($get_course_membership as $index => $student_course) {
+                if (!in_array($student_course->course_uuid, $course_uuids)) {
+                    $course_uuids[] = $student_course->course_uuid;
+                    $my_courses[] = [
+                        "course_uuid" => $student_course->course_uuid,
+                        "type" => "membership",
+                        "title" => $student_course->course->title,
+                        'description' => $student_course->course->description,
+                        'image' => $student_course->course->image,
+                        'video' => $student_course->course->video,
+                        'number_of_meeting' => $student_course->course->number_of_meeting,
+                        'instructor_uuid' => $student_course->course->instructor->name,
+                    ];
+                }
+            }
+
+            return response()->json([
+                'message'=> "success get data",
+                "courses" => $my_courses,
+            ], 200);
+    }
+
+    public function detailPurchasedCourse($course_uuid){
+        $user = JWTAuth::parseToken()->authenticate();
+
+        return $this->checkThisCourseIsPaid($course_uuid, $user);
+    }
+
+    public function checkThisCourseIsPaid($course_uuid, $user){
+        // cek apakah course uuid tersebut ada
+        $course = Course::where([
+            'uuid' => $course_uuid,
+        ])->first();
+
+        if($course == null){
+            return response()->json([
+                'message' => "Course not found",
+            ]);
+        }
+
+        // cek package mana aja yang menyimpan course tersebut
+        $check_package_courses = PackageCourse::where([
+            'course_uuid' => $course->uuid,
+        ])->get();
+
+        $package_uuids = [];
+        foreach ($check_package_courses as $index => $package) {
+            $package_uuids[] = $package->package_uuid;
+        }
+
+        if(count($package_uuids) <= 0){
+            return response()->json([
+                'message' => "Package course not found",
+            ]);
+        }
+
+        // cek apakah user pernah membeli lifetime package tersebut
+        $check_purchased_package = PurchasedPackage::where([
+            "user_uuid" => $user->uuid,
+        ])->whereIn("package_uuid", $package_uuids)->first();
+
+        // jika ternyata tidak ada, maka sekarang cek di membership
+        if($check_purchased_package == null){
+            $check_membership_package = MembershipHistory::where([
+                "user_uuid" => $user->uuid,
+            ])
+            ->whereDate('expired_date', '>', now())
+            ->whereIn("package_uuid", $package_uuids)->first();
+
+            if($check_membership_package == null){
+                return response()->json([
+                    'message' => 'You can\'t access this course',
+                ]);
+            }
+        }
+
+        $getCourse = Course::where([
+            'uuid' => $course_uuid
+        ])->with(['instructor', 'lessons', 'pretestPosttests', 'pretestPosttests.test', 'lessons.lectures', 'lessons.quizzes', 'lessons.assignments'])->first();
+
+        $pretest_posttests = [];
+        foreach ($getCourse->pretestPosttests as $index => $test) {
+            $pretest_posttests[] = [
+                "title" => $test->test->title,
+                "test_uuid" => $test->test->uuid,
+                "test_category" => $test->test->test_category,
+                "max_attempt" => $test->max_attempt,
+            ];
+        }
+
+        $lessons = [];
+        foreach ($getCourse->lessons as $index => $lesson) {
+            $lesson_lectures = [];
+            foreach ($lesson->lectures as $index1 => $lecture_data) {
+                $lesson_lectures[] = [
+                    "lecture_uuid" => $lecture_data->uuid,
+                    "title" => $lecture_data->title,
+                ];
+            }
+
+            $quizzes = [];
+            foreach ($lesson->quizzes as $index1 => $quiz) {
+                $quizzes[] = [
+                    "test_uuid" => $quiz->test_uuid,
+                    'title' => $quiz->title,
+                    'description' => $quiz->description,
+                    'duration' => $quiz->duration,
+                    'max_attempt' => $quiz->max_attempt,
+                ];
+            }
+
+            $assignments = [];
+            foreach ($lesson->assignments as $index1 => $assignment) {
+                $assignments[] = [
+                    "assignment_uuid" => $assignment->uuid,
+                    'title' => $assignment->title,
+                    'description' => $assignment->description
+                ];
+            }
+
+
+            $lessons[] = [
+                "lesson_uuid" => $lesson->uuid,
+                "title" => $lesson->title,
+                "description" => $lesson->description,
+                "lectures" => $lesson_lectures,
+                "quizzes" => $quizzes,
+                "assignments" => $assignments,
+            ];
+        }
+        $course = [
+            "uuid" => $getCourse->uuid,
+            "title" => $getCourse->title,
+            "instructor_name" => $getCourse->instructor->name,
+            'description' => $getCourse->description,
+            "image" => $getCourse->image,
+            "video" => $getCourse->video,
+            'number_of_meeting' => $getCourse->number_of_meeting,
+            "lessons" =>$lessons,
+            "pretest_posttests" => $pretest_posttests,
+        ];
+
+        return $course;
     }
 }

@@ -18,7 +18,7 @@ class CreateCoursesTable extends Migration
             $table->uuid('uuid')->unique();
             $table->string('title');
             $table->text('description');
-            $table->string('image');
+            $table->string('image')->nullable();
             $table->string('video')->nullable();
             $table->integer('number_of_meeting')->nullable();
             $table->boolean('is_have_pretest_posttest');

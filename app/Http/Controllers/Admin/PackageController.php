@@ -16,42 +16,13 @@ use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
 use File;
 
+use App\Traits\Package\PackageTrait;
+
 class PackageController extends Controller
 {
+    use PackageTrait;
     public function index(){
-        try{
-            $getPackages = Package::with(['category'])->get();
-            $packages = [];
-
-            foreach ($getPackages as $index => $package) {
-                $packages[] = [
-                    'uuid' => $package->uuid,
-                    'package_type' => $package->package_type,
-                    'category_name' => $package->category->name,
-                    'name' => $package->name,
-                    'description' => $package->description,
-                    'price_lifetime' => $package->price_lifetime,
-                    'price_one_month' => $package->price_one_month,
-                    'price_three_months' => $package->price_three_months,
-                    'price_six_months' => $package->price_six_months,
-                    'price_one_year' => $package->price_one_year,
-                    'learner_accesibility' => $package->learner_accesibility,
-                    'image' => $package->image,
-                    'discount' => $package->discount,
-                    'is_membership' => $package->is_membership,
-                ];
-            }
-
-            return response()->json([
-                'message' => 'Success get data',
-                'packages' => $packages,
-            ], 200);
-        }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
-        }
+        return $this->getAllPackages(true);
     }
 
     public function show($uuid){
@@ -83,6 +54,7 @@ class PackageController extends Controller
             $package['package_courses'] = [];
             foreach ($checkPackage->packageCourses as $index2 => $list) {
                 $package['package_courses'][] = [
+                    "course_uuid" => $list['course']['uuid'],
                     "title" => $list['course']['title'],
                     "description" => $list['course']['description'],
                     "status" => $list['status'],
@@ -93,7 +65,9 @@ class PackageController extends Controller
             $package['package_tests'] = [];
             foreach ($checkPackage->packageTests as $index2 => $list) {
                 $package['package_tests'][] = [
-                    "name" => $list['test']['name'],
+                    "uuid" => $list['uuid'],
+                    "test_uuid" => $list['test']['uuid'],
+                    "title" => $list['test']['title'],
                     "test_type" => $list['test']['test_type'],
                     "attempt" => $list['attempt'],
                     "passing_grade" => $list['passing_grade'],
@@ -153,7 +127,7 @@ class PackageController extends Controller
             'learner_accesibility' => $request->learner_accesibility,
             'name' => $request->name,
             'description' => $request->description,
-            'status' => true,
+            'status' => "Draft",
             'image' => $path,
         ];
 
@@ -201,6 +175,7 @@ class PackageController extends Controller
             'name' => 'required|string',
             'description' => 'required|string',
             'learner_accesibility' => 'required|in:paid,free',
+            'status' => 'required|in:Published,Waiting for review,Draft',
         ];
 
         if($request->learner_accesibility == 'paid'){
@@ -226,6 +201,21 @@ class PackageController extends Controller
             ], 422);
         }
 
+        if($checkPackage->status == 'Published'){
+            if($request->status != $checkPackage->status){
+                return response()->json([
+                    'message' => 'You can\'t change the package status, because this package already published',
+                    'errors' => [
+                        "status" => [
+                            'You can\'t change the package status, because this package already published'
+                        ]
+                    ]
+                ], 422);
+            }
+        }
+
+
+
         $checkCategory = Category::where(['uuid' => $request->category_uuid])->first();
         if(!$checkCategory){
             return response()->json([
@@ -248,6 +238,7 @@ class PackageController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'learner_accesibility' => $request->learner_accesibility,
+            'status' => $request->status,
             'image' => $path,
         ];
 
@@ -276,6 +267,10 @@ class PackageController extends Controller
         ], 200);
     }
 
+    public function duplicate(Request $request, $uuid){
+
+    }
+
     public function packageLists(Request $request, $type, $uuid): JsonResponse{
         if($type != 'course' && $type != 'test'){
             return response()->json([
@@ -288,6 +283,12 @@ class PackageController extends Controller
             return response()->json([
                 'message' => 'Data not found'
             ], 404);
+        }
+
+        if($checkPackage->status == 'Published'){
+            return response()->json([
+                'message' => 'You can\'t change the package, because this package already published'
+            ], 422);
         }
 
        if($type == 'course'){
@@ -357,7 +358,6 @@ class PackageController extends Controller
             $validate = [
                 'lists' => 'required|array',
                 'lists.*' => 'required',
-                'lists.*.uuid' => 'required',
                 'lists.*.test_uuid' => 'required',
                 'lists.*.attempt' => 'required',
                 'lists.*.passing_grade' => 'required|numeric',

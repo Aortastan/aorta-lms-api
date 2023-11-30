@@ -1,12 +1,11 @@
 <?php
 
 namespace App\Models;
-
 use Ramsey\Uuid\Uuid;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PretestPosttest extends Model
+class TemplateAnswer extends Model
 {
     public $incrementing = false; // Non-incrementing primary key
     protected $keyType = 'string'; // Primary key type is string
@@ -18,14 +17,16 @@ class PretestPosttest extends Model
      * @var array
      */
     protected $fillable = [
-       'test_uuid',
-       'course_uuid',
-       'max_attempt',
+        'question_uuid',
+        'answer',
+        'image',
+        'is_correct',
+        'point',
     ];
 
-    public function test()
+    public function question()
     {
-        return $this->belongsTo(Test::class, 'test_uuid', 'uuid');
+        return $this->belongsTo(TemplateQuestion::class, 'question_uuid');
     }
 
     protected static function boot()

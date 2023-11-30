@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Models\Tag;
+use App\Models\CourseTag;
+use App\Models\TestTag;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -100,11 +102,25 @@ class TagController extends Controller
     }
 
     public function delete(Request $request, $uuid){
-        $checkTag = Tag::where(['uuid' => $uuid])->first();
-        if(!$checkTag){
+        $tag = Tag::where(['uuid' => $uuid])->first();
+        if(!$tag){
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
+        }
+
+        $checkTagCourse = CourseTag::where([
+            'tag_uuid' => $tag->uuid
+        ])->first();
+
+        $checkTagTest = TestTag::where([
+            'tag_uuid' => $tag->uuid
+        ])->first();
+
+        if($checkTagCourse || $checkTagTest){
+            return response()->json([
+                'message' => 'You can\'t delete it, the tag already used in course / test'
+            ], 422);
         }
 
         Tag::where(['uuid' => $uuid])->delete();

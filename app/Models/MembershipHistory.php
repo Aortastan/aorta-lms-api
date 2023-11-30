@@ -24,6 +24,11 @@ class MembershipHistory extends Model
         'expired_date',
     ];
 
+    public function packageCourse()
+    {
+        return $this->hasMany(PackageCourse::class, 'package_uuid', 'package_uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

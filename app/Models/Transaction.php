@@ -20,15 +20,17 @@ class Transaction extends Model
     protected $fillable = [
         'user_uuid',
         'external_id',
-        'package_uuid',
         'coupon_uuid',
-        'type_of_purchase',
-        'transaction_type',
         'transaction_amount',
         'payment_method_uuid',
         'transaction_status',
         'url',
     ];
+
+    public function detailTransaction()
+    {
+        return $this->hasMany(DetailTransaction::class, 'transaction_uuid', 'uuid');
+    }
 
     protected static function boot()
     {

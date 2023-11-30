@@ -29,7 +29,7 @@ class CreatePackagesTable extends Migration
             $table->string('image');
             $table->integer('discount');
             $table->boolean('is_membership');
-            $table->boolean('status')->default(true);
+            $table->string('status')->comment('Published, Waiting for review, Draft');
             $table->timestamps();
         });
     }

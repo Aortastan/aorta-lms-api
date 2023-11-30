@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Subject;
+use App\Models\Question;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 
@@ -104,6 +105,16 @@ class SubjectController extends Controller
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
+        }
+
+        $checkSubjectQuestion = Question::where([
+            'subject_uuid' => $checkSubject->uuid
+        ])->first();
+
+        if($checkSubjectQuestion){
+            return response()->json([
+                'message' => 'You can\'t delete it, the subject already used in question'
+            ], 422);
         }
 
         Subject::where(['uuid' => $uuid])->delete();

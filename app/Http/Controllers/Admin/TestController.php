@@ -14,12 +14,16 @@ use Illuminate\Http\JsonResponse;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Validator;
 
+use App\Traits\Admin\Test\DuplicateTrait;
+
 class TestController extends Controller
 {
+    use DuplicateTrait;
+
     public function index(){
         try{
             $tests = DB::table('tests')
-                ->select('tests.uuid', 'tests.test_type', 'tests.title', 'tests.test_category')
+                ->select('tests.uuid', 'tests.test_type', 'tests.title','tests.status', 'tests.test_category')
                 ->get();
 
             return response()->json([
@@ -46,7 +50,7 @@ class TestController extends Controller
                     'tests' => $tests,
                 ], 200);
             }else{
-                $test = Test::select('uuid', 'test_type', 'title', 'test_category')
+                $test = Test::select('uuid', 'test_type', 'title', 'status', 'test_category')
                 ->where([
                     'uuid' => $uuid
                 ])->with(['questions.question.subject'])->first();
@@ -77,6 +81,7 @@ class TestController extends Controller
                     'uuid' => $test['uuid'],
                     'test_type' => $test['test_type'],
                     'title' => $test['title'],
+                    'status' => $test['status'],
                     'test_category' => $test['test_category'],
                     'questions' => $getQuestion,
                 ];
@@ -130,6 +135,7 @@ class TestController extends Controller
         $validated = [
             'test_type' => $request->test_type,
             'title' => $request->title,
+            'status' => 'Draft',
             'test_category' => $request->test_category,
         ];
 
@@ -140,6 +146,30 @@ class TestController extends Controller
         ], 200);
     }
 
+    public function duplicate(Request $request, $uuid){
+        $test = Test::where(['uuid' => $uuid])->first();
+        if(!$test){
+            return response()->json([
+                'message' => 'Test not found',
+            ], 404);
+        }
+
+        $validate = [
+            'title' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        return $this->duplicateTest($request, $uuid);
+    }
+
     public function addQuestions(Request $request, $uuid): JsonResponse{
         $test = Test::where(['uuid' => $uuid])->first();
         if(!$test){
@@ -147,6 +177,13 @@ class TestController extends Controller
                 'message' => 'Test not found',
             ], 404);
         }
+
+        if($test->status == "Published"){
+            return response()->json([
+                'message' => 'Test already published, you cannot edit this test.',
+            ], 422);
+        }
+
         $validate = [
             'questions' => 'required|array',
             'questions.*' => 'required',
@@ -204,10 +241,18 @@ class TestController extends Controller
                 'message' => 'Test not found',
             ], 404);
         }
+
+        if($test->status == "Published"){
+            return response()->json([
+                'message' => 'Test already published, you cannot edit this test.',
+            ], 422);
+        }
+
         $validate = [
             'test_type' => 'required|in:classical,IRT',
             'title' => 'required',
             'test_category' => 'required|in:quiz,tryout',
+            'status' => 'required|in:Published,Waiting for review,Draft',
         ];
 
         $validator = Validator::make($request->all(), $validate);
@@ -223,6 +268,7 @@ class TestController extends Controller
             'test_type' => $request->test_type,
             'title' => $request->title,
             'test_category' => $request->test_category,
+            'status' => $request->status,
         ]);
 
         return response()->json([
