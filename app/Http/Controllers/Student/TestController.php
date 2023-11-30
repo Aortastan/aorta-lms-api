@@ -12,8 +12,12 @@ use App\Models\PurchasedPackage;
 use App\Models\MembershipHistory;
 use Illuminate\Support\Facades\DB;
 
+use App\Traits\Package\PackageTrait;
+
 class TestController extends Controller
 {
+    use PackageTrait;
+
     public function show($package_uuid, $uuid){
         try{
             $test = DB::table('tests')
@@ -119,71 +123,44 @@ class TestController extends Controller
         return $test;
     }
 
+    // ambil semua test yang pernah dibeli berdasarkan package pacakge
     public function getStudentTests(){
         $user = JWTAuth::parseToken()->authenticate();
-            $purchased_packages = DB::table('purchased_packages')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image')
-                ->where('purchased_packages.user_uuid', $user->uuid)
-                ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
-                // ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
-                ->distinct('package_uuid')
-                ->get();
+        $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
+        $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
 
-            $uuid_packages = [];
-
-            foreach ($purchased_packages as $package) {
-                $uuid_packages[] = $package->package_uuid;
+        $my_tests = [];
+        $test_uuids = [];
+        foreach ($get_test_purchased as $index => $student_test) {
+            if (!in_array($student_test->test_uuid, $test_uuids)) {
+                $test_uuids[] = $student_test->test_uuid;
+                $my_tests[] = [
+                    "test_uuid" => $student_test->test_uuid,
+                    "type" => "Lifetime",
+                    "title" => $student_test->test->title,
+                    'test_type' => $student_test->test->test_type,
+                ];
             }
+        }
 
-            $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
+        $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
+        $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
 
-            $my_tests = [];
-            $test_uuids = [];
-            foreach ($get_test_purchased as $index => $student_test) {
-                if (!in_array($student_test->test_uuid, $test_uuids)) {
-                    $test_uuids[] = $student_test->test_uuid;
-                    $my_tests[] = [
-                        "test_uuid" => $student_test->test_uuid,
-                        "type" => "lifetime",
-                        "title" => $student_test->test->title,
-                        'test_type' => $student_test->test->test_type,
-                    ];
-                }
+        foreach ($get_course_membership as $index => $student_test) {
+            if (!in_array($student_test->test_uuid, $test_uuids)) {
+                $test_uuids[] = $student_test->test_uuid;
+                $my_tests[] = [
+                    "test_uuid" => $student_test->test_uuid,
+                    "type" => "Membership",
+                    "title" => $student_test->test->title,
+                    'test_type' => $student_test->test->test_type,
+                ];
             }
+        }
 
-            $membership_histories = DB::table('membership_histories')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image',  'membership_histories.expired_date')
-                ->where('membership_histories.user_uuid', $user->uuid)
-                ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
-                ->whereNotIn('membership_histories.package_uuid', $uuid_packages)
-                ->whereDate('membership_histories.expired_date', '>', now())
-                ->distinct('package_uuid')
-                ->get();
-
-            $uuid_packages = [];
-
-            foreach ($membership_histories as $package) {
-                $uuid_packages[] = $package->package_uuid;
-            }
-
-            $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
-
-
-            foreach ($get_course_membership as $index => $student_test) {
-                if (!in_array($student_test->test_uuid, $test_uuids)) {
-                    $test_uuids[] = $student_test->test_uuid;
-                    $my_tests[] = [
-                        "test_uuid" => $student_test->test_uuid,
-                        "type" => "lifetime",
-                        "title" => $student_test->test->title,
-                        'test_type' => $student_test->test->test_type,
-                    ];
-                }
-            }
-
-            return response()->json([
-                'message'=> "success get data",
-                "tests" => $my_tests,
-            ], 200);
+        return response()->json([
+            'message'=> "success get data",
+            "tests" => $my_tests,
+        ], 200);
     }
 }

@@ -12,8 +12,12 @@ use App\Models\CourseTag;
 use App\Models\Course;
 use App\Models\PackageCourse;
 
+use App\Traits\Package\PackageTrait;
+
 class CourseController extends Controller
 {
+    use PackageTrait;
+
     public function show($package_uuid, $uuid){
         // try{
         //     // $user = JWTAuth::parseToken()->authenticate();
@@ -165,80 +169,53 @@ class CourseController extends Controller
         }
     }
 
+    // ambil semua course yang sudah pernah dibeli dari package package
     public function getStudentCourses(){
         $user = JWTAuth::parseToken()->authenticate();
-            $purchased_packages = DB::table('purchased_packages')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image')
-                ->where('purchased_packages.user_uuid', $user->uuid)
-                ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
-                // ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
-                ->distinct('package_uuid')
-                ->get();
+        $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
+        $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
 
-            $uuid_packages = [];
-
-            foreach ($purchased_packages as $package) {
-                $uuid_packages[] = $package->package_uuid;
+        $my_courses = [];
+        $course_uuids = [];
+        foreach ($get_course_purchased as $index => $student_course) {
+            if (!in_array($student_course->course_uuid, $course_uuids)) {
+                $course_uuids[] = $student_course->course_uuid;
+                $my_courses[] = [
+                    "course_uuid" => $student_course->course_uuid,
+                    "type" => "Lifetime",
+                    "title" => $student_course->course->title,
+                    'description' => $student_course->course->description,
+                    'image' => $student_course->course->image,
+                    'video' => $student_course->course->video,
+                    'number_of_meeting' => $student_course->course->number_of_meeting,
+                    'instructor_uuid' => $student_course->course->instructor->name,
+                ];
             }
+        }
 
-            $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
+        $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
+        $get_course_membership = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
 
-            $my_courses = [];
-            $course_uuids = [];
-            foreach ($get_course_purchased as $index => $student_course) {
-                if (!in_array($student_course->course_uuid, $course_uuids)) {
-                    $course_uuids[] = $student_course->course_uuid;
-                    $my_courses[] = [
-                        "course_uuid" => $student_course->course_uuid,
-                        "type" => "lifetime",
-                        "title" => $student_course->course->title,
-                        'description' => $student_course->course->description,
-                        'image' => $student_course->course->image,
-                        'video' => $student_course->course->video,
-                        'number_of_meeting' => $student_course->course->number_of_meeting,
-                        'instructor_uuid' => $student_course->course->instructor->name,
-                    ];
-                }
+        foreach ($get_course_membership as $index => $student_course) {
+            if (!in_array($student_course->course_uuid, $course_uuids)) {
+                $course_uuids[] = $student_course->course_uuid;
+                $my_courses[] = [
+                    "course_uuid" => $student_course->course_uuid,
+                    "type" => "Membership",
+                    "title" => $student_course->course->title,
+                    'description' => $student_course->course->description,
+                    'image' => $student_course->course->image,
+                    'video' => $student_course->course->video,
+                    'number_of_meeting' => $student_course->course->number_of_meeting,
+                    'instructor_uuid' => $student_course->course->instructor->name,
+                ];
             }
+        }
 
-            $membership_histories = DB::table('membership_histories')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image',  'membership_histories.expired_date')
-                ->where('membership_histories.user_uuid', $user->uuid)
-                ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
-                ->whereNotIn('membership_histories.package_uuid', $uuid_packages)
-                ->whereDate('membership_histories.expired_date', '>', now())
-                ->distinct('package_uuid')
-                ->get();
-
-            $uuid_packages = [];
-
-            foreach ($membership_histories as $package) {
-                $uuid_packages[] = $package->package_uuid;
-            }
-
-            $get_course_membership = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
-
-
-            foreach ($get_course_membership as $index => $student_course) {
-                if (!in_array($student_course->course_uuid, $course_uuids)) {
-                    $course_uuids[] = $student_course->course_uuid;
-                    $my_courses[] = [
-                        "course_uuid" => $student_course->course_uuid,
-                        "type" => "membership",
-                        "title" => $student_course->course->title,
-                        'description' => $student_course->course->description,
-                        'image' => $student_course->course->image,
-                        'video' => $student_course->course->video,
-                        'number_of_meeting' => $student_course->course->number_of_meeting,
-                        'instructor_uuid' => $student_course->course->instructor->name,
-                    ];
-                }
-            }
-
-            return response()->json([
-                'message'=> "success get data",
-                "courses" => $my_courses,
-            ], 200);
+        return response()->json([
+            'message'=> "success get data",
+            "courses" => $my_courses,
+        ], 200);
     }
 
     public function detailPurchasedCourse($course_uuid){

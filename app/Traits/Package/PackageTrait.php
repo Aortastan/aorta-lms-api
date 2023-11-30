@@ -282,4 +282,44 @@ trait PackageTrait
 
         return null;
     }
+
+    // cek package mana saja yang dibeli oleh user
+    public function checkAllPurchasedPackageByUser($user){
+        $purchased_packages = DB::table('purchased_packages')
+            ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image')
+            ->where('purchased_packages.user_uuid', $user->uuid)
+            ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
+            // ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+            ->distinct('package_uuid')
+            ->get();
+
+        $uuid_packages = [];
+
+        foreach ($purchased_packages as $package) {
+            $uuid_packages[] = $package->package_uuid;
+        }
+
+        return $uuid_packages;
+    }
+
+    // cek package mana saja yang dibeli secara membership oleh user, namun dengan pengecualian jika terdapat duplikat dari purchased package, maka yang lebih diutamankan purchased package,
+    // not_in_uuid berisi hasil return dari checkAllPurchasedPackageByUser
+    public function checkAllMembershipPackageByUser($user, $not_in_uuid){
+        $membership_histories = DB::table('membership_histories')
+            ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image',  'membership_histories.expired_date')
+            ->where('membership_histories.user_uuid', $user->uuid)
+            ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
+            ->whereNotIn('membership_histories.package_uuid', $not_in_uuid)
+            ->whereDate('membership_histories.expired_date', '>', now())
+            ->distinct('package_uuid')
+            ->get();
+
+        $uuid_packages = [];
+
+        foreach ($membership_histories as $package) {
+            $uuid_packages[] = $package->package_uuid;
+        }
+
+        return $uuid_packages;
+    }
 }
