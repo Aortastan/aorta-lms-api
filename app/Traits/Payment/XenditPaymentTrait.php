@@ -20,10 +20,12 @@ use DateTime;
 use DateInterval;
 
 use App\Traits\Student\DeleteCartTrait;
+use App\Traits\Coupon\CouponTrait;
+use App\Traits\Package\PackageTrait;
 
 trait XenditPaymentTrait
 {
-    use DeleteCartTrait;
+    use DeleteCartTrait, CouponTrait, PackageTrait;
 
     public $invoice, $paymentGateway;
 
@@ -111,7 +113,7 @@ trait XenditPaymentTrait
             if($request->coupon){
                 $result = $this->checkAvailableCoupon($request, $user, $total_amount);
                 if (!isset($result[0])) {
-                    return $result;
+                    return response()->json($result);
                 }
 
                 $coupon_uuid = $result[1];
@@ -217,53 +219,6 @@ trait XenditPaymentTrait
         }
     }
 
-    public function purchasedPackages($transaction_uuid, $user_uuid, $packages){
-
-        $purchasedPackages = [];
-        foreach ($packages as $index => $package) {
-            $purchasedPackages[] = [
-                'uuid' => Uuid::uuid4()->toString(),
-                'transaction_uuid' => $transaction_uuid,
-                'package_uuid' => $package['package_uuid'],
-                'user_uuid' => $user_uuid,
-            ];
-        }
-
-        if(count($purchasedPackages) > 0){
-            PurchasedPackage::insert($purchasedPackages);
-        }
-
-    }
-
-    public function membershipPackages($transaction_uuid, $user_uuid, $packages){
-        $membershipPackages = [];
-        $now = new DateTime();
-        foreach ($packages as $index => $package) {
-            if($package['type_of_purchase'] == 'one month'){
-                $now->add(new DateInterval('P1M'));
-            }elseif($package['type_of_purchase'] == 'three months'){
-                $now->add(new DateInterval('P3M'));
-            }elseif($package['type_of_purchase'] == 'six months'){
-                $now->add(new DateInterval('P6M'));
-            }
-            elseif($package['type_of_purchase'] == 'one year'){
-                $now->add(new DateInterval('P1Y'));
-            }
-
-            $membershipPackages[] = [
-                'uuid' => Uuid::uuid4()->toString(),
-                'transaction_uuid' => $transaction_uuid,
-                'user_uuid' => $user_uuid,
-                'package_uuid' => $package['package_uuid'],
-                'expired_date' => $now->format('Y-m-d H:i:s'),
-            ];
-
-            if(count($membershipPackages) > 0){
-                MembershipHistory::insert($membershipPackages);
-            }
-        }
-    }
-
     private function payment($request, $total_amount){
         Xendit::setApiKey($this->paymentGateway->api_key);
         $params = [
@@ -297,106 +252,5 @@ trait XenditPaymentTrait
                 'message' => 'An Error Occured.',
             ], 500);
         }
-    }
-
-    private function checkAvailableCoupon($request, $user, $total_amount){
-        try{
-            $coupon = Coupon::where([
-                'code' => $request->coupon,
-            ])->first();
-
-            if($coupon == null){
-                PaymentApiLog::create([
-                    'endpoint_url' => $request->path(),
-                    'method' => $request->method(),
-                    'status' => "You've already redeem this coupon",
-                ]);
-                throw new \Exception("You've already redeemed this coupon");
-            }
-
-            $checkClaimedCoupon = ClaimedCoupon::where([
-                'coupon_uuid' => $coupon->uuid,
-                'user_uuid' => $user->uuid,
-            ])->first();
-
-            if($checkClaimedCoupon){
-                PaymentApiLog::create([
-                    'endpoint_url' => $request->path(),
-                    'method' => $request->method(),
-                    'status' => "You've already redeem this coupon",
-                ]);
-                throw new \Exception("You've already redeemed this coupon");
-            }
-
-            if($coupon->type_limit == 1){
-                // check limit
-                $checkClaimedCoupon = ClaimedCoupon::where([
-                    'coupon_uuid' => $coupon->uuid,
-                ])->count();
-                if($checkClaimedCoupon >= $coupon->limit){
-                    PaymentApiLog::create([
-                        'endpoint_url' => $request->path(),
-                        'method' => $request->method(),
-                        'status' => "The coupon has run out of limit",
-                    ]);
-                    throw new \Exception("The coupon has run out of limit");
-                }
-            }
-            if($coupon->type_limit == 2){
-                $today = new DateTime();
-                $expiredDate = DateTime::createFromFormat('Y-m-d H:i:s', $coupon->expired_date);
-
-                if ($today > $expiredDate) {
-                    PaymentApiLog::create([
-                        'endpoint_url' => $request->path(),
-                        'method' => $request->method(),
-                        'status' => "The coupon has expired",
-                    ]);
-                    throw new \Exception("The coupon has expired");
-                }
-            }
-
-            if($coupon->type_coupon == 'discount amount'){
-                $total_amount = $total_amount - $coupon->price;
-                if($total_amount < 0){
-                    $total_amount = 0;
-                }
-            }
-            if($coupon->type_coupon == 'percentage discount'){
-                $total_amount = ((100 - $coupon->discount) / 100) * $total_amount;
-            }
-
-            return [$total_amount, $coupon['uuid']];
-
-        }catch (\Exception $e) {
-            // Tangkap exception dan kirimkan pesan kesalahan
-            return ['message' => $e->getMessage(), 'success' => false];
-        }
-    }
-
-    private function checkAvailablePackage($uuid){
-        $getPackage = Package::where([
-            'uuid' => $uuid,
-        ])->first();
-
-        return $getPackage;
-    }
-
-    private function checkPurchasedPackage($request, $package_uuid, $user_uuid){
-        $purchasedPackage = PurchasedPackage::where(['package_uuid' => $package_uuid, 'user_uuid' => $user_uuid])->first();
-
-        if($purchasedPackage){
-            PaymentApiLog::create([
-                'endpoint_url' => $request->path(),
-                'method' => $request->method(),
-                'status' => "You've already bought this item",
-            ]);
-            return response()->json([
-                'message' => "You've already bought this item",
-            ], 422);
-        }
-
-
-        return null;
     }
 }

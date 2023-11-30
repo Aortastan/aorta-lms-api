@@ -23,10 +23,11 @@ use DateTime;
 use DateInterval;
 
 use App\Traits\Payment\XenditPaymentTrait;
+use App\Traits\Package\PackageTrait;
 
 class XenditController extends Controller
 {
-    use XenditPaymentTrait;
+    use XenditPaymentTrait,PackageTrait;
 
     public function create(Request $request): JsonResponse{
         $validate = [

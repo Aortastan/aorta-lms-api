@@ -2,6 +2,12 @@
 namespace App\Traits\Package;
 use Illuminate\Support\Facades\DB;
 use App\Models\Package;
+use App\Models\PurchasedPackage;
+use App\Models\MembershipHistory;
+use Ramsey\Uuid\Uuid;
+
+use DateTime;
+use DateInterval;
 
 trait PackageTrait
 {
@@ -206,5 +212,74 @@ trait PackageTrait
                 'message' => $e,
             ], 404);
         }
+    }
+
+    // insert purchased package
+    public function purchasedPackages($transaction_uuid, $user_uuid, $packages){
+
+        $purchasedPackages = [];
+        foreach ($packages as $index => $package) {
+            $purchasedPackages[] = [
+                'uuid' => Uuid::uuid4()->toString(),
+                'transaction_uuid' => $transaction_uuid,
+                'package_uuid' => $package['package_uuid'],
+                'user_uuid' => $user_uuid,
+            ];
+        }
+
+        if(count($purchasedPackages) > 0){
+            PurchasedPackage::insert($purchasedPackages);
+        }
+    }
+
+    // insert membership package
+    public function membershipPackages($transaction_uuid, $user_uuid, $packages){
+        $membershipPackages = [];
+        $now = new DateTime();
+        foreach ($packages as $index => $package) {
+            if($package['type_of_purchase'] == 'one month'){
+                $now->add(new DateInterval('P1M'));
+            }elseif($package['type_of_purchase'] == 'three months'){
+                $now->add(new DateInterval('P3M'));
+            }elseif($package['type_of_purchase'] == 'six months'){
+                $now->add(new DateInterval('P6M'));
+            }
+            elseif($package['type_of_purchase'] == 'one year'){
+                $now->add(new DateInterval('P1Y'));
+            }
+
+            $membershipPackages[] = [
+                'uuid' => Uuid::uuid4()->toString(),
+                'transaction_uuid' => $transaction_uuid,
+                'user_uuid' => $user_uuid,
+                'package_uuid' => $package['package_uuid'],
+                'expired_date' => $now->format('Y-m-d H:i:s'),
+            ];
+
+            if(count($membershipPackages) > 0){
+                MembershipHistory::insert($membershipPackages);
+            }
+        }
+    }
+
+    public function checkAvailablePackage($uuid){
+        $getPackage = Package::where([
+            'uuid' => $uuid,
+        ])->first();
+
+        return $getPackage;
+    }
+
+    public function checkPurchasedPackage($request, $package_uuid, $user_uuid){
+        $purchasedPackage = PurchasedPackage::where(['package_uuid' => $package_uuid, 'user_uuid' => $user_uuid])->first();
+
+        if($purchasedPackage){
+            return response()->json([
+                'message' => "You've already bought this item",
+            ], 422);
+        }
+
+
+        return null;
     }
 }
