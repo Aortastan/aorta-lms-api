@@ -20,57 +20,80 @@ use Illuminate\Support\Str;
 use App\Traits\Admin\Question\CreateUpdateQuestionTrait;
 use App\Traits\Admin\Question\QuestionValidationRuleTrait;
 use App\Traits\SubjectValidationTrait;
+use App\Traits\Question\QuestionTrait;
 
 class QuestionController extends Controller
 {
-    use SubjectValidationTrait, QuestionValidationRuleTrait, CreateUpdateQuestionTrait;
+    use SubjectValidationTrait, QuestionValidationRuleTrait, CreateUpdateQuestionTrait, QuestionTrait;
 
     public function index(Request $request){
-        try{
+        $search = "";
+        $question_type = "";
+        $type = "";
+        $status = "";
+        $orderBy = "";
+        $order = "";
+        $subject_uuid = "";
 
-            $search = "";
-
-            $questions = DB::table('questions')->select('questions.uuid', 'questions.title', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.type', 'questions.status', 'subjects.name as subject_name', 'users.name as author_name', 'users.avatar as author_image')
-                ->join('users', 'questions.author_uuid', '=', 'users.uuid')
-                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid');
-
-            if(isset($_GET['search'])){
-                $questions->where('questions.title', 'LIKE', '%'.$_GET['search'].'%');
-            }
-
-            if(isset($_GET['question_type'])){
-                $questions->where('questions.question_type', $_GET['question_type']);
-            }
-
-            if(isset($_GET['type'])){
-                $questions->where('questions.type', $_GET['type']);
-            }
-
-            if(isset($_GET['status'])){
-                $questions->where('questions.status', $_GET['status']);
-            }
-
-            if(isset($_GET['orderBy']) && isset($_GET['order'])){
-                $orderBy = ['question_type', 'question', 'type', 'title', 'status'];
-                $order = ['asc', 'desc'];
-
-                if(in_array($_GET['orderBy'], $orderBy) && in_array($_GET['order'], $order)){
-                    $questions->orderBy('questions.' . $_GET['orderBy'], $_GET['order']);
-                }
-            }
-
-            $questions = $questions->get();
-
-            return response()->json([
-                'message' => 'Success get data',
-                'questions' => $questions,
-            ], 200);
+        if(isset($_GET['search'])){
+            $search = $_GET['search'];
         }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
+
+        if(isset($_GET['question_type'])){
+            $question_type = $_GET['question_type'];
         }
+
+        if(isset($_GET['type'])){
+            $type = $_GET['type'];
+        }
+
+        if(isset($_GET['status'])){
+            $status = $_GET['status'];
+        }
+
+        if(isset($_GET['subject_uuid'])){
+            $subject_uuid = $_GET['subject_uuid'];
+        }
+
+        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+            $orderBy = $_GET['orderBy'];
+            $order = $_GET['order'];
+        }
+
+        return $this->getQuestions($search, $question_type, $type, $status, $orderBy, $order, $subject_uuid);
+    }
+
+    public function published(Request $request){
+        $search = "";
+        $question_type = "";
+        $type = "";
+        $status = "Published";
+        $orderBy = "";
+        $order = "";
+        $subject_uuid = "";
+
+        if(isset($_GET['search'])){
+            $search = $_GET['search'];
+        }
+
+        if(isset($_GET['question_type'])){
+            $question_type = $_GET['question_type'];
+        }
+
+        if(isset($_GET['type'])){
+            $type = $_GET['type'];
+        }
+
+        if(isset($_GET['subject_uuid'])){
+            $subject_uuid = $_GET['subject_uuid'];
+        }
+
+        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+            $orderBy = $_GET['orderBy'];
+            $order = $_GET['order'];
+        }
+
+        return $this->getQuestions($search, $question_type, $type, $status, $orderBy, $order, $subject_uuid);
     }
 
     public function store(Request $request){
@@ -169,18 +192,62 @@ class QuestionController extends Controller
         ], 200);
     }
 
-    public function getBySubject($subject_uuid){
+    public function show(Request $request, $detail){
         try{
-            $questions = Question::
-                with('answers')
-                ->where(['subject_uuid' => $subject_uuid])
-                ->select('questions.uuid', 'questions.question_type', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.type', 'subjects.name as subject_name')
-                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
-                ->get();
+            $getQuestion = Question::where(['uuid' => $detail])->with(['answers'])->first();
+
+            if($getQuestion == null){
+                return response()->json([
+                    'message' => 'Data not found',
+                ], 404);
+            }
+
+            $getSubject = Subject::where([
+                'uuid' => $getQuestion->subject_uuid,
+            ])->first();
+            $getAuthor = User::where([
+                'uuid' => $getQuestion->author_uuid,
+            ])->first();
+
+            $answers = [];
+
+            foreach ($getQuestion->answers as $index => $answer) {
+                $have_image = 0;
+                if($answer['image']){
+                    $have_image = 1;
+                }
+                $answers[] = [
+                    'uuid' => $answer['uuid'],
+                    'answer' => $answer['answer'],
+                    'is_correct' => $answer['is_correct'],
+                    'point' => $answer['point'],
+                    'have_image' => $have_image,
+                    'image' => $answer['image'],
+                ];
+            }
+
+            $question = [
+                'uuid' => $getQuestion->uuid,
+                'question_type' => $getQuestion->question_type,
+                'title' => $getQuestion->title,
+                'question' => $getQuestion->question,
+                'subject_name' => $getSubject->name,
+                'author_name' => $getAuthor->author_name,
+                'file_path' => $getQuestion->file_path,
+                'url_path' => $getQuestion->url_path,
+                'file_size' => $getQuestion->file_size,
+                'file_duration' => $getQuestion->file_duration,
+                'type' => $getQuestion->type,
+                'status' => $getQuestion->status,
+                'different_point' => $getQuestion->different_point,
+                'point' => $getQuestion->point,
+                'hint' => $getQuestion->hint,
+                'answers' => $getQuestion->answers,
+            ];
 
             return response()->json([
                 'message' => 'Success get data',
-                'questions' => $questions,
+                'questions' => $question,
             ], 200);
         }
         catch(\Exception $e){
@@ -188,116 +255,6 @@ class QuestionController extends Controller
                 'message' => $e,
             ], 404);
         }
-    }
-
-    public function show(Request $request, $detail){
-        if($detail == 'multi choice' || $detail == 'most point' || $detail == 'single choice' || $detail == 'fill in blank' || $detail == 'true false'){
-            try{
-
-                $getQuestions = Question::
-                select('questions.uuid', 'questions.question_type', 'questions.title', 'questions.question', 'questions.file_path', 'questions.url_path', 'questions.file_size', 'questions.file_duration', 'questions.type', 'questions.different_point', 'questions.point', 'questions.hint', 'questions.status', 'subjects.name as subject_name', 'users.name as author_name')
-                ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
-                ->join('users', 'users.author_uuid', '=', 'users.uuid')
-                ->where(['questions.question_type' => $detail])
-                ->with(['answers'])
-                ->get();
-
-                $questions = [];
-                foreach ($getQuestions as $index => $question) {
-                    $questions[] = [
-                        'uuid' => $question->uuid,
-                        'subject_name' => $question->subject_name,
-                        'author_name' => $question->author_name,
-                        'title' => $question->title,
-                        'question' => $question->question,
-                        'question_type' => $question->question_type,
-                        'file_path' => $question->file_path,
-                        'url_path' => $question->url_path,
-                        'file_size' => $question->file_size,
-                        'file_duration' => $question->file_duration,
-                        'type' => $question->type,
-                        'status' => $question->status,
-                        'different_point' => $question->different_point,
-                        'point' => $question->point,
-                        'hint' => $question->hint,
-                        'answers' => $question->answers,
-                    ];
-                }
-                return response()->json([
-                    'message' => 'Success get data',
-                    'questions' => $questions,
-                ], 200);
-            }
-            catch(\Exception $e){
-                return response()->json([
-                    'message' => $e,
-                ], 404);
-            }
-        }else{
-            try{
-                $getQuestion = Question::where(['uuid' => $detail])->with(['answers'])->first();
-
-                if($getQuestion == null){
-                    return response()->json([
-                        'message' => 'Data not found',
-                    ], 404);
-                }
-
-                $getSubject = Subject::where([
-                    'uuid' => $getQuestion->subject_uuid,
-                ])->first();
-                $getAuthor = User::where([
-                    'uuid' => $getQuestion->author_uuid,
-                ])->first();
-
-                $answers = [];
-
-                foreach ($getQuestion->answers as $index => $answer) {
-                    $have_image = 0;
-                    if($answer['image']){
-                        $have_image = 1;
-                    }
-                    $answers[] = [
-                        'uuid' => $answer['uuid'],
-                        'answer' => $answer['answer'],
-                        'is_correct' => $answer['is_correct'],
-                        'point' => $answer['point'],
-                        'have_image' => $have_image,
-                        'image' => $answer['image'],
-                    ];
-                }
-
-                $question = [
-                    'uuid' => $getQuestion->uuid,
-                    'question_type' => $getQuestion->question_type,
-                    'title' => $getQuestion->title,
-                    'question' => $getQuestion->question,
-                    'subject_name' => $getSubject->name,
-                    'author_name' => $getAuthor->author_name,
-                    'file_path' => $getQuestion->file_path,
-                    'url_path' => $getQuestion->url_path,
-                    'file_size' => $getQuestion->file_size,
-                    'file_duration' => $getQuestion->file_duration,
-                    'type' => $getQuestion->type,
-                    'status' => $getQuestion->status,
-                    'different_point' => $getQuestion->different_point,
-                    'point' => $getQuestion->point,
-                    'hint' => $getQuestion->hint,
-                    'answers' => $getQuestion->answers,
-                ];
-
-                return response()->json([
-                    'message' => 'Success get data',
-                    'questions' => $question,
-                ], 200);
-            }
-            catch(\Exception $e){
-                return response()->json([
-                    'message' => $e,
-                ], 404);
-            }
-        }
-
     }
 
     public function delete(Request $request, $uuid){

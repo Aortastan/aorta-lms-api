@@ -15,106 +15,142 @@ use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Validator;
 
 use App\Traits\Admin\Test\DuplicateTrait;
+use App\Traits\Test\TestTrait;
 
 class TestController extends Controller
 {
-    use DuplicateTrait;
+    use DuplicateTrait, TestTrait;
 
     public function index(){
-        try{
-            $tests = DB::table('tests')
-                ->select('tests.uuid', 'tests.test_type', 'tests.title','tests.status', 'tests.test_category')
-                ->get();
+        $search = "";
+        $test_type = "";
+        $type = "";
+        $status = "";
+        $test_category = "";
+        $orderBy = "";
+        $order = "";
 
-            return response()->json([
-                'message' => 'Success get data',
-                'tests' => $tests,
-            ], 200);
+        if(isset($_GET['search'])){
+            $search = $_GET['search'];
         }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
+
+        if(isset($_GET['test_type'])){
+            $test_type = $_GET['test_type'];
         }
+
+        if(isset($_GET['type'])){
+            $type = $_GET['type'];
+        }
+
+        if(isset($_GET['status'])){
+            $status = $_GET['status'];
+        }
+
+        if(isset($_GET['test_category'])){
+            $test_category = $_GET['test_category'];
+        }
+
+        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+            $orderBy = $_GET['orderBy'];
+            $order = $_GET['order'];
+        }
+
+        return $this->getTests($search, $test_type, $type, $status, $test_category, $orderBy, $order);
+    }
+
+    public function published(){
+        $search = "";
+        $test_type = "";
+        $type = "";
+        $status = "Published";
+        $test_category = "";
+        $orderBy = "";
+        $order = "";
+
+        if(isset($_GET['search'])){
+            $search = $_GET['search'];
+        }
+
+        if(isset($_GET['test_type'])){
+            $test_type = $_GET['test_type'];
+        }
+
+        if(isset($_GET['type'])){
+            $type = $_GET['type'];
+        }
+
+        if(isset($_GET['test_category'])){
+            $test_category = $_GET['test_category'];
+        }
+
+        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+            $orderBy = $_GET['orderBy'];
+            $order = $_GET['order'];
+        }
+
+        return $this->getTests($search, $test_type, $type, $status, $test_category, $orderBy, $order);
     }
 
     public function show(Request $request, $uuid){
-        try{
-            if($uuid == "quiz" || $uuid == "tryout"){
-                $tests = Test::where([
-                    'test_category' => $uuid
-                ])->with(['questions'])->get();
+        $test = Test::select('uuid', 'test_type', 'title', 'status', 'test_category')
+        ->where([
+            'uuid' => $uuid
+        ])->with(['questions.question.subject'])->first();
 
-                return response()->json([
-                    'message' => 'Success get data',
-                    'tests' => $tests,
-                ], 200);
-            }else{
-                $test = Test::select('uuid', 'test_type', 'title', 'status', 'test_category')
-                ->where([
-                    'uuid' => $uuid
-                ])->with(['questions.question.subject'])->first();
-
-                if(!$test){
-                    return response()->json([
-                        'message' => 'Data not found',
-                    ], 404);
-                }
-
-                $getQuestion = [];
-                foreach ($test->questions as $key => $data) {
-                    $getQuestion[] = [
-                        'question_uuid' => $data['question']['uuid'],
-                        'question_type' => $data['question']['question_type'],
-                        'title' => $data['question']['title'],
-                        'subject' => $data['question']['subject']['name'],
-                        'type' => $data['question']['type'],
-                        'question' => $data['question']['question'],
-                        'file_path' => $data['question']['file_path'],
-                        'url_path' => $data['question']['url_path'],
-                        'file_size' => $data['question']['file_size'] . " MB",
-                        'file_duration' => $data['question']['file_duration'],
-                    ];
-                }
-
-                $response_test = [
-                    'uuid' => $test['uuid'],
-                    'test_type' => $test['test_type'],
-                    'title' => $test['title'],
-                    'status' => $test['status'],
-                    'test_category' => $test['test_category'],
-                    'questions' => $getQuestion,
-                ];
-
-
-
-                $getTestTags = TestTag::where([
-                    'test_uuid' => $test->uuid,
-                ])->with(['tag'])->get();
-
-                $testTags = [];
-                foreach ($getTestTags as $index => $tag) {
-                    $testTags[] = [
-                        'tag_uuid' => $tag->tag->uuid,
-                        'name' => $tag->tag->name,
-                    ];
-                }
-
-
-                $response_test['test_tags'] = $testTags;
-
-                return response()->json([
-                    'message' => 'Success get data',
-                    'test' => $response_test,
-                ], 200);
-            }
-        }
-        catch(\Exception $e){
+        if(!$test){
             return response()->json([
-                'message' => $e,
+                'message' => 'Data not found',
             ], 404);
         }
+
+        $getQuestion = [];
+        foreach ($test->questions as $key => $data) {
+            $getQuestion[] = [
+                'question_uuid' => $data['question']['uuid'],
+                'question_type' => $data['question']['question_type'],
+                'title' => $data['question']['title'],
+                'subject' => $data['question']['subject']['name'],
+                'type' => $data['question']['type'],
+                'question' => $data['question']['question'],
+                'file_path' => $data['question']['file_path'],
+                'url_path' => $data['question']['url_path'],
+                'file_size' => $data['question']['file_size'] . " MB",
+                'file_duration' => $data['question']['file_duration'],
+            ];
+        }
+
+        $response_test = [
+            'uuid' => $test['uuid'],
+            'test_type' => $test['test_type'],
+            'title' => $test['title'],
+            'status' => $test['status'],
+            'test_category' => $test['test_category'],
+            'questions' => $getQuestion,
+        ];
+
+
+
+        $getTestTags = TestTag::where([
+            'test_uuid' => $test->uuid,
+        ])->with(['tag'])->get();
+
+        $testTags = [];
+        foreach ($getTestTags as $index => $tag) {
+            $testTags[] = [
+                'tag_uuid' => $tag->tag->uuid,
+                'name' => $tag->tag->name,
+            ];
+        }
+
+
+        $response_test['test_tags'] = $testTags;
+
+        return response()->json([
+            'message' => 'Success get data',
+            'test' => $response_test,
+        ], 200);
     }
+
 
     public function store(Request $request): JsonResponse{
         $validate = [

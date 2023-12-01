@@ -130,8 +130,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // question management
         Route::group(['prefix' => 'questions', 'as' => 'questions.',], function () {
             Route::get('', 'Admin\QuestionController@index')->name('get');
-            Route::get('{detail}', 'Admin\QuestionController@show')->name('show'); // ambil data, bisa ambil semua question berdasarkan question_type, jika diluar question type, bisa dipakai untuk mengambil data berdasarkan uuid
-            Route::get('subject/{subject_uuid}', 'Admin\QuestionController@getBySubject')->name('get.bySubject');
+            Route::get('published', 'Admin\QuestionController@published')->name('published');
+            Route::get('{uuid}', 'Admin\QuestionController@show')->name('show');
             Route::post('', 'Admin\QuestionController@store')->name('store');
             Route::post('duplicate', 'Admin\QuestionController@duplicate')->name('duplicate');
             Route::post('upload/csv', 'Admin\QuestionController@uploadCSV')->name('upload.csv');
@@ -143,7 +143,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // test management
         Route::group(['prefix' => 'tests', 'as' => 'tests.',], function () {
             Route::get('', 'Admin\TestController@index')->name('get');
-            Route::get('{uuid}', 'Admin\TestController@show')->name('show'); // if uuid is quiz / tryout, its return list question quiz / tryout, if its not quiz/tryout, return spesific test
+            Route::get('published', 'Admin\TestController@published')->name('published');
+            Route::get('{uuid}', 'Admin\TestController@show')->name('show');
             Route::post('', 'Admin\TestController@store')->name('store');
             Route::post('duplicate/{uuid}', 'Admin\TestController@duplicate')->name('duplicate');
             Route::put('{uuid}', 'Admin\TestController@update')->name('update');
@@ -155,6 +156,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // course management
         Route::group(['prefix' => 'courses', 'as' => 'courses.',], function () {
             Route::get('', 'Admin\CourseController@index')->name('get');
+            Route::get('published', 'Admin\CourseController@published')->name('published');
             Route::get('{uuid}', 'Admin\CourseController@show')->name('show');
             Route::post('', 'Admin\CourseController@store')->name('store');
             Route::post('{uuid}', 'Admin\CourseController@update')->name('update');

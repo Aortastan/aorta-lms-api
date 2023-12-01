@@ -24,6 +24,14 @@ class StudentProgress extends Model
         'lecture_uuid',
     ];
 
+    public static function isLectureDone($lectureUuid, $userUuid)
+    {
+        return self::where([
+            'lecture_uuid' => $lectureUuid,
+            'user_uuid' => $userUuid,
+        ])->exists();
+    }
+
     protected static function boot()
     {
         parent::boot();

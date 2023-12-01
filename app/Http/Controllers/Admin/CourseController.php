@@ -17,25 +17,50 @@ use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
 use File;
 
+use App\Traits\Course\CourseTrait;
+
 class CourseController extends Controller
 {
-    public function index(){
-        try{
-            $courses = DB::table('courses')
-                ->select('courses.uuid', 'courses.title', 'courses.description', 'courses.image', 'courses.video', 'courses.number_of_meeting', 'courses.is_have_pretest_posttest', 'courses.status', 'users.name as instructor_name')
-                ->join('users', 'courses.instructor_uuid', '=', 'users.uuid')
-                ->get();
+    use CourseTrait;
 
-            return response()->json([
-                'message' => 'Success get data',
-                'courses' => $courses,
-            ], 200);
+    public function index(){
+        $search = "";
+        $status = "";
+        $orderBy = "";
+        $order = "";
+
+        if(isset($_GET['search'])){
+            $search = $_GET['search'];
         }
-        catch(\Exception $e){
-            return response()->json([
-                'message' => $e,
-            ], 404);
+
+        if(isset($_GET['status'])){
+            $status = $_GET['status'];
         }
+
+        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+            $orderBy = $_GET['orderBy'];
+            $order = $_GET['order'];
+        }
+
+        return $this->getCourses($search, $status, $orderBy, $order);
+    }
+
+    public function published(){
+        $search = "";
+        $status = "Published";
+        $orderBy = "";
+        $order = "";
+
+        if(isset($_GET['search'])){
+            $search = $_GET['search'];
+        }
+
+        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+            $orderBy = $_GET['orderBy'];
+            $order = $_GET['order'];
+        }
+
+        return $this->getCourses($search, $status, $orderBy, $order);
     }
 
     public function show(Request $request, $uuid){

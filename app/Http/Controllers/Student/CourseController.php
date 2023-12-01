@@ -11,6 +11,9 @@ use App\Models\CourseLesson;
 use App\Models\CourseTag;
 use App\Models\Course;
 use App\Models\PackageCourse;
+use App\Models\PurchasedPackage;
+use App\Models\MembershipHistory;
+use App\Models\StudentProgress;
 
 use App\Traits\Package\PackageTrait;
 
@@ -290,9 +293,11 @@ class CourseController extends Controller
         foreach ($getCourse->lessons as $index => $lesson) {
             $lesson_lectures = [];
             foreach ($lesson->lectures as $index1 => $lecture_data) {
+                $isDone = StudentProgress::isLectureDone($lecture_data->uuid, $user->uuid);
                 $lesson_lectures[] = [
                     "lecture_uuid" => $lecture_data->uuid,
                     "title" => $lecture_data->title,
+                    "is_done" => $isDone ? 1 : 0,
                 ];
             }
 
