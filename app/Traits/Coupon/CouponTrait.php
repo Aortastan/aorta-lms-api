@@ -2,6 +2,8 @@
 namespace App\Traits\Coupon;
 use App\Models\ClaimedCoupon;
 use App\Models\Coupon;
+use DateTime;
+use DateInterval;
 
 trait CouponTrait
 {

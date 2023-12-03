@@ -39,6 +39,7 @@ class CartController extends Controller
                     'price_three_months' => $cart->package->price_three_months,
                     'price_six_months' => $cart->package->price_six_months,
                     'price_one_year' => $cart->package->price_one_year,
+                    'discount' => $cart->package->discount,
                 ];
             }
 

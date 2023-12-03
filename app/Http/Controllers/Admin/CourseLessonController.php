@@ -222,7 +222,7 @@ class CourseLessonController extends Controller
                         'lesson_uuid' => $uuid,
                         'title' => $assignment['title'],
                         'description' => $assignment['description'],
-                        'status'=> 1,
+                        // 'status'=> 1,
                     ];
                 }else{
                     $assignment_uuid[] = $assignment['uuid'];

@@ -149,7 +149,7 @@ class CourseController extends Controller
             $course->course_tags = $courseTags;
 
             $coursePretestPosttest =  DB::table('pretest_posttests')
-                                    ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.test_type as test_type', 'tests.title as test_title', 'tests.test_category as test_category', 'tests.uuid as test_uuid')
+                                    ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'pretest_posttests.duration', 'tests.test_type as test_type', 'tests.title as test_title', 'tests.test_category as test_category',  'tests.uuid as test_uuid')
                                     ->join('tests', 'pretest_posttests.test_uuid', '=', 'tests.uuid')
                                     ->where('course_uuid', $uuid)
                                     ->get();

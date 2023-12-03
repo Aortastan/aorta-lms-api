@@ -46,6 +46,8 @@ trait XenditPaymentTrait
             ], 422);
         }
 
+        $total_amount = 0;
+
         foreach ($request->packages as $index => $package) {
             // cek apakah package tersebut tersedia
             $getPackage = $this->checkAvailablePackage($package['package_uuid']);
@@ -62,7 +64,7 @@ trait XenditPaymentTrait
             }
 
             $detail_amount = 0;
-            $total_amount = 0;
+
             if($getPackage->learner_accesibility == 'paid'){
                 if($package['type_of_purchase'] == 'lifetime'){
                     $detail_amount = $getPackage->price_lifetime;
@@ -82,14 +84,13 @@ trait XenditPaymentTrait
                     $totalDetailAmount = 0;
                 }
 
-                $total_amount += $detail_amount - $getPackage->discount;
-
+                $total_amount += ($detail_amount - $getPackage->discount);
                 $paid_packages[] = [
                     'package_uuid' => $getPackage->uuid,
                     'transaction_type' => $getPackage->package_type,
                     'user_uuid' => $user->uuid,
                     'type_of_purchase' => $package['type_of_purchase'],
-                    'detail_amount' => $detail_amount,
+                    'detail_amount' => $detail_amount - $getPackage->discount,
                 ];
 
             }elseif($getPackage->learner_accesibility == 'free'){
@@ -139,7 +140,6 @@ trait XenditPaymentTrait
                     'is_used' => 1,
                 ]);
             }
-
         }
 
         $transaction = Transaction::create([
@@ -224,7 +224,7 @@ trait XenditPaymentTrait
         $params = [
             'external_id' => Uuid::uuid4()->toString(),
             'amount' => $total_amount,
-            'success_redirect_url' => 'https://aortastan-5a3a6.web.app/dashboard/student/my-courses',
+            'success_redirect_url' => 'https://aortastan-5a3a6.web.app/dashboard/student/transactions',
         ];
 
         try {

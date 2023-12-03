@@ -22,7 +22,7 @@ class AssignmentController extends Controller
         try{
             $user = JWTAuth::parseToken()->authenticate();
             $getAssignment = Assignment::
-                select('uuid', 'title', 'description')
+                select('uuid', 'title', 'description', 'lesson_uuid')
                 ->where(['uuid' => $assignment_uuid])
                 ->first();
 
@@ -45,6 +45,8 @@ class AssignmentController extends Controller
             $check_package_courses = PackageCourse::where([
                 'course_uuid' => $course->uuid,
             ])->get();
+
+
 
             $package_uuids = [];
             foreach ($check_package_courses as $index => $package) {
@@ -115,7 +117,7 @@ class AssignmentController extends Controller
 
             $user = JWTAuth::parseToken()->authenticate();
             $getAssignment = Assignment::
-                select('uuid', 'title', 'description')
+                select('uuid', 'title', 'description', 'lesson_uuid')
                 ->where(['uuid' => $assignment_uuid])
                 ->first();
 
@@ -191,15 +193,17 @@ class AssignmentController extends Controller
                     'assignment_url' => $request->assignment_url,
                     'status' => "Waiting for Review",
                 ]);
+            }else{
+                $assignment = StudentAssignment::
+                    create([
+                        'student_uuid' => $user->uuid,
+                        'assignment_uuid' => $getAssignment->uuid,
+                        'assignment_url' => $request->assignment_url,
+                        'status' => "Waiting for Review",
+                    ]);
             }
 
-            $assignment = StudentAssignment::
-                create([
-                    'student_uuid' => $user->uuid,
-                    'assignment_uuid' => $getAssignment->uuid,
-                    'assignment_url' => $request->assignment_url,
-                    'status' => "Waiting for Review",
-                ]);
+
 
             return response()->json([
                 'message' => 'Success post assignment',

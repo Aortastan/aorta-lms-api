@@ -243,18 +243,19 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
         // Manage Test
         Route::group(['prefix' => 'tests', 'as' => 'test.',], function () {
-            Route::get('', 'Student\TestController@getStudentTests');
+        Route::get('', 'Student\TestController@getStudentTests');
+        Route::post('submit/{session_uuid}', 'Student\SubmitTestController@submitTest');
             // Route::get('{tryout_uuid}', 'Student\TestController@detailPurchasedTest')->name('detailPurchasedTest');
         });
         // End Manage Test
 
-        // Package
+        // Cart
         Route::group(['prefix' => 'carts', 'as' => 'cart.',], function () {
             Route::get('', 'Student\CartController@index')->name('index');
             Route::post('', 'Student\CartController@store')->name('store');
             Route::delete('{cart_uuid}', 'Student\CartController@delete')->name('delete');
         });
-        // End Package
+        // End Cart
 
         // Package
         Route::group(['prefix' => 'packages', 'as' => 'package.',], function () {

@@ -11,7 +11,7 @@ use App\Models\CourseLesson;
 use App\Models\Course;
 use App\Models\PackageCourse;
 use App\Models\PurchasedPackage;
-use App\Models\MemebershipHistory;
+use App\Models\MembershipHistory;
 use App\Models\StudentQuiz;
 use App\Models\Test;
 use App\Models\SessionTest;
