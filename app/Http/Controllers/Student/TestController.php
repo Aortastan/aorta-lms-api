@@ -130,12 +130,12 @@ class TestController extends Controller
         $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
 
         $my_tests = [];
-        $test_uuids = [];
+        $tryout_uuids = [];
         foreach ($get_test_purchased as $index => $student_test) {
-            if (!in_array($student_test->test_uuid, $test_uuids)) {
-                $test_uuids[] = $student_test->test_uuid;
+            if (!in_array($student_test->uuid, $tryout_uuids)) {
+                $tryout_uuids[] = $student_test->uuid;
                 $my_tests[] = [
-                    "test_uuid" => $student_test->test_uuid,
+                    "tryout_uuid" => $student_test->uuid,
                     "type" => "Lifetime",
                     "title" => $student_test->test->title,
                     'test_type' => $student_test->test->test_type,
@@ -147,10 +147,10 @@ class TestController extends Controller
         $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
 
         foreach ($get_course_membership as $index => $student_test) {
-            if (!in_array($student_test->test_uuid, $test_uuids)) {
-                $test_uuids[] = $student_test->test_uuid;
+            if (!in_array($student_test->uuid, $tryout_uuids)) {
+                $tryout_uuids[] = $student_test->uuid;
                 $my_tests[] = [
-                    "test_uuid" => $student_test->test_uuid,
+                    "tryout_uuid" => $student_test->uuid,
                     "type" => "Membership",
                     "title" => $student_test->test->title,
                     'test_type' => $student_test->test->test_type,

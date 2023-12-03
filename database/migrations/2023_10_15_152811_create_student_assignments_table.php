@@ -20,7 +20,7 @@ class CreateStudentAssignmentsTable extends Migration
             $table->string('assignment_uuid');
             $table->string('assignment_url');
             $table->text('feedback')->nullable();
-            $table->boolean('status');
+            $table->string('status')->comment('Waiting for review, Revise, Done');
             $table->timestamps();
         });
     }

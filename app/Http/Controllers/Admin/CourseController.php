@@ -18,10 +18,11 @@ use Ramsey\Uuid\Uuid;
 use File;
 
 use App\Traits\Course\CourseTrait;
+use App\Traits\Course\DuplicateTrait;
 
 class CourseController extends Controller
 {
-    use CourseTrait;
+    use CourseTrait, DuplicateTrait;
 
     public function index(){
         $search = "";
@@ -61,6 +62,30 @@ class CourseController extends Controller
         }
 
         return $this->getCourses($search, $status, $orderBy, $order);
+    }
+
+    public function duplicate(Request $request, $uuid){
+        $course = Course::where(['uuid' => $uuid])->first();
+        if(!$course){
+            return response()->json([
+                'message' => 'Course not found',
+            ], 404);
+        }
+
+        $validate = [
+            'title' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        return $this->duplicateCourse($request, $uuid);
     }
 
     public function show(Request $request, $uuid){
@@ -170,6 +195,7 @@ class CourseController extends Controller
         if($request->is_have_pretest_posttest == 1){
             $validate['pretest_posttests'] = 'required|array';
             $validate['pretest_posttests.*.max_attempt'] = 'required|numeric';
+            $validate['pretest_posttests.*.duration'] = 'required|numeric';
             $validate['pretest_posttests.*.test_uuid'] = 'required';
         }
         $validator = Validator::make($request->all(), $validate);
@@ -233,6 +259,7 @@ class CourseController extends Controller
                     'course_uuid' => $course->uuid,
                     'test_uuid' => $checkTest->uuid,
                     'max_attempt' => $pretest_posttest['max_attempt'],
+                    'duration' => $pretest_posttest['duration'],
                 ];
             }
             PretestPosttest::insert($validated_pretest_posttests);
@@ -284,6 +311,7 @@ class CourseController extends Controller
             $validate['pretest_posttests'] = 'required|array';
             $validate['pretest_posttests.*.uuid'] = 'required';
             $validate['pretest_posttests.*.max_attempt'] = 'required|numeric';
+            $validate['pretest_posttests.*.duration'] = 'required|numeric';
             $validate['pretest_posttests.*.test_uuid'] = 'required';
         }
         $validator = Validator::make($request->all(), $validate);
@@ -365,6 +393,7 @@ class CourseController extends Controller
                             'course_uuid' => $checkCourse->uuid,
                             'test_uuid' => $test['test_uuid'],
                             'max_attempt' => $test['max_attempt'],
+                            'duration' => $test['duration'],
                         ];
                 }else{
                     $pretestUuid[] = $checkPretestPosttest->uuid;
@@ -372,6 +401,7 @@ class CourseController extends Controller
                     $validatedPretest=[
                         'test_uuid' => $test['test_uuid'],
                         'max_attempt' => $test['max_attempt'],
+                        'duration' => $test['duration'],
                     ];
                     PretestPosttest::where('uuid', $checkPretestPosttest->uuid)->update($validatedPretest);
                 }

@@ -18,6 +18,7 @@ class CreatePretestPosttestsTable extends Migration
             $table->uuid('uuid')->unique();
             $table->string('course_uuid');
             $table->string('test_uuid');
+            $table->string('duration');
             $table->integer('max_attempt');
             $table->timestamps();
         });

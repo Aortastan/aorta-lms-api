@@ -16,9 +16,14 @@ class CreateSessionTestsTable extends Migration
         Schema::create('session_tests', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
+            $table->string('user_uuid');
+            $table->string('duration_left');
+            $table->string('lesson_quiz_uuid')->nullable();
+            $table->string('pretest_posttest_uuid')->nullable();
+            $table->string('package_test_uuid')->nullable();
             $table->string('type_test')->comment('tryout, quiz, pretest posttest');
             $table->string('test_uuid');
-            $table->text('answer_data');
+            $table->text('data_question');
             $table->timestamps();
         });
     }

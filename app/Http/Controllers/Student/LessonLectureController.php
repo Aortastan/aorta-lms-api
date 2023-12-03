@@ -11,58 +11,15 @@ use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\LessonLecture;
 use App\Models\StudentProgress;
+use App\Models\PackageCourse;
+use App\Models\PurchasedPackage;
+use App\Models\MembershipHistory;
 
 class LessonLectureController extends Controller
 {
-    public function show($package_uuid, $course_uuid, $lesson_uuid, $lecture_uuid){
+    public function show($lecture_uuid){
         try{
             $user = JWTAuth::parseToken()->authenticate();
-            $getPackage = Package::
-                where(['uuid' => $package_uuid])
-                ->first();
-
-            if(!$getPackage){
-                return response()->json([
-                    'message' => "Package not found",
-                ], 404);
-            }
-
-            $check_purchased_package = DB::table('purchased_packages')
-                ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                ->first();
-
-            if(!$check_purchased_package){
-                $check_membership_history = DB::table('membership_histories')
-                    ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                    ->whereDate('membership_histories.expired_date', '>', now())
-                    ->first();
-
-                if(!$check_membership_history){
-                    return response()->json([
-                        'message' => "You haven't purchased this package yet",
-                    ], 404);
-                }
-            }
-
-            $getCourse = Course::
-                where(['uuid' => $course_uuid])
-                ->first();
-
-            if(!$getCourse){
-                return response()->json([
-                    'message' => "Course not found",
-                ], 404);
-            }
-
-            $getLesson = CourseLesson::
-                where(['uuid' => $lesson_uuid])
-                ->first();
-
-            if(!$getLesson){
-                return response()->json([
-                    'message' => "Lesson not found",
-                ], 404);
-            }
 
             $getLecture = LessonLecture::
                 where(['uuid' => $lecture_uuid])
@@ -74,14 +31,56 @@ class LessonLectureController extends Controller
                 ], 404);
             }
 
+            $getLesson = CourseLesson::
+                where(['uuid' => $getLecture->lesson_uuid])
+                ->first();
+
+            // cek apakah course uuid tersebut ada
+            $course = Course::where([
+                'uuid' => $getLesson->course_uuid,
+            ])->first();
+
+            // cek package mana aja yang menyimpan course tersebut
+            $check_package_courses = PackageCourse::where([
+                'course_uuid' => $course->uuid,
+            ])->get();
+
+            $package_uuids = [];
+            foreach ($check_package_courses as $index => $package) {
+                $package_uuids[] = $package->package_uuid;
+            }
+
+            if(count($package_uuids) <= 0){
+                return response()->json([
+                    'message' => "Package course not found",
+                ]);
+            }
+
+            // cek apakah user pernah membeli lifetime package tersebut
+            $check_purchased_package = PurchasedPackage::where([
+                "user_uuid" => $user->uuid,
+            ])->whereIn("package_uuid", $package_uuids)->first();
+
+            // jika ternyata tidak ada, maka sekarang cek di membership
+            if($check_purchased_package == null){
+                $check_membership_package = MembershipHistory::where([
+                    "user_uuid" => $user->uuid,
+                ])
+                ->whereDate('expired_date', '>', now())
+                ->whereIn("package_uuid", $package_uuids)->first();
+
+                if($check_membership_package == null){
+                    return response()->json([
+                        'message' => 'You can\'t access this course',
+                    ]);
+                }
+            }
+
             $lecture = [];
 
             if($getLecture){
                 $lecture= [
                     "lecture_uuid" => $lecture_uuid,
-                    "lesson_uuid" => $lesson_uuid,
-                    "package_uuid" => $package_uuid,
-                    "course_uuid" => $course_uuid,
                     "title" => $getLecture->title,
                     "body" => $getLecture->body,
                     "file_path" => $getLecture->file_path,
@@ -94,18 +93,16 @@ class LessonLectureController extends Controller
 
             $check_student_progress = StudentProgress::where([
                 'user_uuid' => $user->uuid,
-                'package_uuid' => $package_uuid,
-                'course_uuid' => $course_uuid,
-                'lesson_uuid' => $lesson_uuid,
+                'course_uuid' => $course->uuid,
+                'lesson_uuid' => $getLesson->uuid,
                 'lecture_uuid' => $lecture_uuid,
             ])->first();
 
             if(!$check_student_progress){
                 StudentProgress::create([
                     'user_uuid' => $user->uuid,
-                    'package_uuid' => $package_uuid,
-                    'course_uuid' => $course_uuid,
-                    'lesson_uuid' => $lesson_uuid,
+                    'course_uuid' => $course->uuid,
+                    'lesson_uuid' => $getLesson->uuid,
                     'lecture_uuid' => $lecture_uuid,
                 ]);
             }

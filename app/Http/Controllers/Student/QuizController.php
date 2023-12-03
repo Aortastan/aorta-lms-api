@@ -10,35 +10,29 @@ use App\Models\LessonQuiz;
 use App\Models\CourseLesson;
 use App\Models\Course;
 use App\Models\PackageCourse;
+use App\Models\PurchasedPackage;
+use App\Models\MemebershipHistory;
 use App\Models\StudentQuiz;
 use App\Models\Test;
+use App\Models\SessionTest;
 use App\Models\QuestionTest;
+use App\Models\Question;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
 
 class QuizController extends Controller
 {
-    public function index($package_uuid, $quiz_uuid){
+    public function index($quiz_uuid){
         try{
             $user = JWTAuth::parseToken()->authenticate();
-            $getPackage = Package::
-                where(['uuid' => $package_uuid])
-                ->first();
-
-            if(!$getPackage){
-                return response()->json([
-                    'message' => "Package not found",
-                ], 404);
-            }
-
             $getQuiz = LessonQuiz::
-                select('uuid', 'name', 'description', 'duration', 'max_attempt')
+                select('uuid', 'title', 'lesson_uuid', 'description', 'duration', 'max_attempt')
                 ->where(['uuid' => $quiz_uuid])
                 ->first();
 
             if(!$getQuiz){
                 return response()->json([
-                    'message' => "Assignment not found",
+                    'message' => "Quiz not found",
                 ], 404);
             }
 
@@ -46,38 +40,11 @@ class QuizController extends Controller
                 where(['uuid' => $getQuiz->lesson_uuid])
                 ->first();
 
-            $getCourse = Course::
-                where(['uuid' => $getLesson->course_uuid])
-                ->first();
+            $checkCourseIsPurchasedOrMembership = $this->checkCourseIsPurchasedOrMembership($user, $getLesson->course_uuid);
 
-            $getPackageCourse = PackageCourse::where([
-                'package_uuid' => $getPackage->uuid,
-                'course_uuid' => $getCourse->uuid,
-            ])->first();
-
-            if(!$getAssignment){
-                return response()->json([
-                    'message' => "Package or assignment not valid",
-                ], 404);
+            if($checkCourseIsPurchasedOrMembership != null){
+                return $checkCourseIsPurchasedOrMembership;
             }
-
-            $check_purchased_package = DB::table('purchased_packages')
-                ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                ->first();
-
-            if(!$check_purchased_package){
-                $check_membership_history = DB::table('membership_histories')
-                    ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                    ->whereDate('membership_histories.expired_date', '>', now())
-                    ->first();
-
-                if(!$check_membership_history){
-                    return response()->json([
-                        'message' => "You haven't purchased this package yet",
-                    ], 404);
-                }
-            }
-
 
 
             $quizzes = StudentQuiz::
@@ -99,6 +66,51 @@ class QuizController extends Controller
                 'message' => $e,
             ], 404);
         }
+    }
+
+    public function checkCourseIsPurchasedOrMembership($user, $course_uuid){
+        // cek apakah course uuid tersebut ada
+        $course = Course::where([
+            'uuid' => $course_uuid,
+        ])->first();
+
+        // cek package mana aja yang menyimpan course tersebut
+        $check_package_courses = PackageCourse::where([
+            'course_uuid' => $course->uuid,
+        ])->get();
+
+        $package_uuids = [];
+        foreach ($check_package_courses as $index => $package) {
+            $package_uuids[] = $package->package_uuid;
+        }
+
+        if(count($package_uuids) <= 0){
+            return response()->json([
+                'message' => "Package course not found",
+            ]);
+        }
+
+        // cek apakah user pernah membeli lifetime package tersebut
+        $check_purchased_package = PurchasedPackage::where([
+            "user_uuid" => $user->uuid,
+        ])->whereIn("package_uuid", $package_uuids)->first();
+
+        // jika ternyata tidak ada, maka sekarang cek di membership
+        if($check_purchased_package == null){
+            $check_membership_package = MembershipHistory::where([
+                "user_uuid" => $user->uuid,
+            ])
+            ->whereDate('expired_date', '>', now())
+            ->whereIn("package_uuid", $package_uuids)->first();
+
+            if($check_membership_package == null){
+                return response()->json([
+                    'message' => 'You can\'t access this course',
+                ]);
+            }
+        }
+
+        return null;
     }
 
     public function submit(Request $request, $package_uuid, $quiz_uuid){
@@ -128,7 +140,7 @@ class QuizController extends Controller
             }
 
             $getQuiz = LessonQuiz::
-                select('uuid', 'name', 'description', 'duration', 'max_attempt')
+                select('uuid', 'title', 'description', 'duration', 'max_attempt')
                 ->where(['uuid' => $quiz_uuid])
                 ->first();
 
@@ -223,83 +235,154 @@ class QuizController extends Controller
         }
     }
 
-    public function takeQuiz($package_uuid, $quiz_uuid){
-        $user = JWTAuth::parseToken()->authenticate();
-            $getPackage = Package::
-                where(['uuid' => $package_uuid])
-                ->first();
+    public function takeQuiz($quiz_uuid){
+        try{
+            $user = JWTAuth::parseToken()->authenticate();
+        $getQuiz = LessonQuiz::
+            select('uuid', 'title', 'lesson_uuid', 'test_uuid', 'description', 'duration', 'max_attempt')
+            ->where(['uuid' => $quiz_uuid])
+            ->first();
 
-            if(!$getPackage){
-                return response()->json([
-                    'message' => "Package not found",
-                ], 404);
-            }
-
-            $getQuiz = LessonQuiz::
-                select('uuid', 'name', 'description', 'duration', 'max_attempt')
-                ->where(['uuid' => $quiz_uuid])
-                ->with(['question', 'question.answer'])
-                ->first();
-
-            if(!$getQuiz){
-                return response()->json([
-                    'message' => "Assignment not found",
-                ], 404);
-            }
-
-            $getLesson = CourseLesson::
-                where(['uuid' => $getQuiz->lesson_uuid])
-                ->first();
-
-            $getCourse = Course::
-                where(['uuid' => $getLesson->course_uuid])
-                ->first();
-
-            $getPackageCourse = PackageCourse::where([
-                'package_uuid' => $getPackage->uuid,
-                'course_uuid' => $getCourse->uuid,
-            ])->first();
-
-            if(!$getAssignment){
-                return response()->json([
-                    'message' => "Package or assignment not valid",
-                ], 404);
-            }
-
-            $check_purchased_package = DB::table('purchased_packages')
-                ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                ->first();
-
-            if(!$check_purchased_package){
-                $check_membership_history = DB::table('membership_histories')
-                    ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                    ->whereDate('membership_histories.expired_date', '>', now())
-                    ->first();
-
-                if(!$check_membership_history){
-                    return response()->json([
-                        'message' => "You haven't purchased this package yet",
-                    ], 404);
-                }
-            }
-
+        if(!$getQuiz){
             return response()->json([
-                'message' => "Success get data",
-                'question' => $getQuiz,
+                'message' => "Quiz not found",
             ], 404);
-    }
+        }
 
-    public function show($student_quiz_uuid){
-        $user = JWTAuth::parseToken()->authenticate();
+        $getLesson = CourseLesson::
+            where(['uuid' => $getQuiz->lesson_uuid])
+            ->first();
 
-        $student_quiz = StudentQuiz::where([
-            'uuid' => $student_quiz_uuid,
-            'user_id' => $user->id,
-        ])->with(['question', 'question.answer'])->first();
+        // cek apakah course tersebut sudah pernah dibeli atau belum
+        $checkCourseIsPurchasedOrMembership = $this->checkCourseIsPurchasedOrMembership($user, $getLesson->course_uuid);
+        if($checkCourseIsPurchasedOrMembership != null){
+            return $checkCourseIsPurchasedOrMembership;
+        }
+
+        // cek apakah quiz sudah melewati max attempt
+        $checkQuizMaxAttempt = $this->checkQuizMaxAttempt($user, $getQuiz);
+        if($checkQuizMaxAttempt != null){
+            return $checkQuizMaxAttempt;
+        }
+
+        // cek session
+        $sessionTest = $this->checkQuizSession($user, $getQuiz);
+
+        $questions = [];
+
+        $data_questions = json_decode($sessionTest->data_question);
+
+
+
+        foreach ($data_questions as $index => $data) {
+            $get_question = Question::where([
+                'uuid' => $data->question_uuid,
+            ])->with(['answers'])->first();
+
+            $answers = [];
+
+            foreach ($get_question->answers as $index1 => $answer) {
+                $is_selected = 0;
+                if(in_array($answer['uuid'], $data->answer_uuid)){
+                    $is_selected = 1;
+                }
+
+                $answers[]=[
+                    'answer_uuid' => $answer['uuid'],
+                    'answer' => $answer['answer'],
+                    'image' => $answer['image'],
+                    'is_selected' => $is_selected,
+                ];
+            }
+
+            $questions[] = [
+                'question_uuid' => $data->question_uuid,
+                'status' => $data->status,
+                'title' => $get_question->title,
+                'question_type' => $get_question->question_type,
+                'question' => $get_question->question,
+                'file_path' => $get_question->file_path,
+                'url_path' => $get_question->url_path,
+                'type' => $get_question->type,
+                'hint' => $get_question->hint,
+                'answers' => $answers,
+            ];
+        }
+
+        $quiz = [
+            'session_uuid' => $sessionTest->uuid,
+            'duration_left' => $sessionTest->duration_left,
+            'questions' => $questions,
+        ];
 
         return response()->json([
             'message' => "Success get data",
-            'quiz' => $student_quiz,
-        ], 200);
+            'question' => $quiz,
+        ], 404);
+        }catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
+
+    public function checkQuizMaxAttempt($user, $quiz){
+        $studentQuiz = StudentQuiz::where([
+            'user_uuid' => $user->uuid,
+            'lesson_quiz_uuid' => $quiz->uuid,
+        ])->count();
+
+        if($studentQuiz >= $quiz->max_attempt){
+            return response()->json([
+                'success' => false,
+                'message' => "You have passed the maximum number of attempts",
+            ]);
+        }
+        return null;
+    }
+
+    public function checkQuizSession($user, $quiz){
+        $sessionTest = SessionTest::where([
+            'user_uuid' => $user->uuid,
+            'lesson_quiz_uuid' => $quiz->uuid,
+            'type_test' => 'quiz',
+        ])->first();
+
+        if($sessionTest == null){
+            $sessionTest = $this->createQuizSession($user, $quiz);
+        }
+
+        return $sessionTest;
+    }
+    public function createQuizSession($user, $quiz){
+        try{
+            $data_question = [];
+        $get_test = Test::where([
+            'uuid' => $quiz->test_uuid
+        ])->with(['questions'])->first();
+
+        foreach ($get_test->questions as $index => $data) {
+            $data_question[] = [
+                'question_uuid' => $data->question_uuid,
+                'answer_uuid' => [],
+                'status' => '',
+            ];
+        }
+
+        $sessionTest = SessionTest::create([
+            'user_uuid' => $user->uuid,
+            'duration_left' => $quiz->duration,
+            'lesson_quiz_uuid' => $quiz->uuid,
+            'type_test' => 'quiz',
+            'test_uuid' => $quiz->test_uuid,
+            'data_question' => json_encode($data_question),
+        ]);
+
+        return $sessionTest;
+        }catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
     }
 }

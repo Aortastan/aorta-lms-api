@@ -282,6 +282,7 @@ class CourseController extends Controller
         $pretest_posttests = [];
         foreach ($getCourse->pretestPosttests as $index => $test) {
             $pretest_posttests[] = [
+                "pretest_posttest_uuid" => $test->uuid,
                 "title" => $test->test->title,
                 "test_uuid" => $test->test->uuid,
                 "test_category" => $test->test->test_category,
@@ -304,6 +305,7 @@ class CourseController extends Controller
             $quizzes = [];
             foreach ($lesson->quizzes as $index1 => $quiz) {
                 $quizzes[] = [
+                    "quiz_uuid" => $quiz->uuid,
                     "test_uuid" => $quiz->test_uuid,
                     'title' => $quiz->title,
                     'description' => $quiz->description,

@@ -12,23 +12,15 @@ use App\Models\CourseLesson;
 use App\Models\Course;
 use App\Models\PackageCourse;
 use App\Models\StudentAssignment;
+use App\Models\PurchasedPackage;
+use App\Models\MembershipHistory;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AssignmentController extends Controller
 {
-    public function index($package_uuid, $assignment_uuid){
+    public function index($assignment_uuid){
         try{
             $user = JWTAuth::parseToken()->authenticate();
-            $getPackage = Package::
-                where(['uuid' => $package_uuid])
-                ->first();
-
-            if(!$getPackage){
-                return response()->json([
-                    'message' => "Package not found",
-                ], 404);
-            }
-
             $getAssignment = Assignment::
                 select('uuid', 'title', 'description')
                 ->where(['uuid' => $assignment_uuid])
@@ -44,46 +36,53 @@ class AssignmentController extends Controller
                 where(['uuid' => $getAssignment->lesson_uuid])
                 ->first();
 
-            $getCourse = Course::
-                where(['uuid' => $getLesson->course_uuid])
-                ->first();
-
-            $getPackageCourse = PackageCourse::where([
-                'package_uuid' => $getPackage->uuid,
-                'course_uuid' => $getCourse->uuid,
+            // cek apakah course uuid tersebut ada
+            $course = Course::where([
+                'uuid' => $getLesson->course_uuid,
             ])->first();
 
-            if(!$getAssignment){
-                return response()->json([
-                    'message' => "Package or assignment not valid",
-                ], 404);
+            // cek package mana aja yang menyimpan course tersebut
+            $check_package_courses = PackageCourse::where([
+                'course_uuid' => $course->uuid,
+            ])->get();
+
+            $package_uuids = [];
+            foreach ($check_package_courses as $index => $package) {
+                $package_uuids[] = $package->package_uuid;
             }
 
-            $check_purchased_package = DB::table('purchased_packages')
-                ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                ->first();
+            if(count($package_uuids) <= 0){
+                return response()->json([
+                    'message' => "Package course not found",
+                ]);
+            }
 
-            if(!$check_purchased_package){
-                $check_membership_history = DB::table('membership_histories')
-                    ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                    ->whereDate('membership_histories.expired_date', '>', now())
-                    ->first();
+            // cek apakah user pernah membeli lifetime package tersebut
+            $check_purchased_package = PurchasedPackage::where([
+                "user_uuid" => $user->uuid,
+            ])->whereIn("package_uuid", $package_uuids)->first();
 
-                if(!$check_membership_history){
+            // jika ternyata tidak ada, maka sekarang cek di membership
+            if($check_purchased_package == null){
+                $check_membership_package = MembershipHistory::where([
+                    "user_uuid" => $user->uuid,
+                ])
+                ->whereDate('expired_date', '>', now())
+                ->whereIn("package_uuid", $package_uuids)->first();
+
+                if($check_membership_package == null){
                     return response()->json([
-                        'message' => "You haven't purchased this package yet",
-                    ], 404);
+                        'message' => 'You can\'t access this course',
+                    ]);
                 }
             }
-
-
 
             $assignment = StudentAssignment::
             select('uuid', 'assignment_url', 'feedback', 'status')
             ->where([
                 'student_uuid' => $user->uuid,
                 'assignment_uuid' => $getAssignment->uuid,
-            ])->get();
+            ])->first();
 
             $getAssignment['student_assignments'] = $assignment;
 
@@ -99,7 +98,7 @@ class AssignmentController extends Controller
         }
     }
 
-    public function store(Request $request, $package_uuid, $assignment_uuid){
+    public function store(Request $request, $assignment_uuid){
         try{
             $validate = [
                 'assignment_url' => 'required|string',
@@ -115,16 +114,6 @@ class AssignmentController extends Controller
             }
 
             $user = JWTAuth::parseToken()->authenticate();
-            $getPackage = Package::
-                where(['uuid' => $package_uuid])
-                ->first();
-
-            if(!$getPackage){
-                return response()->json([
-                    'message' => "Package not found",
-                ], 404);
-            }
-
             $getAssignment = Assignment::
                 select('uuid', 'title', 'description')
                 ->where(['uuid' => $assignment_uuid])
@@ -140,35 +129,44 @@ class AssignmentController extends Controller
                 where(['uuid' => $getAssignment->lesson_uuid])
                 ->first();
 
-            $getCourse = Course::
-                where(['uuid' => $getLesson->course_uuid])
-                ->first();
-
-            $getPackageCourse = PackageCourse::where([
-                'package_uuid' => $getPackage->uuid,
-                'course_uuid' => $getCourse->uuid,
+            // cek apakah course uuid tersebut ada
+            $course = Course::where([
+                'uuid' => $getLesson->course_uuid,
             ])->first();
 
-            if(!$getAssignment){
-                return response()->json([
-                    'message' => "Package or assignment not valid",
-                ], 404);
+            // cek package mana aja yang menyimpan course tersebut
+            $check_package_courses = PackageCourse::where([
+                'course_uuid' => $course->uuid,
+            ])->get();
+
+            $package_uuids = [];
+            foreach ($check_package_courses as $index => $package) {
+                $package_uuids[] = $package->package_uuid;
             }
 
-            $check_purchased_package = DB::table('purchased_packages')
-                ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-                ->first();
+            if(count($package_uuids) <= 0){
+                return response()->json([
+                    'message' => "Package course not found",
+                ]);
+            }
 
-            if(!$check_purchased_package){
-                $check_membership_history = DB::table('membership_histories')
-                    ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-                    ->whereDate('membership_histories.expired_date', '>', now())
-                    ->first();
+            // cek apakah user pernah membeli lifetime package tersebut
+            $check_purchased_package = PurchasedPackage::where([
+                "user_uuid" => $user->uuid,
+            ])->whereIn("package_uuid", $package_uuids)->first();
 
-                if(!$check_membership_history){
+            // jika ternyata tidak ada, maka sekarang cek di membership
+            if($check_purchased_package == null){
+                $check_membership_package = MembershipHistory::where([
+                    "user_uuid" => $user->uuid,
+                ])
+                ->whereDate('expired_date', '>', now())
+                ->whereIn("package_uuid", $package_uuids)->first();
+
+                if($check_membership_package == null){
                     return response()->json([
-                        'message' => "You haven't purchased this package yet",
-                    ], 404);
+                        'message' => 'You can\'t access this course',
+                    ]);
                 }
             }
 
@@ -178,22 +176,33 @@ class AssignmentController extends Controller
                 'assignment_uuid' => $getAssignment->uuid,
             ])->first();
 
-            if(!$checkAssignment){
-                return response()->json([
-                    'message' => "User already post the assignment",
-                ], 404);
+            if($checkAssignment){
+                if($checkAssignment->status == 'Done'){
+                    return response()->json([
+                        'message' => 'This assignment is done',
+                    ], 200);
+                }
+
+                StudentAssignment::
+                where([
+                    'student_uuid' => $user->uuid,
+                    'assignment_uuid' => $getAssignment->uuid,
+                ])->update([
+                    'assignment_url' => $request->assignment_url,
+                    'status' => "Waiting for Review",
+                ]);
             }
 
             $assignment = StudentAssignment::
-            create([
-                'student_uuid' => $user->uuid,
-                'assignment_uuid' => $getAssignment->uuid,
-                'assignment_url' => $request->assignment_url,
-                'status' => 0,
-            ]);
+                create([
+                    'student_uuid' => $user->uuid,
+                    'assignment_uuid' => $getAssignment->uuid,
+                    'assignment_url' => $request->assignment_url,
+                    'status' => "Waiting for Review",
+                ]);
 
             return response()->json([
-                'message' => 'Success post data',
+                'message' => 'Success post assignment',
             ], 200);
         }
         catch(\Exception $e){

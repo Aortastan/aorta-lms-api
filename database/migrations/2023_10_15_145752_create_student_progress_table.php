@@ -17,7 +17,6 @@ class CreateStudentProgressTable extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('user_uuid');
-            $table->string('package_uuid');
             $table->string('course_uuid');
             $table->string('lesson_uuid');
             $table->string('lecture_uuid');

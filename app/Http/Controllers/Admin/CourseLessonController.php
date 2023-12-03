@@ -10,6 +10,7 @@ use App\Models\Course;
 use App\Models\User;
 use App\Models\Test;
 use App\Models\LessonQuiz;
+use App\Models\LessonLecture;
 use App\Models\Assignment;
 use App\Models\CourseLesson;
 use Illuminate\Support\Facades\Validator;
@@ -246,4 +247,57 @@ class CourseLessonController extends Controller
 
     }
 
+    public function delete(Request $request, $uuid){
+        $get_lesson = CourseLesson::where([
+            'uuid' => $uuid,
+        ])->first();
+
+        if($get_lesson == null){
+            return response()->json([
+                'message' => 'Data not found',
+            ]);
+        }
+
+        $get_course = Course::where([
+            'uuid' => $get_lesson->course_uuid,
+        ])->first();
+
+        if($get_course->status == 'Published'){
+            return response()->json([
+                'message' => 'You cannot delete it, this course has published'
+            ]);
+        }
+
+        $lectures = LessonLecture::where([
+            'lesson_uuid' => $get_lesson->uuid,
+        ])->get();
+
+        foreach ($lectures as $index => $lecture) {
+            if($lecture->file_path){
+                if (File::exists(public_path('storage/'.$lecture->file_path))) {
+                    File::delete(public_path('storage/'.$lecture->file_path));
+                }
+            }
+        }
+
+        LessonQuiz::where([
+            'lesson_uuid' => $get_lesson->uuid,
+        ])->delete();
+
+        Assignment::where([
+            'lesson_uuid' => $get_lesson->uuid,
+        ])->delete();
+
+        LessonLecture::where([
+            'lesson_uuid' => $get_lesson->uuid,
+        ])->delete();
+
+        CourseLesson::where([
+            'uuid' => $uuid,
+        ])->delete();
+
+        return response()->json([
+            'message' => 'success delete lesson'
+        ], 200);
+    }
 }

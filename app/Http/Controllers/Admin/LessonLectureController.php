@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use App\Models\PretestPosttest;
 use App\Models\CourseLesson;
+use App\Models\Course;
 use App\Models\LessonLecture;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
@@ -149,5 +150,45 @@ class LessonLectureController extends Controller
             'message' => 'Success update lecture'
         ], 200);
 
+    }
+
+    public function delete(Request $request, $uuid){
+        $get_lecture = LessonLecture::where([
+            'uuid' => $uuid,
+        ])->first();
+
+        if($get_lecture == null){
+            return response()->json([
+                'message' => 'Data not found',
+            ]);
+        }
+
+        $get_lesson = CourseLesson::where([
+            'uuid' => $get_lecture->lesson_uuid,
+        ])->first();
+
+        $get_course = Course::where([
+            'uuid' => $get_lesson->course_uuid,
+        ])->first();
+
+        if($get_course->status == 'Published'){
+            return response()->json([
+                'message' => 'You cannot delete it, this course has published'
+            ]);
+        }
+
+        if($get_lecture->file_path){
+            if (File::exists(public_path('storage/'.$get_lecture->file_path))) {
+                File::delete(public_path('storage/'.$get_lecture->file_path));
+            }
+        }
+
+        LessonLecture::where([
+            'uuid' => $uuid,
+        ])->delete();
+
+        return response()->json([
+            'message' => 'success delete lecture'
+        ], 200);
     }
 }

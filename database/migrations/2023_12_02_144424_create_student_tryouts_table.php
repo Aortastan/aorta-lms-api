@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateAssignmentsTable extends Migration
+class CreateStudentTryoutsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,13 @@ class CreateAssignmentsTable extends Migration
      */
     public function up()
     {
-        Schema::create('assignments', function (Blueprint $table) {
+        Schema::create('student_tryouts', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->string('lesson_uuid');
-            $table->string('title');
-            $table->text('description')->nullable();
+            $table->text('data_question');
+            $table->string('user_uuid');
+            $table->string('package_test_uuid');
+            $table->integer('score');
             $table->timestamps();
         });
     }
@@ -30,6 +31,6 @@ class CreateAssignmentsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('assignments');
+        Schema::dropIfExists('student_tryouts');
     }
 }

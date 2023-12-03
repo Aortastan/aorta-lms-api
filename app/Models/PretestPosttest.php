@@ -21,6 +21,7 @@ class PretestPosttest extends Model
        'test_uuid',
        'course_uuid',
        'max_attempt',
+       'duration',
     ];
 
     public function test()

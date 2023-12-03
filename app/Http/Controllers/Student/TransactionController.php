@@ -26,6 +26,7 @@ class TransactionController extends Controller
                         "type_of_purchase" => $detail->type_of_purchase,
                         "name" => $detail->package['name'],
                         "image" => $detail->package['image'],
+                        "price" => $detail->detail_amount,
                     ];
                 }
                 $transactions[] = [

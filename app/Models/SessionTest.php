@@ -18,9 +18,14 @@ class SessionTest extends Model
      * @var array
      */
     protected $fillable = [
+        'user_uuid',
+        'duration_left',
+        'lesson_quiz_uuid',
+        'pretest_posttest_uuid',
+        'package_test_uuid',
         'type_test',
         'test_uuid',
-        'answer_data',
+        'data_question',
     ];
 
     protected static function boot()
