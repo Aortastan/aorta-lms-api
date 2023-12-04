@@ -72,6 +72,7 @@ class PackageController extends Controller
                     "attempt" => $list['attempt'],
                     "passing_grade" => $list['passing_grade'],
                     "duration" => $list['duration'],
+                    "test_type" => $list['test_type'],
                 ];
             }
         }
@@ -362,6 +363,7 @@ class PackageController extends Controller
                 'lists.*.attempt' => 'required',
                 'lists.*.passing_grade' => 'required|numeric',
                 'lists.*.duration' => 'required',
+                'lists.*.test_type' => 'required|in:classical,IRT',
             ];
 
             $validator = Validator::make($request->all(), $validate);
@@ -393,6 +395,7 @@ class PackageController extends Controller
                             'attempt' => $list['attempt'],
                             'passing_grade' => $list['passing_grade'],
                             'duration' => $list['duration'],
+                            'test_type' => $list['test_type'],
                         ];
                 }else{
                     $listsUuid[] = $list['uuid'];
@@ -400,6 +403,7 @@ class PackageController extends Controller
                         'attempt' => $list['attempt'],
                         'passing_grade' => $list['passing_grade'],
                         'duration' => $list['duration'],
+                        'test_type' => $list['test_type'],
                     ];
                     PackageTest::where('uuid', $list['uuid'])->update($validatedList);
                 }

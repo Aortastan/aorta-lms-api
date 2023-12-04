@@ -193,7 +193,7 @@ class PretestPosttestController extends Controller
         return response()->json([
             'message' => "Success get data",
             'question' => $test,
-        ], 404);
+        ], 200);
         }catch(\Exception $e){
             return response()->json([
                 'message' => $e,

@@ -14,6 +14,7 @@ use App\Models\PackageCourse;
 use App\Models\PurchasedPackage;
 use App\Models\MembershipHistory;
 use App\Models\StudentProgress;
+use App\Models\StudentAssignment;
 
 use App\Traits\Package\PackageTrait;
 
@@ -176,7 +177,7 @@ class CourseController extends Controller
     public function getStudentCourses(){
         $user = JWTAuth::parseToken()->authenticate();
         $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
-        $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
+        $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor', 'course.lessons'])->get();
 
         $my_courses = [];
         $course_uuids = [];
@@ -191,13 +192,14 @@ class CourseController extends Controller
                     'image' => $student_course->course->image,
                     'video' => $student_course->course->video,
                     'number_of_meeting' => $student_course->course->number_of_meeting,
+                    'number_of_lessons'=> count($student_course->course->lessons),
                     'instructor_uuid' => $student_course->course->instructor->name,
                 ];
             }
         }
 
         $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
-        $get_course_membership = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor'])->get();
+        $get_course_membership = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor', 'course.lessons'])->get();
 
         foreach ($get_course_membership as $index => $student_course) {
             if (!in_array($student_course->course_uuid, $course_uuids)) {
@@ -210,6 +212,7 @@ class CourseController extends Controller
                     'image' => $student_course->course->image,
                     'video' => $student_course->course->video,
                     'number_of_meeting' => $student_course->course->number_of_meeting,
+                    'number_of_lessons'=> count($student_course->course->lessons),
                     'instructor_uuid' => $student_course->course->instructor->name,
                 ];
             }
@@ -316,10 +319,19 @@ class CourseController extends Controller
 
             $assignments = [];
             foreach ($lesson->assignments as $index1 => $assignment) {
+                $student_assignment = StudentAssignment::where([
+                    'student_uuid' => $user->uuid,
+                    'assignment_uuid' => $assignment->uuid,
+                ])->first();
+                $status = null;
+                if($student_assignment != null){
+                    $status = $student_assignment->status;
+                }
                 $assignments[] = [
                     "assignment_uuid" => $assignment->uuid,
                     'title' => $assignment->title,
-                    'description' => $assignment->description
+                    'description' => $assignment->description,
+                    'status' => $status,
                 ];
             }
 

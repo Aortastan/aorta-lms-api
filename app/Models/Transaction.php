@@ -25,6 +25,7 @@ class Transaction extends Model
         'payment_method_uuid',
         'transaction_status',
         'url',
+        'updated_at',
     ];
 
     public function detailTransaction()

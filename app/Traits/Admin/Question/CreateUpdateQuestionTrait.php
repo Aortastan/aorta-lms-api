@@ -167,7 +167,7 @@ trait CreateUpdateQuestionTrait
 
                             $newAnswers[]=[
                                 'uuid' => Uuid::uuid4()->toString(),
-                                'question_uuid' => $question->uuid,
+                                'question_uuid' => $this->question->uuid,
                                 'answer' => $answer['answer'],
                                 'image' => $path,
                                 'is_correct' => $answer['is_correct'],

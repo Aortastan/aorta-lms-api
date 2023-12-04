@@ -152,6 +152,12 @@ trait XenditPaymentTrait
             'url' => $url,
         ]);
 
+        Transaction::where([
+            'uuid' => $transaction->uuid,
+        ])->update([
+            'updated_at' => null
+        ]);
+
         if($total_amount <= 0){
             $lifetimePackages = [];
             $membershipPackages = [];

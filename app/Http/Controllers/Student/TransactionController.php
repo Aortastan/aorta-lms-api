@@ -35,6 +35,8 @@ class TransactionController extends Controller
                     "status" => $transaction->transaction_status,
                     "url" => $transaction->url,
                     "packages" => $packages,
+                    "created_at" => $transaction->created_at,
+                    "updated_at" => $transaction->updated_at,
                 ];
             }
 

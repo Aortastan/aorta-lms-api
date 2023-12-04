@@ -23,6 +23,7 @@ class PackageTest extends Model
         'attempt',
         'passing_grade',
         'duration',
+        'test_type',
     ];
 
     public function test()

@@ -310,4 +310,19 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
         Route::post('session/{session_uuid}', 'Student\SessionController@update')->name('test.session');
     });
+
+    Route::group(['middleware' => ['auth', 'instructor', 'verified'], 'prefix' => 'instructor', 'as' => 'instructor.',], function () {
+        // Dashboard
+        Route::get('', 'Instructor\DashboardController@index')->name('get');
+        // end dashboard
+
+        // Manage Course
+        Route::group(['prefix' => 'courses', 'as' => 'course.',], function () {
+            Route::get('', 'Instructor\CourseController@index');
+            Route::get('{course_uuid}', 'Instructor\CourseController@show')->name('show');
+        });
+        // End Manage Course
+
+
+    });
 });

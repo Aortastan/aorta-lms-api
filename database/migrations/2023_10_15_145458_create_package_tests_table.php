@@ -21,6 +21,7 @@ class CreatePackageTestsTable extends Migration
             $table->integer('attempt');
             $table->integer('passing_grade');
             $table->integer('duration');
+            $table->string('test_type');
             $table->timestamps();
         });
     }

@@ -318,7 +318,7 @@ class QuizController extends Controller
         return response()->json([
             'message' => "Success get data",
             'question' => $quiz,
-        ], 404);
+        ], 200);
         }catch(\Exception $e){
             return response()->json([
                 'message' => $e,

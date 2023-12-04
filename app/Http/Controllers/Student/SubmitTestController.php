@@ -38,9 +38,9 @@ class SubmitTestController extends Controller
         $data_question = [];
         $points = 0;
 
-        foreach ($request->data_questions as $index => $data) {
+        foreach ($request->data_question as $index => $data) {
             $get_question = Question::where([
-                'uuid' => $data->question_uuid,
+                'uuid' => $data['question_uuid'],
             ])->with(['answers'])->first();
 
             if($get_question->different_point == 0){
@@ -51,7 +51,7 @@ class SubmitTestController extends Controller
             $is_true = 0;
             foreach ($get_question->answers as $index1 => $answer) {
                 $is_selected = 0;
-                if(in_array($answer['uuid'], $data->answer_uuid)){
+                if(in_array($answer['uuid'], $data['answer_uuid'])){
                     $is_selected = 1;
                 }
 
@@ -79,7 +79,7 @@ class SubmitTestController extends Controller
             }
 
             $data_question[] = [
-                "question_uuid" => $data->question_uuid,
+                "question_uuid" => $data['question_uuid'],
                 "answers" => $answers,
             ];
         }
