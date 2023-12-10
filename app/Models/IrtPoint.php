@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Models;
-use Ramsey\Uuid\Uuid;
 
+use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\Model;
 
-class StudentTryout extends Model
+class IrtPoint extends Model
 {
     public $incrementing = false; // Non-incrementing primary key
     protected $keyType = 'string'; // Primary key type is string
@@ -17,11 +17,15 @@ class StudentTryout extends Model
      * @var array
      */
     protected $fillable = [
-        'data_question',
-        'user_uuid',
         'package_test_uuid',
-        'score',
+        'data_question',
+        'total_submit',
     ];
+
+    public function package()
+    {
+        return $this->belongsTo(Package::class, 'package_uuid', 'uuid');
+    }
 
     protected static function boot()
     {

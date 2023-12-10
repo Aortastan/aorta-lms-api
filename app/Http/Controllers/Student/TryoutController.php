@@ -319,7 +319,7 @@ class TryoutController extends Controller
         $sessionTest = SessionTest::create([
             'user_uuid' => $user->uuid,
             'duration_left' => $test->duration,
-            'pretest_posttest_uuid' => $test->uuid,
+            'package_test_uuid' => $test->uuid,
             'type_test' => 'tryout',
             'test_uuid' => $test->test_uuid,
             'data_question' => json_encode($data_question),
