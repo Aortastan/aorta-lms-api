@@ -17,6 +17,7 @@ use App\Models\Test;
 use App\Models\SessionTest;
 use App\Models\QuestionTest;
 use App\Models\Question;
+use App\Models\Answer;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
 
@@ -66,6 +67,84 @@ class QuizController extends Controller
                 'message' => $e,
             ], 404);
         }
+    }
+
+    public function show(Request $request, $student_quiz_uuid){
+        $user = JWTAuth::parseToken()->authenticate();
+        $student_quiz = StudentQuiz::
+        select('uuid', 'data_question', 'score', 'lesson_quiz_uuid')
+        ->where([
+            'user_uuid' => $user->uuid,
+            'uuid' => $student_quiz_uuid,
+        ])->first();
+
+        if(!$student_quiz){
+            return response()->json([
+                'message' => "Student Quiz not found",
+            ], 404);
+        }
+
+        $getQuiz = LessonQuiz::
+            select('uuid', 'title', 'lesson_uuid', 'description', 'duration', 'max_attempt')
+            ->where(['uuid' => $student_quiz->lesson_quiz_uuid])
+            ->first();
+
+        if(!$getQuiz){
+            return response()->json([
+                'message' => "Quiz not found",
+            ], 404);
+        }
+
+        $getLesson = CourseLesson::
+            where(['uuid' => $getQuiz->lesson_uuid])
+            ->first();
+
+        $checkCourseIsPurchasedOrMembership = $this->checkCourseIsPurchasedOrMembership($user, $getLesson->course_uuid);
+
+        if($checkCourseIsPurchasedOrMembership != null){
+            return $checkCourseIsPurchasedOrMembership;
+        }
+
+        $data_question = json_decode($student_quiz->data_question);
+
+        $questions = [];
+        foreach ($data_question as $index => $data) {
+            $get_question = Question::where([
+                'uuid' => $data->question_uuid,
+            ])->first();
+
+            $answers = [];
+            foreach ($data->answers as $index => $answer) {
+                $get_answer = Answer::where([
+                    'uuid' => $answer->answer_uuid,
+                ])->first();
+
+                $answers[] = [
+                    'is_correct' => $answer->is_correct,
+                    'is_selected' => $answer->is_selected,
+                    'answer' => $get_answer->answer,
+                    'image' => $get_answer->image,
+                ];
+            }
+
+            $questions[] = [
+                'question_type' => $get_question->question_type,
+                'question' => $get_question->question,
+                'file_path' => $get_question->file_path,
+                'url_path' => $get_question->url_path,
+                'file_size' => $get_question->file_size,
+                'file_duration' => $get_question->file_duration,
+                'type' => $get_question->type,
+                'hint' => $get_question->hint,
+                'answers' => $answers,
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Success get data',
+            'score' => $student_quiz->score,
+            'questions' => $questions
+        ], 200);
     }
 
     public function checkCourseIsPurchasedOrMembership($user, $course_uuid){

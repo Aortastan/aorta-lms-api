@@ -306,36 +306,56 @@ class QuestionController extends Controller
         while (($line = fgetcsv($file)) !== false) {
 
             // validasi
-            if($line[0] != 'multiple' && $line[0] != 'most point'){
+            if (!is_string($line[0])){
                 return response()->json([
-                    'message' => 'Question type must multiple or most point',
+                    'message' => 'Title is required',
                 ], 422);
             }
-            if ($line[2] == null){
+            if($line[1] != 'multi choice' && $line[1] != 'most point' && $line[1] != 'single choice' && $line[1] != 'fill in blank' && $line[1] != 'true false'){
+                return response()->json([
+                    'message' => 'Question type not valid',
+                ], 422);
+            }
+            if ($line[3] == null){
                 return response()->json([
                     'message' => 'Question required',
                 ], 422);
             }
-            if (!is_string($line[2])){
+            if (!is_string($line[3])){
                 return response()->json([
                     'message' => 'Question must string type',
                 ], 422);
             }
-            if($line[4] != 'text' && $line[4] != 'youtube'){
+            if($line[5] != 'text' && $line[5] != 'youtube'){
                 return response()->json([
                     'message' => 'Only text / youtube allowed',
                 ], 422);
             }
 
-            if($line[4] == 'youtube'){
-                if ($line[3] == null){
+            if($line[5] == 'youtube'){
+                if ($line[4] == null){
                     return response()->json([
                         'message' => 'If type is youtube, url_path is required',
                     ], 422);
                 }
             }
+
+            if($line[6] != 1 && $line[6] != 0){
+                return response()->json([
+                    'message' => 'Only 1/0 allowed',
+                ], 422);
+            }
+
+            if($line[6] == 0){
+                if ($line[7] == null){
+                    return response()->json([
+                        'message' => 'If different point is 0, point is required',
+                    ], 422);
+                }
+            }
+
             $check_subject = Subject::where([
-                'name' => $line[1],
+                'name' => $line[2],
             ])->first();
 
             if(!$check_subject){
@@ -345,21 +365,27 @@ class QuestionController extends Controller
             }
 
             $question_uuid = Uuid::uuid4()->toString();
+            $user = JWTAuth::parseToken()->authenticate();
             // Membuat array asosiatif untuk setiap baris data
             $questionData = [
                 "uuid" => $question_uuid,
+                "author_uuid" => $user->uuid,
+                'title' => $line[0],
                 "subject_uuid" => $check_subject->uuid,
-                'question_type' => $line[0],
-                'question' => $line[2],
-                'url_path' => $line[3],
-                'type' => $line[4],
+                'question_type' => $line[1],
+                'question' => $line[3],
+                'url_path' => $line[4],
+                'type' => $line[5],
+                "different_point"=> $line[6],
+                "point" => $line[7],
+                'status' => 'Draft',
             ];
 
             $questions[] = $questionData;
 
             // Menambahkan setiap jawaban ke dalam array answers
-            for ($i = 0; $i < (count($line) - 5) / 3; $i++) {
-                $answerIndex = 5 + ($i * 3);
+            for ($i = 0; $i < (count($line) - 9) / 3; $i++) {
+                $answerIndex = 9 + ($i * 3);
 
                 if ($line[$answerIndex] == null && $line[$answerIndex + 1] == null && $line[$answerIndex + 2] == null){
                     continue;
@@ -385,15 +411,17 @@ class QuestionController extends Controller
                         'message' => 'is_correct must boolean type',
                     ], 422);
                 }
-                if ($line[$answerIndex + 2] == null){
-                    return response()->json([
-                        'message' => 'Point is required',
-                    ], 422);
-                }
-                if (!is_numeric($line[$answerIndex + 2])){
-                    return response()->json([
-                        'message' => 'Point must number type',
-                    ], 422);
+                if($line[6] == 1){
+                    if ($line[$answerIndex + 2] == null){
+                        return response()->json([
+                            'message' => 'Point is required',
+                        ], 422);
+                    }
+                    if (!is_numeric($line[$answerIndex + 2])){
+                        return response()->json([
+                            'message' => 'Point must number type',
+                        ], 422);
+                    }
                 }
 
                 $answerData = [

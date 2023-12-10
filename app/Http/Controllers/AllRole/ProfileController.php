@@ -87,12 +87,22 @@ class ProfileController extends Controller
             $path = $this->user->avatar;
         }
 
+        $cleanedNumber = preg_replace('/[^0-9]/', '', $request->mobile_number);
+            // Menambahkan awalan + jika belum dimulai dengan +
+            if (substr($cleanedNumber, 0, 1) !== '+') {
+                // Menghapus angka 0 di depan jika ada
+                $cleanedNumber = ltrim($cleanedNumber, '0');
+
+                // Menambahkan awalan +62
+                $cleanedNumber = '+62' . $cleanedNumber;
+            }
+
         User::where([
             'uuid' => $this->user->uuid,
         ])->update([
             "name" => $request->name,
             "username" => $request->username,
-            "mobile_number" => $request->mobile_number,
+            "mobile_number" => $cleanedNumber,
             "gender" => $request->gender,
             "avatar" => $path,
         ]);

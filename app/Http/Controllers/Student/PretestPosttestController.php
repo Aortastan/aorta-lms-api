@@ -12,6 +12,7 @@ use App\Models\PurchasedPackage;
 use App\Models\MembershipHistory;
 use App\Models\Test;
 use App\Models\Question;
+use App\Models\Answer;
 use App\Models\SessionTest;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -56,6 +57,96 @@ class PretestPosttestController extends Controller
                 'message' => 'Success get data',
                 'pretest_posttest' => $getTest,
             ], 200);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
+
+    public function show($student_test_uuid){
+        try{
+            $user = JWTAuth::parseToken()->authenticate();
+            $pretest_posttests = StudentPretestPosttest::
+            select('uuid', 'score', 'pretest_posttest_uuid', 'data_question')
+            ->where([
+                'user_uuid' => $user->uuid,
+                'uuid' => $student_test_uuid,
+            ])->first();
+
+
+            if($pretest_posttests == null){
+                return response()->json([
+                    'message' => 'Test not found'
+                ], 404);
+            }
+
+            $getTest = PretestPosttest::
+                select(
+                    'uuid',
+                    'test_uuid',
+                    'course_uuid',
+                    'duration',
+                    'max_attempt'
+                )
+                ->where(['uuid' => $pretest_posttests->pretest_posttest_uuid])
+                ->first();
+
+            if(!$getTest){
+                return response()->json([
+                    'message' => "Test not found",
+                ], 404);
+            }
+
+            $checkCourseIsPurchasedOrMembership = $this->checkCourseIsPurchasedOrMembership($user, $getTest->course_uuid);
+
+            if($checkCourseIsPurchasedOrMembership != null){
+                return $checkCourseIsPurchasedOrMembership;
+            }
+
+
+
+            $data_question = json_decode($pretest_posttests->data_question);
+
+        $questions = [];
+        foreach ($data_question as $index => $data) {
+            $get_question = Question::where([
+                'uuid' => $data->question_uuid,
+            ])->first();
+
+            $answers = [];
+            foreach ($data->answers as $index => $answer) {
+                $get_answer = Answer::where([
+                    'uuid' => $answer->answer_uuid,
+                ])->first();
+
+                $answers[] = [
+                    'is_correct' => $answer->is_correct,
+                    'is_selected' => $answer->is_selected,
+                    'answer' => $get_answer->answer,
+                    'image' => $get_answer->image,
+                ];
+            }
+
+            $questions[] = [
+                'question_type' => $get_question->question_type,
+                'question' => $get_question->question,
+                'file_path' => $get_question->file_path,
+                'url_path' => $get_question->url_path,
+                'file_size' => $get_question->file_size,
+                'file_duration' => $get_question->file_duration,
+                'type' => $get_question->type,
+                'hint' => $get_question->hint,
+                'answers' => $answers,
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Success get data',
+            'score' => $pretest_posttests->score,
+            'questions' => $questions
+        ], 200);
         }
         catch(\Exception $e){
             return response()->json([

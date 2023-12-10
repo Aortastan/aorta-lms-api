@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Models\Category;
 use App\Models\Blog;
+use App\Models\Coupon;
 use App\Models\Package;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
@@ -117,9 +118,13 @@ class CategoryController extends Controller
             'category_uuid' => $checkCategory->uuid
         ])->first();
 
-        if($checkPackageBlog || $checkCategoryBlog){
+        $checkCoupon = Coupon::where([
+            'category_uuid' => $checkCategory->uuid
+        ])->first();
+
+        if($checkPackageBlog || $checkCategoryBlog || $checkCoupon){
             return response()->json([
-                'message' => 'You can\'t delete it, the category already used in blog / package'
+                'message' => 'You can\'t delete it, the category already used in blog / package / coupon'
             ], 422);
         }
 

@@ -23,6 +23,11 @@ class CreateCouponsTable extends Migration
             $table->integer('discount')->nullable();
             $table->integer('limit')->nullable()->comment('if type_limit 1, this field is a must');
             $table->datetime('expired_date')->nullable()->comment('if type_limit 2, this field is a must');
+            $table->integer('limit_per_user');
+            $table->boolean('is_restricted');
+            $table->string('restricted_by')->nullable()->comment('package/category');
+            $table->string('package_uuid')->nullable();
+            $table->string('category_uuid')->nullable();
             $table->timestamps();
         });
     }

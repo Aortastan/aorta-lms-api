@@ -30,6 +30,8 @@ class CreatePackagesTable extends Migration
             $table->integer('discount');
             $table->boolean('is_membership');
             $table->string('status')->comment('Published, Waiting for review, Draft');
+            $table->string('test_type')->nullable()->comment('classical, IRT');
+            $table->integer('max_point')->nullable();
             $table->timestamps();
         });
     }

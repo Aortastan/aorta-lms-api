@@ -25,6 +25,11 @@ class Coupon extends Model
         'discount',
         'limit',
         'expired_date',
+        'limit_per_user',
+        'is_restricted',
+        'restricted_by',
+        'package_uuid',
+        'category_uuid',
     ];
 
     public function claimed()

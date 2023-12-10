@@ -1,21 +1,17 @@
 <?php
 
-namespace App\Http\Controllers\Student;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Transaction;
 
 class TransactionController extends Controller
 {
     public function index(){
         try{
-            $user = JWTAuth::parseToken()->authenticate();
-            $get_transactions = Transaction::where([
-                'user_uuid' => $user->uuid,
-            ])
-            ->with(['detailTransaction', 'detailTransaction.package'])
+            $get_transactions = Transaction::
+            with(['detailTransaction', 'detailTransaction.package'])
             ->get();
             $transactions = [];
             foreach ($get_transactions as $index => $transaction) {

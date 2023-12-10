@@ -16,6 +16,7 @@ class CreateClaimedCouponsTable extends Migration
         Schema::create('claimed_coupons', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
+            $table->string('transaction_uuid');
             $table->string('coupon_uuid');
             $table->string('user_uuid');
             $table->boolean('is_used')->default(false);

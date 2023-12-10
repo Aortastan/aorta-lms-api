@@ -16,10 +16,68 @@ use Illuminate\Support\Facades\Password;
 */
 
 
+
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
 
 Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
+    Route::get('/tes', function(){
+        $wrong_answers = [
+            'soal_1' => 10,
+            'soal_2' => 8,
+            'soal_3' => 1,
+            'soal_4' => 3,
+            'soal_5' => 15,
+        ];
+
+        // Inisialisasi total point keseluruhan
+        $total_point = 1000;
+
+        // Faktor skala untuk menentukan seberapa besar pengaruh jumlah yang salah terhadap point
+        $scale_factor = 1;
+
+        // Hitung total point per soal
+        $point_per_soal = [];
+
+        foreach ($wrong_answers as $soal => $jumlah_salah) {
+            // Hitung point per soal berdasarkan jumlah yang salah
+            $point = $total_point * ($jumlah_salah / array_sum($wrong_answers)) * $scale_factor;
+
+            // Simpan point per soal
+            $point_per_soal[$soal] = intval($point);
+            // return response()->json([$point]);
+        }
+
+
+
+        // Hitung total point keseluruhan
+        $total_point_after_adjustment = array_sum($point_per_soal);
+
+        // Periksa jika total point setelah penyesuaian lebih kecil dari total point awal
+        if ($total_point_after_adjustment < $total_point) {
+            // Temukan soal dengan nilai tertinggi
+            $soal_tertinggi = array_search(max($point_per_soal), $point_per_soal);
+
+            // Tambahkan selisih ke soal tertinggi
+            $selisih = $total_point - $total_point_after_adjustment;
+            $point_per_soal[$soal_tertinggi] += $selisih;
+
+            // Hitung total point keseluruhan setelah penyesuaian ulang
+            $total_point_after_adjustment = array_sum($point_per_soal);
+        }
+
+        // Tampilkan hasil
+        echo "Point per soal:\n";
+        foreach ($point_per_soal as $soal => $point) {
+            echo "$soal: $point\n";
+        }
+
+
+        return response()->json($total_point_after_adjustment);
+    });
+
+
+
     Route::post('payments/webhook/xendit/paid', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
     Route::post('authenticate', 'AuthController@authenticate')->name('authenticate');
     Route::post('register', 'AuthController@register')->name('register');
@@ -65,6 +123,12 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // Dashboard
         Route::get('', 'Admin\DashboardController@index')->name('get');
         // end dashboard
+
+        // Manage Transaction
+        Route::group(['prefix' => 'transactions', 'as' => 'transactions.',], function () {
+            Route::get('', 'Admin\TransactionController@index');
+        });
+        // End Manage Transaction
 
         // User management
         Route::group(['prefix' => 'users', 'as' => 'users.',], function () {
@@ -226,11 +290,11 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // End Redeem Coupon
 
-        // Manage Course
+        // Manage Transaction
         Route::group(['prefix' => 'transactions', 'as' => 'transactions.',], function () {
             Route::get('', 'Student\TransactionController@index');
         });
-        // End Manage Course
+        // End Manage Transaction
 
         // Manage Course
         Route::group(['prefix' => 'courses', 'as' => 'course.',], function () {
@@ -260,6 +324,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // Package
         Route::group(['prefix' => 'packages', 'as' => 'package.',], function () {
             Route::post('buy', 'API\Payment\XenditController@create')->name('buy');
+            Route::post('expired/{transaction_uuid}', 'API\Payment\XenditController@expired')->name('expired');
             Route::get('', 'Student\PackageController@index')->name('index');
 
         });
@@ -288,6 +353,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::group(['prefix' => 'quizzes', 'as' => 'quiz.',], function () {
             Route::get('take-quiz/{quiz_uuid}', 'Student\QuizController@takeQuiz')->name('takeQuiz');
             Route::get('{quiz_uuid}', 'Student\QuizController@index')->name('index');
+            Route::get('review/{student_quiz_uuid}', 'Student\QuizController@show')->name('show');
             Route::post('{package_uuid}/{quiz_uuid}', 'Student\QuizController@store')->name('store');
         });
         // End Quiz
@@ -296,6 +362,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::group(['prefix' => 'pretest-posttests', 'as' => 'pretestPosttest.',], function () {
             Route::get('take-test/{pretest_posttest_uuid}', 'Student\PretestPosttestController@takeTest')->name('takeTest');
             Route::get('{pretest_posttest_uuid}', 'Student\PretestPosttestController@index')->name('index');
+            Route::get('review/{student_posttest_uuid}', 'Student\PretestPosttestController@show')->name('show');
             Route::post('{package_uuid}/{quiz_uuid}', 'Student\PretestPosttestController@store')->name('store');
         });
         // End Pretest posttest
@@ -304,6 +371,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::group(['prefix' => 'tryout', 'as' => 'tryout.',], function () {
             Route::get('take-test/{pretest_posttest_uuid}', 'Student\TryoutController@takeTest')->name('takeTest');
             Route::get('{pretest_posttest_uuid}', 'Student\TryoutController@index')->name('index');
+            Route::get('review/{tryout_uuid}', 'Student\TryoutController@show')->name('show');
             Route::post('{package_uuid}/{quiz_uuid}', 'Student\TryoutController@store')->name('store');
         });
         // End Tryout
@@ -322,6 +390,19 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{course_uuid}', 'Instructor\CourseController@show')->name('show');
         });
         // End Manage Course
+
+        // Lecture
+        Route::group(['prefix' => 'lectures', 'as' => 'lecture.',], function () {
+            Route::get('{lecture_uuid}', 'Instructor\LessonLectureController@show')->name('show');
+        });
+        // End Lecture
+
+        // Manage Assignment
+        Route::group(['prefix' => 'assignments', 'as' => 'assignments.',], function () {
+            Route::get('{assignment_uuid}', 'Instructor\AssignmentController@index');
+            Route::post('{student_assignment_uuid}', 'Instructor\AssignmentController@review')->name('review');
+        });
+        // End Manage Assignment
 
 
     });

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Models\Coupon;
+use App\Models\Package;
+use App\Models\Category;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -13,7 +15,7 @@ class CouponController extends Controller
 {
     public function index(){
         try{
-            $coupons = Coupon::select('uuid', 'type_coupon', 'type_limit', 'code', 'price', 'discount', 'limit', 'expired_date')->get();
+            $coupons = Coupon::select('uuid', 'type_coupon', 'type_limit', 'code', 'price', 'discount', 'limit', 'expired_date', 'limit_per_user', 'is_restricted', 'restricted_by', 'package_uuid' , 'category_uuid')->get();
             return response()->json([
                 'message' => 'Success get data',
                 'coupons' => $coupons,
@@ -28,7 +30,7 @@ class CouponController extends Controller
 
     public function show(Request $request, $uuid){
         try{
-            $coupon = Coupon::select('uuid', 'type_coupon', 'type_limit', 'code', 'price', 'discount', 'limit', 'expired_date')->where(['uuid' => $uuid])->first();
+            $coupon = Coupon::select('uuid', 'type_coupon', 'type_limit', 'code', 'price', 'discount', 'limit', 'expired_date', 'limit_per_user', 'is_restricted', 'restricted_by', 'package_uuid' , 'category_uuid')->where(['uuid' => $uuid])->first();
             return response()->json([
                 'message' => 'Success get data',
                 'coupon' => $coupon,
@@ -46,6 +48,8 @@ class CouponController extends Controller
             'type_coupon' => 'required|in:discount amount,percentage discount',
             'type_limit' => 'required|in:1,2|numeric',
             'code' => 'required|unique:coupons|string',
+            // 'limit_per_user' => 'required|numeric',
+            // 'is_restricted' => 'required|in:1,2|numeric',
         ];
 
         if($request->type_coupon == 'discount amount'){
@@ -61,6 +65,15 @@ class CouponController extends Controller
             $validate['expired_date'] = 'required';
         }
 
+        // if($request->is_restricted == 1){
+        //     $validate['restricted_by'] = 'required|in:package,category';
+        //     if($request->restricted_by == 'package'){
+        //         $validate['package_uuid'] = 'required';
+        //     }elseif($request->restricted_by == 'category'){
+        //         $validate['category_uuid'] = 'required';
+        //     }
+        // }
+
         $validator = Validator::make($request->all(), $validate);
 
         if ($validator->fails()) {
@@ -75,6 +88,10 @@ class CouponController extends Controller
         $limit = null;
         $expired_date = null;
 
+        $restricted_by = null;
+        $package_uuid = null;
+        $category_uuid = null;
+
         if($request->type_coupon == 'discount amount'){
             $price = $request->price;
         }
@@ -88,6 +105,34 @@ class CouponController extends Controller
             $expired_date = $request->expired_date;
         }
 
+        if($request->is_restricted == 1){
+            $restricted_by = $request->restricted_by;
+            if($request->restricted_by == 'package'){
+                $checkPackage = Package::where([
+                    'uuid' => $request->package_uuid
+                ])->first();
+
+                if($checkPackage == null){
+                    return response()->json([
+                        'message' => 'Package not found'
+                    ]);
+                }
+
+                $package_uuid = $request->package_uuid;
+            }elseif($request->restricted_by == 'category'){
+                $checkCategory = Category::where([
+                    'uuid' => $request->category_uuid
+                ])->first();
+
+                if($checkCategory == null){
+                    return response()->json([
+                        'message' => 'Category not found'
+                    ]);
+                }
+                $category_uuid = $request->category_uuid;
+            }
+        }
+
         $coupon = Coupon::create([
             'type_coupon' => $request->type_coupon,
             'type_limit' => $request->type_limit,
@@ -96,6 +141,11 @@ class CouponController extends Controller
             'discount' => $discount,
             'limit' => $limit,
             'expired_date' => $expired_date,
+            'limit_per_user' => 1,
+            'is_restricted' => 0,
+            // 'restricted_by' => $restricted_by,
+            // 'package_uuid' => $package_uuid,
+            // 'category_uuid' => $category_uuid,
         ]);
 
         return response()->json([
@@ -109,6 +159,11 @@ class CouponController extends Controller
                 'discount'      => $coupon->discount,
                 'limit'         => $coupon->limit,
                 'expired_date'  => $coupon->expired_date,
+                // 'limit_per_user' => $coupon->limit_per_user,
+                // 'is_restricted' => $coupon->is_restricted,
+                // 'restricted_by' => $coupon->restricted_by,
+                // 'package_uuid' => $coupon->package_uuid,
+                // 'category_uuid' => $coupon->category_uuid,
             ]
         ], 200);
     }
@@ -125,6 +180,8 @@ class CouponController extends Controller
             'type_coupon' => 'required|in:discount amount,percentage discount',
             'type_limit' => 'required|in:1,2|numeric',
             'code' => 'required|string',
+            // 'limit_per_user' => 'required|numeric',
+            // 'is_restricted' => 'required|in:1,2|numeric',
         ];
 
         if($request->code != $checkCoupon->code){
@@ -144,6 +201,15 @@ class CouponController extends Controller
             $validate['expired_date'] = 'required';
         }
 
+        // if($request->is_restricted == 1){
+        //     $validate['restricted_by'] = 'required|in:package,category';
+        //     if($request->restricted_by == 'package'){
+        //         $validate['package_uuid'] = 'required';
+        //     }elseif($request->restricted_by == 'category'){
+        //         $validate['category_uuid'] = 'required';
+        //     }
+        // }
+
         $validator = Validator::make($request->all(), $validate);
 
         if ($validator->fails()) {
@@ -158,6 +224,10 @@ class CouponController extends Controller
         $limit = null;
         $expired_date = null;
 
+        $restricted_by = null;
+        $package_uuid = null;
+        $category_uuid = null;
+
         if($request->type_coupon == 'discount amount'){
             $price = $request->price;
         }
@@ -171,6 +241,33 @@ class CouponController extends Controller
             $expired_date = $request->expired_date;
         }
 
+        // if($request->is_restricted == 1){
+        //     $restricted_by = $request->restricted_by;
+        //     if($request->restricted_by == 'package'){
+        //         $checkPackage = Package::where([
+        //             'uuid' => $request->package_uuid
+        //         ])->first();
+
+        //         if($checkPackage == null){
+        //             return response()->json([
+        //                 'message' => 'Package not found'
+        //             ]);
+        //         }
+        //         $package_uuid = $request->package_uuid;
+        //     }elseif($request->restricted_by == 'category'){
+        //         $checkCategory = Category::where([
+        //             'uuid' => $request->category_uuid
+        //         ])->first();
+
+        //         if($checkCategory == null){
+        //             return response()->json([
+        //                 'message' => 'Category nto found'
+        //             ]);
+        //         }
+        //         $category_uuid = $request->category_uuid;
+        //     }
+        // }
+
         $checkCoupon->update([
             'type_coupon' => $request->type_coupon,
             'type_limit' => $request->type_limit,
@@ -179,6 +276,11 @@ class CouponController extends Controller
             'discount' => $discount,
             'limit' => $limit,
             'expired_date' => $expired_date,
+            'limit_per_user' => 1,
+            'is_restricted' => 0,
+            // 'restricted_by' => $restricted_by,
+            // 'package_uuid' => $package_uuid,
+            // 'category_uuid' => $category_uuid,
         ]);
 
         return response()->json([
@@ -192,6 +294,11 @@ class CouponController extends Controller
                 'discount'      => $checkCoupon->discount,
                 'limit'         => $checkCoupon->limit,
                 'expired_date'  => $checkCoupon->expired_date,
+                'limit_per_user' => $checkCoupon->limit_per_user,
+                'is_restricted' => $checkCoupon->is_restricted,
+                'restricted_by' => $checkCoupon->restricted_by,
+                'package_uuid' => $checkCoupon->package_uuid,
+                'category_uuid' => $checkCoupon->category_uuid,
             ]
         ], 200);
     }

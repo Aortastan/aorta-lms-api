@@ -25,6 +25,11 @@ class StudentAssignment extends Model
         'status',
     ];
 
+    public function student()
+    {
+        return $this->belongsTo(User::class, 'student_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

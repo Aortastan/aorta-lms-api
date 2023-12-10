@@ -19,9 +19,7 @@ class CreatePackageTestsTable extends Migration
             $table->string('package_uuid');
             $table->string('test_uuid');
             $table->integer('attempt');
-            $table->integer('passing_grade');
             $table->integer('duration');
-            $table->string('test_type');
             $table->timestamps();
         });
     }

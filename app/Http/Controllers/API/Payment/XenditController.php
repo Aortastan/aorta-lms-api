@@ -56,6 +56,87 @@ class XenditController extends Controller
         return $this->buyPackages($request, $user);
     }
 
+    public function expired(Request $request, $transaction_uuid){
+        $get_transaction = Transaction::where([
+            'uuid' => $transaction_uuid,
+            "transaction_status" => 'pending',
+        ])->first();
+
+        if($get_transaction == null){
+            return response()->json([
+                'message' => "Transaction not found"
+            ], 404);
+        }
+        $user = JWTAuth::parseToken()->authenticate();
+        $this->paymentGateway = PaymentGatewaySetting::first();
+        Xendit::setApiKey($this->paymentGateway->api_key);
+        $params = [
+            'external_id' => Uuid::uuid4()->toString(),
+            'amount' => $get_transaction->transaction_amount,
+            'success_redirect_url' => 'https://aortastan-5a3a6.web.app/dashboard/student/transactions',
+            "customer"=> [
+                "given_names" => $user->name,
+                "email" => $user->email,
+                "mobile_number" => $user->mobile_number,
+            ],
+            "customer_notification_preference" => [
+                "invoice_created" => [
+                    "whatsapp",
+                    "email",
+                ],
+                "invoice_reminder" => [
+                    "whatsapp",
+                    "email",
+                ],
+                "invoice_paid" => [
+                    "whatsapp",
+                    "email",
+                ]
+            ],
+        ];
+
+        try {
+
+            $invoice = \Xendit\Invoice::create($params);
+
+        } catch (\Xendit\Exceptions\ApiException $e) {
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => json_encode($e->getMessage()),
+            ]);
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 500);
+
+        } catch (\Exception $e) {
+            PaymentApiLog::create([
+                'endpoint_url' => $request->path(),
+                'method' => $request->method(),
+                'status' => "An error Occured.",
+            ]);
+            return response()->json([
+                'message' => 'An Error Occured.',
+            ], 500);
+        }
+
+        $timestamp = strtotime($invoice['expiry_date']);
+        $formattedDatetime = date('Y-m-d H:i:s', $timestamp);
+        Transaction::where([
+            'uuid' => $transaction_uuid,
+        ])->update([
+            'external_id' => $invoice['id'],
+            'url' => $invoice['invoice_url'],
+            'expiry_date' => $formattedDatetime,
+        ]);
+
+        return response()->json([
+            'message' => 'Success extend invoice',
+            'url' => $invoice['invoice_url'],
+        ], 200);
+
+    }
+
     public function webhook(Request $request){
         try{
             $transaction = Transaction::where('external_id', $request->id)->first();

@@ -31,6 +31,8 @@ class Package extends Model
         'discount',
         'is_membership',
         'status',
+        'test_type',
+        'max_point',
     ];
 
     public function category()

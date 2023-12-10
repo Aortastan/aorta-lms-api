@@ -48,6 +48,8 @@ class PackageController extends Controller
             'discount' => $checkPackage->discount,
             'is_membership' => $checkPackage->is_membership,
             'status' => $checkPackage->status,
+            'test_type' => $checkPackage->test_type,
+            'max_point' => $checkPackage->max_point,
         ];
 
         if($checkPackage->package_type == "course"){
@@ -61,20 +63,18 @@ class PackageController extends Controller
                     "image" => $list['course']['image'],
                 ];
             }
-        }elseif($checkPackage->package_type == "test"){
-            $package['package_tests'] = [];
-            foreach ($checkPackage->packageTests as $index2 => $list) {
-                $package['package_tests'][] = [
-                    "uuid" => $list['uuid'],
-                    "test_uuid" => $list['test']['uuid'],
-                    "title" => $list['test']['title'],
-                    "test_type" => $list['test']['test_type'],
-                    "attempt" => $list['attempt'],
-                    "passing_grade" => $list['passing_grade'],
-                    "duration" => $list['duration'],
-                    "test_type" => $list['test_type'],
-                ];
-            }
+        }
+
+        $package['package_tests'] = [];
+        foreach ($checkPackage->packageTests as $index2 => $list) {
+            $package['package_tests'][] = [
+                "uuid" => $list['uuid'],
+                "test_uuid" => $list['test']['uuid'],
+                "title" => $list['test']['title'],
+                "attempt" => $list['attempt'],
+                "duration" => $list['duration'],
+            ];
+
         }
 
         return response()->json([
@@ -93,6 +93,10 @@ class PackageController extends Controller
             'image' => 'required|image',
         ];
 
+        if($request->test_type != null){
+            $validate['test_type'] = 'required|in:classical,IRT';
+        }
+
         if($request->learner_accesibility == 'paid'){
             $validate['price_lifetime'] = 'required|numeric';
             $validate['price_one_month'] = 'required|numeric';
@@ -101,6 +105,10 @@ class PackageController extends Controller
             $validate['price_one_year'] = 'required|numeric';
             $validate['discount'] = 'required|numeric';
             $validate['is_membership'] = 'required|boolean';
+        }
+
+        if($request->test_type == 'IRT'){
+            $validate['max_point'] = 'required|numeric';
         }
 
         $validator = Validator::make($request->all(), $validate);
@@ -150,6 +158,17 @@ class PackageController extends Controller
             $validated['is_membership'] = 0;
         }
 
+        $validated['test_type'] =  null;
+
+        if($request->test_type){
+            $validated['test_type'] = $request->test_type;
+        }
+
+        $validated['max_point'] = null;
+        if($request->test_type == 'IRT'){
+             $validated['max_point'] = $request->max_point;
+        }
+
         Package::create($validated);
 
         return response()->json([
@@ -179,6 +198,10 @@ class PackageController extends Controller
             'status' => 'required|in:Published,Waiting for review,Draft',
         ];
 
+        if($request->test_type != null){
+            $validate['test_type'] = 'required|in:classical,IRT';
+        }
+
         if($request->learner_accesibility == 'paid'){
             $validate['price_lifetime'] = 'required|numeric';
             $validate['price_one_month'] = 'required|numeric';
@@ -187,6 +210,10 @@ class PackageController extends Controller
             $validate['price_one_year'] = 'required|numeric';
             $validate['discount'] = 'required|numeric';
             $validate['is_membership'] = 'required|boolean';
+        }
+
+        if($request->test_type == 'IRT'){
+            $validate['max_point'] = 'required|numeric';
         }
 
         if($request->image instanceof \Illuminate\Http\UploadedFile && $request->image->isValid()){
@@ -261,6 +288,16 @@ class PackageController extends Controller
             $validated['is_membership'] = 0;
         }
 
+        $validated['test_type'] =  null;
+        if($request->test_type){
+            $validated['test_type'] = $request->test_type;
+        }
+
+        $validated['max_point'] = null;
+        if($request->test_type == 'IRT'){
+             $validated['max_point'] = $request->max_point;
+        }
+
         Package::where(['uuid' => $uuid])->update($validated);
 
         return response()->json([
@@ -294,11 +331,11 @@ class PackageController extends Controller
 
        if($type == 'course'){
             $validate = [
-                'lists' => 'required|array',
-                'lists.*' => 'required',
-                'lists.*.uuid' => 'required',
-                'lists.*.course_uuid' => 'required',
-                'lists.*.status' => 'required',
+                'courses' => 'required|array',
+                'courses.*' => 'required',
+                'courses.*.uuid' => 'required',
+                'courses.*.course_uuid' => 'required',
+                'courses.*.status' => 'required',
             ];
 
             $validator = Validator::make($request->all(), $validate);
@@ -313,7 +350,7 @@ class PackageController extends Controller
             $listsUuid = [];
             $newCourses = [];
 
-            foreach ($request->lists as $index => $list) {
+            foreach ($request->courses as $index => $list) {
                 $checkCourse = Course::where(['uuid' => $list['course_uuid']])->first();
                 if(!$checkCourse){
                     return response()->json([
@@ -342,78 +379,60 @@ class PackageController extends Controller
             if(count($newCourses) > 0){
                 PackageCourse::insert($newCourses);
             }
-
-
-
-
-
-
-
-
-
-
-
-
-
-       }elseif($type == 'test'){
-            $validate = [
-                'lists' => 'required|array',
-                'lists.*' => 'required',
-                'lists.*.test_uuid' => 'required',
-                'lists.*.attempt' => 'required',
-                'lists.*.passing_grade' => 'required|numeric',
-                'lists.*.duration' => 'required',
-                'lists.*.test_type' => 'required|in:classical,IRT',
-            ];
-
-            $validator = Validator::make($request->all(), $validate);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors(),
-                ]);
-            }
-
-            $listsUuid = [];
-            $newLists = [];
-
-            foreach ($request->lists as $index => $list) {
-                $checkTest = Test::where(['uuid' => $list['test_uuid']])->first();
-                if(!$checkTest){
-                    return response()->json([
-                        'message' => 'Test not found',
-                    ], 404);
-                }
-                $checkList = PackageTest::where('uuid', $list['uuid'])->first();
-
-                if(!$checkList){
-                        $newLists[]=[
-                            'uuid' => Uuid::uuid4()->toString(),
-                            'package_uuid' => $checkPackage->uuid,
-                            'test_uuid' => $list['test_uuid'],
-                            'attempt' => $list['attempt'],
-                            'passing_grade' => $list['passing_grade'],
-                            'duration' => $list['duration'],
-                            'test_type' => $list['test_type'],
-                        ];
-                }else{
-                    $listsUuid[] = $list['uuid'];
-                    $validatedList=[
-                        'attempt' => $list['attempt'],
-                        'passing_grade' => $list['passing_grade'],
-                        'duration' => $list['duration'],
-                        'test_type' => $list['test_type'],
-                    ];
-                    PackageTest::where('uuid', $list['uuid'])->update($validatedList);
-                }
-            }
-
-            PackageTest::where(['package_uuid' => $uuid])->whereNotIn('uuid', $listsUuid)->delete();
-            if(count($newLists) > 0){
-                PackageTest::insert($newLists);
-            }
        }
+
+        $validate = [
+            'tests' => 'array',
+            'tests.*' => 'required',
+            'tests.*.test_uuid' => 'required',
+            'tests.*.attempt' => 'required',
+            'tests.*.duration' => 'required',
+        ];
+
+        $validator = Validator::make($request->all(), $validate);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ]);
+        }
+
+        $listsUuid = [];
+        $newLists = [];
+
+        foreach ($request->tests as $index => $list) {
+            $checkTest = Test::where(['uuid' => $list['test_uuid']])->first();
+            if(!$checkTest){
+                return response()->json([
+                    'message' => 'Test not found',
+                ], 404);
+            }
+            $checkList = PackageTest::where('uuid', $list['uuid'])->first();
+
+            if(!$checkList){
+                    $newLists[]=[
+                        'uuid' => Uuid::uuid4()->toString(),
+                        'package_uuid' => $checkPackage->uuid,
+                        'test_uuid' => $list['test_uuid'],
+                        'attempt' => $list['attempt'],
+                        'duration' => $list['duration'],
+                    ];
+            }else{
+                $listsUuid[] = $list['uuid'];
+                $validatedList=[
+                    'attempt' => $list['attempt'],
+                    'duration' => $list['duration'],
+                ];
+                PackageTest::where('uuid', $list['uuid'])->update($validatedList);
+            }
+        }
+
+        PackageTest::where(['package_uuid' => $uuid])->whereNotIn('uuid', $listsUuid)->delete();
+        if(count($newLists) > 0){
+            PackageTest::insert($newLists);
+        }
+
 
         return response()->json([
             'message' => 'Success update data',

@@ -21,9 +21,7 @@ class PackageTest extends Model
         'package_uuid',
         'test_uuid',
         'attempt',
-        'passing_grade',
         'duration',
-        'test_type',
     ];
 
     public function test()

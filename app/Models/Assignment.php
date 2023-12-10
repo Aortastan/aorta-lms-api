@@ -22,6 +22,12 @@ class Assignment extends Model
         'description',
     ];
 
+    public function AssignmentWaitingForReview()
+    {
+        return $this->hasMany(StudentAssignment::class, 'assignment_uuid', 'uuid')
+        ->where('status', 'Waiting for review');
+    }
+
     protected static function boot()
     {
         parent::boot();

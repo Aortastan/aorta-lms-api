@@ -11,6 +11,7 @@ use App\Models\PurchasedPackage;
 use App\Models\SessionTest;
 use App\Models\Test;
 use App\Models\Question;
+use App\Models\Answer;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TryoutController extends Controller
@@ -23,7 +24,7 @@ class TryoutController extends Controller
                     'uuid',
                     'test_uuid',
                     'attempt',
-                    'passing_grade',
+
                     'duration',
                 )
                 ->where(['uuid' => $tryout_uuid])
@@ -53,6 +54,93 @@ class TryoutController extends Controller
             return response()->json([
                 'message' => 'Success get data',
                 'tryout' => $getTest,
+            ], 200);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
+
+    public function show($tryout_uuid){
+        try{
+            $user = JWTAuth::parseToken()->authenticate();
+            $tryout = StudentTryout::
+            select('uuid', 'score', 'package_test_uuid', 'data_question')
+            ->where([
+                'user_uuid' => $user->uuid,
+                'uuid' => $tryout_uuid,
+            ])->first();
+
+            if($tryout == null){
+                return response()->json([
+                    'message' => "Test not found",
+                ], 404);
+            }
+
+            $getTest = PackageTest::
+                select(
+                    'uuid',
+                    'test_uuid',
+                    'attempt',
+
+                    'duration',
+                )
+                ->where(['uuid' => $tryout->package_test_uuid])
+                ->first();
+
+            if(!$getTest){
+                return response()->json([
+                    'message' => "Test not found",
+                ], 404);
+            }
+
+            $checkTestIsPurchasedOrMembership = $this->checkTestIsPurchasedOrMembership($user, $getTest->uuid);
+
+            if($checkTestIsPurchasedOrMembership != null){
+                return $checkTestIsPurchasedOrMembership;
+            }
+
+            $data_question = json_decode($tryout->data_question);
+
+            $questions = [];
+            foreach ($data_question as $index => $data) {
+                $get_question = Question::where([
+                    'uuid' => $data->question_uuid,
+                ])->first();
+
+                $answers = [];
+                foreach ($data->answers as $index => $answer) {
+                    $get_answer = Answer::where([
+                        'uuid' => $answer->answer_uuid,
+                    ])->first();
+
+                    $answers[] = [
+                        'is_correct' => $answer->is_correct,
+                        'is_selected' => $answer->is_selected,
+                        'answer' => $get_answer->answer,
+                        'image' => $get_answer->image,
+                    ];
+                }
+
+                $questions[] = [
+                    'question_type' => $get_question->question_type,
+                    'question' => $get_question->question,
+                    'file_path' => $get_question->file_path,
+                    'url_path' => $get_question->url_path,
+                    'file_size' => $get_question->file_size,
+                    'file_duration' => $get_question->file_duration,
+                    'type' => $get_question->type,
+                    'hint' => $get_question->hint,
+                    'answers' => $answers,
+                ];
+            }
+
+            return response()->json([
+                'message' => 'Success get data',
+                'score' => $tryout->score,
+                'questions' => $questions
             ], 200);
         }
         catch(\Exception $e){
@@ -101,7 +189,7 @@ class TryoutController extends Controller
                 'uuid',
                 'test_uuid',
                 'attempt',
-                'passing_grade',
+
                 'duration'
             )
             ->where(['uuid' => $tryout_uuid])

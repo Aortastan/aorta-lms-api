@@ -28,7 +28,7 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
         ResetPassword::createUrlUsing(function (User $user, string $token) {
-            return env('FRONTEND_DOMAIN') . 'reset-password?token=' . $token . "email=" . $user->email;
+            return 'https://aortastan-5a3a6.web.app/auth/change-password' . '?token=' . $token . "&email=" . $user->email;
         });
         //
     }

@@ -20,11 +20,11 @@ class Transaction extends Model
     protected $fillable = [
         'user_uuid',
         'external_id',
-        'coupon_uuid',
         'transaction_amount',
         'payment_method_uuid',
         'transaction_status',
         'url',
+        'expiry_date',
         'updated_at',
     ];
 

@@ -18,10 +18,10 @@ class CreateTransactionsTable extends Migration
             $table->uuid('uuid')->unique();
             $table->string('external_id');
             $table->string('user_uuid');
-            $table->string('coupon_uuid')->nullable();
             $table->integer('transaction_amount');
             $table->string('payment_method_uuid');
             $table->string('transaction_status')->comment('pending,settled');
+            $table->timestamp('expiry_date')->nullable();
             $table->string('url')->nullable();
             $table->timestamps();
         });

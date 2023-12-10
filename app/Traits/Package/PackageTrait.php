@@ -18,7 +18,7 @@ trait PackageTrait
                 $uuid = "package_uuid";
             }
             $packages = DB::table('packages')
-                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership')
+                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership', 'packages.test_type', 'packages.max_point')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid');
 
                 if($by_admin == false){
@@ -90,6 +90,8 @@ trait PackageTrait
                         "discount" => $getPackage->discount,
                         "is_membership" => $getPackage->is_membership,
                         "status" => $getPackage->status,
+                        "test_type" => $getPackage->test_type,
+                        "max_point" => $getPackage->max_point,
                         "created_at" => $getPackage->created_at,
                         "updated_at" => $getPackage->updated_at,
                         "category" => $getPackage->category->name,
@@ -101,7 +103,6 @@ trait PackageTrait
                             "title" => $test->test->title,
                             "test_category" => $test->test->test_category,
                             "attempt" => $test->attempt,
-                            "passing_grade" => $test->passing_grade,
                             "duration" => $test->duration,
                         ];
                     }
@@ -158,6 +159,7 @@ trait PackageTrait
                         "updated_at" => $getPackage->updated_at,
                         "category" => $getPackage->category->name,
                         "package_courses" => [],
+                        "package_tests" => [],
                     ];
 
                     foreach ($getPackage->packageCourses as $index => $course) {
@@ -196,6 +198,16 @@ trait PackageTrait
                             "instructor_name" => $course->course->instructor->name,
                             "lessons" => $lessons,
                             "pretest_posttests" => $pretestPosttests,
+                        ];
+                    }
+
+                    foreach ($getPackage->packageTests as $index => $test) {
+                        $package['package_tests'][] = [
+                            "test_uuid" => $test->test->uuid,
+                            "title" => $test->test->title,
+                            "test_category" => $test->test->test_category,
+                            "attempt" => $test->attempt,
+                            "duration" => $test->duration,
                         ];
                     }
                 }
