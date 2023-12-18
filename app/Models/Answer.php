@@ -21,6 +21,7 @@ class Answer extends Model
         'answer',
         'image',
         'is_correct',
+        'correct_answer_explanation',
         'point',
     ];
 

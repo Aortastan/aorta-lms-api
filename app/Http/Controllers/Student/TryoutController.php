@@ -49,7 +49,7 @@ class TryoutController extends Controller
                 'package_test_uuid' => $getTest->uuid,
             ])->get();
 
-            $getTest['student_tryout'] = $pretest_posttests;
+            $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
                 'message' => 'Success get data',
@@ -116,15 +116,28 @@ class TryoutController extends Controller
                         'uuid' => $answer->answer_uuid,
                     ])->first();
 
-                    $answers[] = [
-                        'is_correct' => $answer->is_correct,
-                        'is_selected' => $answer->is_selected,
-                        'answer' => $get_answer->answer,
-                        'image' => $get_answer->image,
-                    ];
+                    if($answer->is_correct) {
+                        $answers[] = [
+                            'answer_uuid' => $answer->answer_uuid,
+                            'is_correct' => $answer->is_correct,
+                            'correct_answer_explanation' => $get_answer->correct_answer_explanation,
+                            'is_selected' => $answer->is_selected,
+                            'answer' => $get_answer->answer,
+                            'image' => $get_answer->image,
+                        ];
+                    } else {
+                        $answers[] = [
+                            'answer_uuid' => $answer->answer_uuid,
+                            'is_correct' => $answer->is_correct,
+                            'is_selected' => $answer->is_selected,
+                            'answer' => $get_answer->answer,
+                            'image' => $get_answer->image,
+                        ];
+                    }
                 }
 
                 $questions[] = [
+                    'question_uuid' => $get_question->uuid,
                     'question_type' => $get_question->question_type,
                     'question' => $get_question->question,
                     'file_path' => $get_question->file_path,
