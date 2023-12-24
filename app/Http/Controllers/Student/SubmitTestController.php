@@ -125,6 +125,7 @@ class SubmitTestController extends Controller
                     $student_tryout = StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
+                        'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
                         'score' => $points,
                     ]);
@@ -166,6 +167,7 @@ class SubmitTestController extends Controller
                     StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
+                        'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
                         'score' => $points,
                     ]);
@@ -174,6 +176,7 @@ class SubmitTestController extends Controller
                 StudentTryout::create([
                     'data_question' => json_encode($data_question),
                     'user_uuid' => $user_session->user_uuid,
+                    'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
                     'score' => $points,
                 ]);
@@ -248,7 +251,7 @@ class SubmitTestController extends Controller
         }
 
         // Inisialisasi total point keseluruhan
-        $total_point = $get_package->max_point;
+        $total_point = $get_package_test->max_point;
 
         // Faktor skala untuk menentukan seberapa besar pengaruh jumlah yang salah terhadap point
         $scale_factor = 1;

@@ -73,6 +73,7 @@ class PackageController extends Controller
                 "title" => $list['test']['title'],
                 "attempt" => $list['attempt'],
                 "duration" => $list['duration'],
+                "max_point" => $list['max_point'],
             ];
 
         }
@@ -387,6 +388,7 @@ class PackageController extends Controller
             'tests.*.test_uuid' => 'required',
             'tests.*.attempt' => 'required',
             'tests.*.duration' => 'required',
+            'tests.*.max_point' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $validate);
@@ -417,12 +419,14 @@ class PackageController extends Controller
                         'test_uuid' => $list['test_uuid'],
                         'attempt' => $list['attempt'],
                         'duration' => $list['duration'],
+                        'max_point' => $list['max_point'],
                     ];
             }else{
                 $listsUuid[] = $list['uuid'];
                 $validatedList=[
                     'attempt' => $list['attempt'],
                     'duration' => $list['duration'],
+                    'max_point' => $list['max_point'],
                 ];
                 PackageTest::where('uuid', $list['uuid'])->update($validatedList);
             }

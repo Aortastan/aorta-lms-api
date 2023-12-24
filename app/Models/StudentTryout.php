@@ -19,6 +19,7 @@ class StudentTryout extends Model
     protected $fillable = [
         'data_question',
         'user_uuid',
+        'package_uuid',
         'package_test_uuid',
         'score',
     ];

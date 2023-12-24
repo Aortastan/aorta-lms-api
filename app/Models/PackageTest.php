@@ -22,6 +22,7 @@ class PackageTest extends Model
         'test_uuid',
         'attempt',
         'duration',
+        'max_point'
     ];
 
     public function test()

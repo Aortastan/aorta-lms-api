@@ -373,6 +373,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{pretest_posttest_uuid}', 'Student\TryoutController@index')->name('index');
             Route::get('review/{tryout_uuid}', 'Student\TryoutController@show')->name('show');
             Route::post('{package_uuid}/{quiz_uuid}', 'Student\TryoutController@store')->name('store');
+            Route::get('leaderboard/{package_uuid}', 'Student\TryoutController@getLeaderboard')->name('getLeaderboard');
+            Route::get('analytics/{package_uuid}', 'Student\TryoutController@getUserTryoutAnalytic')->name('getUserTryoutAnalytic');
         });
         // End Tryout
 
