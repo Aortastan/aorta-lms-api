@@ -26,6 +26,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('register', 'AuthController@register')->name('register');
     Route::post('forgot-password', 'AuthController@forgotPassword')->name('forgotPassword');
     Route::post('reset-password', 'AuthController@resetPassword')->name('resetPassword');
+    Route::get('banners/active', 'AllRole\BannerController@index')->name('index');
     Route::post('logout', 'AuthController@logout');
     Route::get('payment-methods', 'AllRole\PaymentMethodController@index');
     Route::get('admin-fee', "AllRole\PaymentMethodController@adminFee");
@@ -72,6 +73,16 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('', 'Admin\TransactionController@index');
         });
         // End Manage Transaction
+
+        // Banner management
+        Route::group(['prefix' => 'banners', 'as' => 'banners.',], function () {
+            Route::get('', 'Admin\BannerController@index')->name('get');
+            Route::get('{uuid}', 'Admin\BannerController@show')->name('show');
+            Route::post('{uuid}', 'Admin\BannerController@update')->name('update');
+            Route::post('', 'Admin\BannerController@store')->name('store');
+            Route::delete('{uuid}', 'Admin\BannerController@delete')->name('delete');
+        });
+        // end Banner management
 
         // User management
         Route::group(['prefix' => 'users', 'as' => 'users.',], function () {
