@@ -77,8 +77,8 @@ class PackageController extends Controller
         }
     }
 
-    public function allPackage(){
-        return $this->getAllPackages(false);
+    public function allPackage(Request $request){
+        return $this->getAllPackages(false, $request);
     }
 
     public function show($package_type, $uuid){

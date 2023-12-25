@@ -11,7 +11,7 @@ use DateInterval;
 
 trait PackageTrait
 {
-    public function getAllPackages($by_admin = false){
+    public function getAllPackages($by_admin = false, $request = ""){
         try{
             $uuid = "uuid";
             if($by_admin == false){
@@ -23,6 +23,11 @@ trait PackageTrait
 
                 if($by_admin == false){
                     $packages = $packages->where('packages.status', 'Published');
+                }
+
+                if ($request->has('package_type')) {
+                    $packageType = $request->input('package_type');
+                    $packages = $packages->where('packages.package_type', $packageType);
                 }
 
                 $packages = $packages->get();
