@@ -55,7 +55,7 @@ class QuizController extends Controller
                 'lesson_quiz_uuid' => $getQuiz->uuid,
             ])->get();
 
-            $getQuiz['student_quizzes'] = $quizzes;
+            $getQuiz['student_attempts'] = $quizzes;
 
             return response()->json([
                 'message' => 'Success get data',

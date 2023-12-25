@@ -49,7 +49,7 @@ class TryoutController extends Controller
                 'package_test_uuid' => $getTest->uuid,
             ])->get();
 
-            $getTest['student_tryout'] = $pretest_posttests;
+            $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
                 'message' => 'Success get data',

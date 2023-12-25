@@ -21,63 +21,6 @@ Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('ver
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
 
 Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
-    Route::get('/tes', function(){
-        $wrong_answers = [
-            'soal_1' => 10,
-            'soal_2' => 8,
-            'soal_3' => 1,
-            'soal_4' => 3,
-            'soal_5' => 15,
-        ];
-
-        // Inisialisasi total point keseluruhan
-        $total_point = 1000;
-
-        // Faktor skala untuk menentukan seberapa besar pengaruh jumlah yang salah terhadap point
-        $scale_factor = 1;
-
-        // Hitung total point per soal
-        $point_per_soal = [];
-
-        foreach ($wrong_answers as $soal => $jumlah_salah) {
-            // Hitung point per soal berdasarkan jumlah yang salah
-            $point = $total_point * ($jumlah_salah / array_sum($wrong_answers)) * $scale_factor;
-
-            // Simpan point per soal
-            $point_per_soal[$soal] = intval($point);
-            // return response()->json([$point]);
-        }
-
-
-
-        // Hitung total point keseluruhan
-        $total_point_after_adjustment = array_sum($point_per_soal);
-
-        // Periksa jika total point setelah penyesuaian lebih kecil dari total point awal
-        if ($total_point_after_adjustment < $total_point) {
-            // Temukan soal dengan nilai tertinggi
-            $soal_tertinggi = array_search(max($point_per_soal), $point_per_soal);
-
-            // Tambahkan selisih ke soal tertinggi
-            $selisih = $total_point - $total_point_after_adjustment;
-            $point_per_soal[$soal_tertinggi] += $selisih;
-
-            // Hitung total point keseluruhan setelah penyesuaian ulang
-            $total_point_after_adjustment = array_sum($point_per_soal);
-        }
-
-        // Tampilkan hasil
-        echo "Point per soal:\n";
-        foreach ($point_per_soal as $soal => $point) {
-            echo "$soal: $point\n";
-        }
-
-
-        return response()->json($total_point_after_adjustment);
-    });
-
-
-
     Route::post('payments/webhook/xendit/paid', 'API\Payment\XenditController@webhook')->name('xendit.webhook');
     Route::post('authenticate', 'AuthController@authenticate')->name('authenticate');
     Route::post('register', 'AuthController@register')->name('register');

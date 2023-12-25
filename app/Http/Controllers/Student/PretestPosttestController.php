@@ -51,7 +51,7 @@ class PretestPosttestController extends Controller
                 'pretest_posttest_uuid' => $getTest->uuid,
             ])->get();
 
-            $getTest['student_pretest_posttest'] = $pretest_posttests;
+            $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
                 'message' => 'Success get data',
