@@ -13,6 +13,8 @@ use App\Models\Test;
 use App\Models\Question;
 use App\Models\Answer;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Auth;
+use DB;
 
 class TryoutController extends Controller
 {
@@ -52,7 +54,7 @@ class TryoutController extends Controller
             $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Success Get All Tryout Data',
                 'tryout' => $getTest,
             ], 200);
         }
@@ -84,7 +86,6 @@ class TryoutController extends Controller
                     'uuid',
                     'test_uuid',
                     'attempt',
-
                     'duration',
                 )
                 ->where(['uuid' => $tryout->package_test_uuid])
@@ -116,15 +117,28 @@ class TryoutController extends Controller
                         'uuid' => $answer->answer_uuid,
                     ])->first();
 
-                    $answers[] = [
-                        'is_correct' => $answer->is_correct,
-                        'is_selected' => $answer->is_selected,
-                        'answer' => $get_answer->answer,
-                        'image' => $get_answer->image,
-                    ];
+                    if($answer->is_correct) {
+                        $answers[] = [
+                            'answer_uuid' => $answer->answer_uuid,
+                            'is_correct' => $answer->is_correct,
+                            'correct_answer_explanation' => $get_answer->correct_answer_explanation,
+                            'is_selected' => $answer->is_selected,
+                            'answer' => $get_answer->answer,
+                            'image' => $get_answer->image,
+                        ];
+                    } else {
+                        $answers[] = [
+                            'answer_uuid' => $answer->answer_uuid,
+                            'is_correct' => $answer->is_correct,
+                            'is_selected' => $answer->is_selected,
+                            'answer' => $get_answer->answer,
+                            'image' => $get_answer->image,
+                        ];
+                    }
                 }
 
                 $questions[] = [
+                    'question_uuid' => $get_question->uuid,
                     'question_type' => $get_question->question_type,
                     'question' => $get_question->question,
                     'file_path' => $get_question->file_path,
@@ -301,6 +315,7 @@ class TryoutController extends Controller
 
         return $sessionTest;
     }
+
     public function createTestSession($user, $test){
         try{
             $data_question = [];
@@ -332,4 +347,111 @@ class TryoutController extends Controller
             ], 404);
         }
     }
+
+    public function getUserTryoutAnalytic($package_uuid)
+    {
+    // Get all tests related to the package_uuid
+    $testsData = PackageTest::select(
+        'tests.uuid as test_uuid',
+        'tests.title as test_name',
+        'package_tests.max_point',
+        'package_tests.uuid'
+    )
+        ->leftJoin('tests', 'tests.uuid', '=', 'package_tests.test_uuid')
+        ->where('package_tests.package_uuid', $package_uuid)
+        ->get();
+
+    $formattedResult = [];
+
+    // Iterate through each test
+    foreach ($testsData as $testData) {
+        $packageTestUuid = $testData->uuid;
+        $maxPoint = $testData->max_point ?? 0;
+
+        // Fetch corresponding records in student_tryouts
+        $attemptsData = StudentTryout::select('student_tryouts.score', 'student_tryouts.package_test_uuid', 'student_tryouts.uuid as tryout_uuid', 'student_tryouts.created_at')
+            ->where('student_tryouts.user_uuid', auth()->user()->uuid)
+            ->where('student_tryouts.package_test_uuid', $packageTestUuid)
+            ->orderBy('student_tryouts.created_at')
+            ->get();
+        // Process each attempt for the test
+        $attemptsResult = [];
+        foreach ($attemptsData as $attemptData) {
+            $percentage = $attemptData->score ? ($attemptData->score / $maxPoint) * 100 : 0;
+            $attemptsResult[] = [
+                'uuid' => $attemptData->tryout_uuid,
+                'package_test_uuid' => $attemptData->package_test_uuid,
+                'score' => $attemptData->score ?: 0,
+                'percentage' => $percentage,
+            ];
+        }
+
+        // Add the test data with attempts to the result
+        $formattedResult[] = [
+            'test_name' => $testData->test_name,
+            'max_point' => $maxPoint,
+            'attempts' => $attemptsResult,
+        ];
+    }
+
+    return response()->json([
+        'message' => 'Success get user tryout analytics',
+        'status' => true,
+        'data' => $formattedResult,
+    ], 200);
+    }
+
+    public function getLeaderboard($package_uuid) {
+        $currentUserUuid = Auth::user()->uuid;
+        // Subquery to get the earliest attempt for each user and package
+        $earliestAttempts = StudentTryout::select('user_uuid', 'package_uuid', DB::raw('MIN(created_at) as earliest_attempt'))
+            ->where('package_uuid', $package_uuid)
+            ->groupBy('user_uuid', 'package_uuid');
+        // Main query to get all users' ranking based on their earliest attempt for each package
+        $allLeaderboard = StudentTryout::select('users.name', 'student_tryouts.user_uuid', 'student_tryouts.package_uuid', DB::raw('SUM(student_tryouts.score) as score'))
+            ->join('users', 'users.uuid', 'student_tryouts.user_uuid')
+            ->join('packages', 'packages.uuid', 'student_tryouts.package_uuid')
+            ->leftJoinSub($earliestAttempts, 'earliest_attempts', function ($join) {
+                $join->on('earliest_attempts.user_uuid', '=', 'student_tryouts.user_uuid');
+                $join->on('earliest_attempts.package_uuid', '=', 'student_tryouts.package_uuid');
+            })
+            ->where('earliest_attempts.package_uuid', $package_uuid)
+            ->groupBy('users.name', 'student_tryouts.user_uuid', 'student_tryouts.package_uuid')
+            ->orderBy('score', 'desc')
+            ->get();
+
+        // Calculate ranking manually
+        $ranking = 1;
+        $previousScore = null;
+
+        foreach ($allLeaderboard as $item) {
+            if ($item->score !== $previousScore) {
+                $item->ranking = $ranking;
+                $ranking++;
+            } else {
+                $item->ranking = $ranking - 1;
+            }
+
+            $previousScore = $item->score;
+        }
+
+        // Find the current user's ranking
+        $currentUserRanking = $allLeaderboard
+            ->where('user_uuid', $currentUserUuid)
+            ->first();
+
+        $data['currentUser'] = [
+            'uuid' => $currentUserUuid,
+            'ranking' => $currentUserRanking ? $currentUserRanking->ranking : null,
+        ];
+
+        $data['allLeaderboard'] = $allLeaderboard;
+
+        return response()->json([
+            'message' => 'Success get Tryout Leaderboard',
+            'status' => true,
+            'data' => $data
+        ], 200);
+    }
+
 }

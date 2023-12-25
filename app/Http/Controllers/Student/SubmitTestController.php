@@ -47,39 +47,42 @@ class SubmitTestController extends Controller
                 'uuid' => $data['question_uuid'],
             ])->with(['answers'])->first();
 
-            if($get_question->different_point == 0){
-                $different_point = 0;
-            }
+            $is_true = 0;
 
             $answers = [];
-            $is_true = 0;
+            $is_true = 1; // Assume all answers are correct by default
+
             foreach ($get_question->answers as $index1 => $answer) {
-                $is_selected = 0;
-                if(in_array($answer['uuid'], $data['answer_uuid'])){
-                    $is_selected = 1;
+                $is_selected = in_array($answer['uuid'], $data['answer_uuid']) ? 1 : 0;
+
+                if ($answer['is_correct'] == 1 && $is_selected == 0) {
+                    $is_true = 0; // Set to false if any correct answer is not selected
                 }
 
-                if($get_question->different_point == 0){
-                    if($answer['is_correct'] == 1){
-                        $is_true = 1;
-                    }
-                }else{
-                    if($answer['is_correct'] == 1){
+                if ($get_question->different_point == 0) {
+                    $answers[] = [
+                        'answer_uuid' => $answer['uuid'],
+                        'is_correct' => $answer['is_correct'],
+                        'is_selected' => $is_selected,
+                    ];
+                } else {
+                    if ($answer['is_correct'] == 1) {
                         $points += $answer['point'];
-                    }else{
+                    } elseif ($is_selected == 1) {
+                        // Only subtract points for incorrect selected answers
                         $points -= abs($answer['point']);
                     }
                 }
 
-                $answers[]=[
-                    'answer_uuid' => $answer['uuid'],
-                    'is_correct' => $answer['is_correct'],
-                    'is_selected' => $is_selected,
-                ];
+                // // Debugging statements
+                // echo "Answer: " . $answer['uuid'] . ", Is Correct: " . $answer['is_correct'] . ", Is Selected: " . $is_selected . ", Points: " . $points . "\n";
             }
 
-            if($get_question->different_point == 0){
-                if($is_true == 1){
+            // Debugging statement
+            // echo "Is True: " . $is_true . "\n";
+
+            if ($get_question->different_point == 0) {
+                if ($is_true == 1) {
                     $points += $get_question->point;
                 }
             }
@@ -89,7 +92,7 @@ class SubmitTestController extends Controller
                 "answers" => $answers,
             ];
         }
-
+        
         if($user_session->type_test == 'quiz'){
             StudentQuiz::create([
                 'data_question' => json_encode($data_question),
@@ -122,6 +125,7 @@ class SubmitTestController extends Controller
                     $student_tryout = StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
+                        'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
                         'score' => $points,
                     ]);
@@ -163,6 +167,7 @@ class SubmitTestController extends Controller
                     StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
+                        'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
                         'score' => $points,
                     ]);
@@ -171,6 +176,7 @@ class SubmitTestController extends Controller
                 StudentTryout::create([
                     'data_question' => json_encode($data_question),
                     'user_uuid' => $user_session->user_uuid,
+                    'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
                     'score' => $points,
                 ]);
@@ -247,7 +253,7 @@ class SubmitTestController extends Controller
         }
 
         // Inisialisasi total point keseluruhan
-        $total_point = $get_package->max_point;
+        $total_point = $get_package_test->max_point;
 
         // Faktor skala untuk menentukan seberapa besar pengaruh jumlah yang salah terhadap point
         $scale_factor = 1;

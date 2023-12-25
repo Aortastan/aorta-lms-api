@@ -135,6 +135,7 @@ class TestController extends Controller
             if (!in_array($student_test->uuid, $tryout_uuids)) {
                 $tryout_uuids[] = $student_test->uuid;
                 $my_tests[] = [
+                    "package_uuid" => $student_test->package_uuid,
                     "tryout_uuid" => $student_test->uuid,
                     "type" => "Lifetime",
                     "title" => $student_test->test->title,
@@ -150,6 +151,7 @@ class TestController extends Controller
             if (!in_array($student_test->uuid, $tryout_uuids)) {
                 $tryout_uuids[] = $student_test->uuid;
                 $my_tests[] = [
+                    "package_uuid" => $student_test->package_uuid,
                     "tryout_uuid" => $student_test->uuid,
                     "type" => "Membership",
                     "title" => $student_test->test->title,
