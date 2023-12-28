@@ -311,7 +311,8 @@ class QuestionController extends Controller
                     'message' => 'Title is required',
                 ], 422);
             }
-            if($line[1] != 'multi choice' && $line[1] != 'most point' && $line[1] != 'single choice' && $line[1] != 'fill in blank' && $line[1] != 'true false'){
+            // if($line[1] != 'multi choice' && $line[1] != 'most point' && $line[1] != 'single choice' && $line[1] != 'fill in blank' && $line[1] != 'true false'){
+                if($line[1] != 'single choice' && $line[1] != 'true false'){
                 return response()->json([
                     'message' => 'Question type not valid',
                 ], 422);

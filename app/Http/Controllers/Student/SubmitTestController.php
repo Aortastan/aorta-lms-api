@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Validator;
 class SubmitTestController extends Controller
 {
     public function submitTest(Request $request, $session_uuid){
-        $total_submit_IRT = [10, 20, 50];
+        $total_submit_IRT = [1, 3, 5, 6];
         $validate = [
             'duration_left' => 'required',
             'data_question' => 'required',
@@ -92,7 +92,7 @@ class SubmitTestController extends Controller
                 "answers" => $answers,
             ];
         }
-        
+
         if($user_session->type_test == 'quiz'){
             StudentQuiz::create([
                 'data_question' => json_encode($data_question),
@@ -140,14 +140,17 @@ class SubmitTestController extends Controller
                             ->groupBy('user_uuid');
                     })
                     ->get();
-                    foreach ($total_submit_IRT as $total_submit) {
-                        if($total_submit > $check_irt_point->total_submit){
-                            if(count($latestAttempts) > $total_submit){
+
+                    foreach ($total_submit_IRT as $total_submiter) {
+                        if($total_submiter > $check_irt_point->total_submit){
+
+                            if(count($latestAttempts) > $total_submiter){
                                 $this->calculateIRT($package_test_uuid, $user_session);
                                 $this->RecalculatePoint($check_irt_point, $latestAttempts);
                             }
                         }
                     }
+
 
 
                 }else{
@@ -193,7 +196,6 @@ class SubmitTestController extends Controller
         ], 200);
     }
 
-    // buat kalkulasi point student
     public function RecalculatePoint($check_irt_point, $student_tryout){
         $check_irt_point = json_decode($check_irt_point->data_question);
         foreach ($student_tryout as $index => $tryout) {
@@ -215,7 +217,6 @@ class SubmitTestController extends Controller
         }
     }
 
-    // kalkulasi ulang point masing masing soal
     public function calculateIRT($package_test_uuid, $user_session){
         $get_package_test = PackageTest::where('uuid', $package_test_uuid)->first();
         $get_package = Package::where('uuid', $get_package_test->package_uuid)->first();

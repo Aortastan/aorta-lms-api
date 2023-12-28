@@ -49,7 +49,7 @@ class PackageController extends Controller
             'is_membership' => $checkPackage->is_membership,
             'status' => $checkPackage->status,
             'test_type' => $checkPackage->test_type,
-            'max_point' => $checkPackage->max_point,
+            // 'max_point' => $checkPackage->max_point,
         ];
 
         if($checkPackage->package_type == "course"){
@@ -108,9 +108,9 @@ class PackageController extends Controller
             $validate['is_membership'] = 'required|boolean';
         }
 
-        if($request->test_type == 'IRT'){
-            $validate['max_point'] = 'required|numeric';
-        }
+        // if($request->test_type == 'IRT'){
+        //     $validate['max_point'] = 'required|numeric';
+        // }
 
         $validator = Validator::make($request->all(), $validate);
 
@@ -165,10 +165,10 @@ class PackageController extends Controller
             $validated['test_type'] = $request->test_type;
         }
 
-        $validated['max_point'] = null;
-        if($request->test_type == 'IRT'){
-             $validated['max_point'] = $request->max_point;
-        }
+        // $validated['max_point'] = null;
+        // if($request->test_type == 'IRT'){
+        //      $validated['max_point'] = $request->max_point;
+        // }
 
         Package::create($validated);
 
@@ -213,9 +213,9 @@ class PackageController extends Controller
             $validate['is_membership'] = 'required|boolean';
         }
 
-        if($request->test_type == 'IRT'){
-            $validate['max_point'] = 'required|numeric';
-        }
+        // if($request->test_type == 'IRT'){
+        //     $validate['max_point'] = 'required|numeric';
+        // }
 
         if($request->image instanceof \Illuminate\Http\UploadedFile && $request->image->isValid()){
             $validate['image'] = "required|image";
@@ -294,10 +294,10 @@ class PackageController extends Controller
             $validated['test_type'] = $request->test_type;
         }
 
-        $validated['max_point'] = null;
-        if($request->test_type == 'IRT'){
-             $validated['max_point'] = $request->max_point;
-        }
+        // $validated['max_point'] = null;
+        // if($request->test_type == 'IRT'){
+        //      $validated['max_point'] = $request->max_point;
+        // }
 
         Package::where(['uuid' => $uuid])->update($validated);
 

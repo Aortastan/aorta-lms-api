@@ -18,16 +18,18 @@ trait PackageTrait
                 $uuid = "package_uuid";
             }
             $packages = DB::table('packages')
-                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership', 'packages.test_type', 'packages.max_point')
+                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership', 'packages.test_type')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid');
 
                 if($by_admin == false){
                     $packages = $packages->where('packages.status', 'Published');
                 }
 
-                if ($request->has('package_type')) {
-                    $packageType = $request->input('package_type');
-                    $packages = $packages->where('packages.package_type', $packageType);
+                if($request){
+                    if ($request->has('package_type')) {
+                        $packageType = $request->input('package_type');
+                        $packages = $packages->where('packages.package_type', $packageType);
+                    }
                 }
 
                 $packages = $packages->get();
@@ -96,7 +98,7 @@ trait PackageTrait
                         "is_membership" => $getPackage->is_membership,
                         "status" => $getPackage->status,
                         "test_type" => $getPackage->test_type,
-                        "max_point" => $getPackage->max_point,
+                        // "max_point" => $getPackage->max_point,
                         "created_at" => $getPackage->created_at,
                         "updated_at" => $getPackage->updated_at,
                         "category" => $getPackage->category->name,

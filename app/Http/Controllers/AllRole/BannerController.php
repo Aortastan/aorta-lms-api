@@ -10,12 +10,12 @@ class BannerController extends Controller
 {
     public function index(){
         try{
-            $banner = DB::table('banners')
-                ->select('banners.uuid', 'banners.title', 'banners.subtitle', 'banners.image', 'banners.is_active')->where(['is_active' => 1])->first();
+            $banners = DB::table('banners')
+                ->select('banners.uuid', 'banners.title', 'banners.subtitle', 'banners.image', 'banners.is_active')->where(['is_active' => 1])->get();
 
             return response()->json([
                 'message' => 'Success get data',
-                'banner' => $banner,
+                'banners' => $banners,
             ], 200);
         }
         catch(\Exception $e){

@@ -71,12 +71,6 @@ class BannerController extends Controller
             'is_active' => 1,
         ];
 
-        Banner::where([
-            'is_active' => 1,
-        ])->update([
-            'is_active' => 0,
-        ]);
-
         Banner::create($validated);
 
         return response()->json([
@@ -131,23 +125,7 @@ class BannerController extends Controller
             'is_active' => $request->is_active,
         ];
 
-        if($checkBanner->is_active != $request->is_active){
-            if($request->is_active == 1){
-                Banner::where([
-                    'is_active' => 1
-                ])->update([
-                    'is_active' => 0,
-                ]);
-            }
-        }
-
         Banner::where(['uuid' => $uuid])->update($validated);
-
-        if($checkBanner->is_active != $request->is_active){
-            if($request->is_active == 0){
-                Banner::latest()->first()->update(['is_active' => 1]);
-            }
-        }
 
         return response()->json([
             'message' => 'Success update banner'
@@ -166,11 +144,6 @@ class BannerController extends Controller
         }
 
         Banner::where(['uuid' => $uuid])->delete();
-
-
-        if($checkBanner->is_active == 1){
-            $latestBanner = Banner::latest()->first()->update(['is_active' => 1]);
-        }
 
         return response()->json([
             'message' => 'Success delete banner'
