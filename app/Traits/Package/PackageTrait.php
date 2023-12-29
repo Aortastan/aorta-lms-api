@@ -117,7 +117,7 @@ trait PackageTrait
             }elseif($package_type == 'course'){
                 $getPackage = Package::
                     where('packages.uuid', $uuid)
-                    ->with(['category', 'packageCourses', 'packageCourses.course', 'packageCourses.course.lessons', 'packageCourses.course.lessons.lectures', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests'])
+                    ->with(['category', 'packageCourses', 'packageCourses.course', 'packageCourses.course.lessons', 'packageCourses.course.lessons.lectures', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests', 'packageTests', 'packageTests.test'])
                     ->first();
 
                 if($getPackage == null){

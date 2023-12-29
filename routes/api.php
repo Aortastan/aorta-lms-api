@@ -278,6 +278,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // Package
         Route::group(['prefix' => 'packages', 'as' => 'package.',], function () {
             Route::post('buy', 'API\Payment\XenditController@create')->name('buy');
+            Route::get('{uuid}', 'Student\PackageController@showDetailPurchasedPackage')->name('show');
             Route::post('expired/{transaction_uuid}', 'API\Payment\XenditController@expired')->name('expired');
             Route::get('', 'Student\PackageController@index')->name('index');
 
