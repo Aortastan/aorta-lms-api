@@ -446,4 +446,8 @@ class QuestionController extends Controller
             'message' => 'Success post data',
         ], 200);
     }
+
+    public function downloadCSV() {
+        return response()->download(public_path('template.csv'));
+    }
 }

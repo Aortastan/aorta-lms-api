@@ -153,6 +153,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('', 'Admin\QuestionController@store')->name('store');
             Route::post('duplicate', 'Admin\QuestionController@duplicate')->name('duplicate');
             Route::post('upload/csv', 'Admin\QuestionController@uploadCSV')->name('upload.csv');
+            Route::get('download/csv', 'Admin\QuestionController@downloadCSV')->name('download.csv');
             Route::post('{uuid}', 'Admin\QuestionController@update')->name('update');
             Route::delete('{uuid}', 'Admin\QuestionController@delete')->name('delete');
         });
