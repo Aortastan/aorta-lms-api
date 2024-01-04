@@ -124,32 +124,14 @@ class TestController extends Controller
     }
 
     // ambil semua test yang pernah dibeli berdasarkan package pacakge
-    public function getStudentTests(){
+    public function getStudentTests(Request $request){
         $user = JWTAuth::parseToken()->authenticate();
-        $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
-        $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
-
         $my_tests = [];
-        $tryout_uuids = [];
-        foreach ($get_test_purchased as $index => $student_test) {
-            if (!in_array($student_test->uuid, $tryout_uuids)) {
-                $tryout_uuids[] = $student_test->uuid;
-                $my_tests[] = [
-                    "package_uuid" => $student_test->package_uuid,
-                    "tryout_uuid" => $student_test->uuid,
-                    "type" => "Lifetime",
-                    "title" => $student_test->test->title,
-                    'test_type' => $student_test->test->test_type,
-                ];
-            }
-        }
+        if ($request->has('package_uuid')) {
+            $packageUuid = $request->input('package_uuid');
+            $get_package_test = PackageTest::where('package_uuid', $packageUuid)->with(['test'])->get();
 
-        $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
-        $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
-
-        foreach ($get_course_membership as $index => $student_test) {
-            if (!in_array($student_test->uuid, $tryout_uuids)) {
-                $tryout_uuids[] = $student_test->uuid;
+            foreach ($get_package_test as $index => $student_test) {
                 $my_tests[] = [
                     "package_uuid" => $student_test->package_uuid,
                     "tryout_uuid" => $student_test->uuid,
@@ -157,6 +139,40 @@ class TestController extends Controller
                     "title" => $student_test->test->title,
                     'test_type' => $student_test->test->test_type,
                 ];
+            }
+        }else{
+            $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
+            $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
+
+            $my_tests = [];
+            $tryout_uuids = [];
+            foreach ($get_test_purchased as $index => $student_test) {
+                if (!in_array($student_test->uuid, $tryout_uuids)) {
+                    $tryout_uuids[] = $student_test->uuid;
+                    $my_tests[] = [
+                        "package_uuid" => $student_test->package_uuid,
+                        "tryout_uuid" => $student_test->uuid,
+                        "type" => "Lifetime",
+                        "title" => $student_test->test->title,
+                        'test_type' => $student_test->test->test_type,
+                    ];
+                }
+            }
+
+            $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
+            $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
+
+            foreach ($get_course_membership as $index => $student_test) {
+                if (!in_array($student_test->uuid, $tryout_uuids)) {
+                    $tryout_uuids[] = $student_test->uuid;
+                    $my_tests[] = [
+                        "package_uuid" => $student_test->package_uuid,
+                        "tryout_uuid" => $student_test->uuid,
+                        "type" => "Membership",
+                        "title" => $student_test->test->title,
+                        'test_type' => $student_test->test->test_type,
+                    ];
+                }
             }
         }
 
