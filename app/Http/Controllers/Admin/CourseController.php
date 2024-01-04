@@ -12,6 +12,9 @@ use App\Models\Test;
 use App\Models\Tag;
 use App\Models\CourseTag;
 use App\Models\CourseLesson;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\StudentProgress;
+use App\Models\StudentAssignment;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -62,6 +65,90 @@ class CourseController extends Controller
         }
 
         return $this->getCourses($search, $status, $orderBy, $order);
+    }
+
+    public function preview(Request $request, $course_uuid){
+        $user = JWTAuth::parseToken()->authenticate();
+        $getCourse = Course::where([
+            'uuid' => $course_uuid
+        ])->with(['instructor', 'lessons', 'pretestPosttests', 'pretestPosttests.test', 'lessons.lectures', 'lessons.quizzes', 'lessons.assignments'])->first();
+
+        $pretest_posttests = [];
+        foreach ($getCourse->pretestPosttests as $index => $test) {
+            $pretest_posttests[] = [
+                "pretest_posttest_uuid" => $test->uuid,
+                "title" => $test->test->title,
+                "test_uuid" => $test->test->uuid,
+                "test_category" => $test->test->test_category,
+                "max_attempt" => $test->max_attempt,
+            ];
+        }
+
+        $lessons = [];
+        foreach ($getCourse->lessons as $index => $lesson) {
+            $lesson_lectures = [];
+            foreach ($lesson->lectures as $index1 => $lecture_data) {
+                $isDone = StudentProgress::isLectureDone($lecture_data->uuid, $user->uuid);
+                $lesson_lectures[] = [
+                    "lecture_uuid" => $lecture_data->uuid,
+                    "title" => $lecture_data->title,
+                    "is_done" => $isDone ? 1 : 0,
+                ];
+            }
+
+            $quizzes = [];
+            foreach ($lesson->quizzes as $index1 => $quiz) {
+                $quizzes[] = [
+                    "quiz_uuid" => $quiz->uuid,
+                    "test_uuid" => $quiz->test_uuid,
+                    'title' => $quiz->title,
+                    'description' => $quiz->description,
+                    'duration' => $quiz->duration,
+                    'max_attempt' => $quiz->max_attempt,
+                ];
+            }
+
+            $assignments = [];
+            foreach ($lesson->assignments as $index1 => $assignment) {
+                $student_assignment = StudentAssignment::where([
+                    'student_uuid' => $user->uuid,
+                    'assignment_uuid' => $assignment->uuid,
+                ])->first();
+                $status = null;
+                if($student_assignment != null){
+                    $status = $student_assignment->status;
+                }
+                $assignments[] = [
+                    "assignment_uuid" => $assignment->uuid,
+                    'title' => $assignment->title,
+                    'description' => $assignment->description,
+                    'status' => $status,
+                ];
+            }
+
+
+            $lessons[] = [
+                "lesson_uuid" => $lesson->uuid,
+                "title" => $lesson->title,
+                "description" => $lesson->description,
+                "lectures" => $lesson_lectures,
+                "quizzes" => $quizzes,
+                "assignments" => $assignments,
+            ];
+        }
+        $course = [
+            "uuid" => $getCourse->uuid,
+            "title" => $getCourse->title,
+            "instructor_name" => $getCourse->instructor->name,
+            'description' => $getCourse->description,
+            "image" => $getCourse->image,
+            "video" => $getCourse->video,
+            'number_of_meeting' => $getCourse->number_of_meeting,
+            "lessons" =>$lessons,
+            "pretest_posttests" => $pretest_posttests,
+        ];
+
+        return $course;
     }
 
     public function duplicate(Request $request, $uuid){
