@@ -169,8 +169,21 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::put('{uuid}', 'Admin\TestController@update')->name('update');
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
             Route::post('update-tags/{uuid}', 'Admin\TestController@updateTag')->name('update.tag');
+            Route::get('preview/{uuid}', 'Admin\TestController@preview')->name('preview');
         });
         // end test management
+
+        // pretest posttest management
+        Route::group(['prefix' => 'pretest-posttests', 'as' => 'pretestPosttest.',], function () {
+            Route::get('preview/{uuid}', 'Admin\PretestPosttestController@preview')->name('preview');
+        });
+        // end pretest posttest management
+
+        // quiz management
+        Route::group(['prefix' => 'quizzes', 'as' => 'quiz.',], function () {
+            Route::get('preview/{uuid}', 'Admin\QuizController@preview')->name('preview');
+        });
+        // end quiz management
 
         // course management
         Route::group(['prefix' => 'courses', 'as' => 'courses.',], function () {

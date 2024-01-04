@@ -385,8 +385,8 @@ class QuestionController extends Controller
             $questions[] = $questionData;
 
             // Menambahkan setiap jawaban ke dalam array answers
-            for ($i = 0; $i < (count($line) - 9) / 3; $i++) {
-                $answerIndex = 9 + ($i * 3);
+            for ($i = 0; $i < (count($line) - 9) / 4; $i++) {
+                $answerIndex = 9 + ($i * 4);
 
                 if ($line[$answerIndex] == null && $line[$answerIndex + 1] == null && $line[$answerIndex + 2] == null){
                     continue;
@@ -424,6 +424,10 @@ class QuestionController extends Controller
                         ], 422);
                     }
                 }
+                $explanation = "";
+                if ($line[$answerIndex + 3] != null){
+                    $explanation = $line[$answerIndex + 3];
+                }
 
                 $answerData = [
                     'uuid' => Uuid::uuid4()->toString(),
@@ -431,6 +435,7 @@ class QuestionController extends Controller
                     'answer' => $line[$answerIndex],
                     'is_correct' => $line[$answerIndex + 1],
                     'point' => $line[$answerIndex + 2],
+                    'correct_answer_explanation' => $explanation,
                 ];
                 $answers[] = $answerData;
             }

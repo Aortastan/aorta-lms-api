@@ -27,6 +27,11 @@ class LessonQuiz extends Model
         'status',
     ];
 
+    public function test()
+    {
+        return $this->belongsTo(Test::class, 'test_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
