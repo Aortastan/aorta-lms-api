@@ -258,8 +258,9 @@ class TestController extends Controller
                 $allQuestionsUuid[] = $checkQuestionTest->uuid;
             }
         }
-
-        QuestionTest::whereNotIn('uuid', $allQuestionsUuid)->delete();
+        foreach($newQuestions as $new) {
+            QuestionTest::where('test_uuid', $new['test_uuid'])->delete();
+        }
 
         if(count($newQuestions) > 0){
             QuestionTest::insert($newQuestions);
