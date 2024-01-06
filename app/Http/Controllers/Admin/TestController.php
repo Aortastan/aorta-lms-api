@@ -7,7 +7,14 @@ use Illuminate\Http\Request;
 use App\Models\Test;
 use App\Models\Question;
 use App\Models\QuestionTest;
+use App\Models\SessionTest;
 use App\Models\Tag;
+use App\Models\StudentQuiz;
+use App\Models\LessonQuiz;
+use App\Models\StudentTryout;
+use App\Models\PackageTest;
+use App\Models\PretestPosttest;
+use App\Models\StudentPretestPosttest;
 use App\Models\TestTag;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
@@ -321,9 +328,204 @@ class TestController extends Controller
             QuestionTest::insert($newQuestions);
         }
 
+        $this->updateSessionQuestions($test);
+        $this->updateLessonQuizQuestionsStudent($test);
+        $this->updatePretestPosttestQuestionsStudent($test);
+        $this->updateTryoutQuestionsStudent($test);
+
         return response()->json([
             'message' => 'Success update questions'
         ], 200);
+    }
+
+    public function updateSessionQuestions($test){
+        // update session
+        $question_tests = QuestionTest::where([
+            'test_uuid' => $test['uuid']
+        ])->get();
+
+
+        $sessions = SessionTest::where([
+            'test_uuid' => $test->uuid
+        ])->get();
+
+        foreach ($sessions as $key => $session) {
+            $student_session = [];
+            $data_question = json_decode($session->data_question);
+
+            foreach ($question_tests as $data) {
+                $question_uuid = $data->question_uuid;
+                $answer_uuid = [];
+                $status = "";
+
+                foreach ($data_question as $key1 => $data1) {
+                    // Melakukan pengecekan apakah $question_uuid ada dalam $data_question
+                    if ($data1->question_uuid == $question_uuid) {
+                        $answer_uuid = $data1->answer_uuid;
+                        $status = $data1->status;
+                        break; // Keluar dari loop jika question_uuid ditemukan
+                    }
+                }
+
+                // Menyimpan data ke dalam $student_session
+                $student_session[] = [
+                    'question_uuid' => $question_uuid,
+                    'answer_uuid' => $answer_uuid,
+                    'status' => $status,
+                ];
+            }
+
+            SessionTest::where([
+                'uuid' => $session->uuid
+            ])->update([
+                'data_question' => json_encode($student_session),
+            ]);
+        }
+    }
+
+    public function updateLessonQuizQuestionsStudent($test){
+        // update session
+        $question_tests = QuestionTest::where([
+            'test_uuid' => $test['uuid']
+        ])->get();
+
+        $lesson_quizzes = LessonQuiz::where([
+            'test_uuid' => $test->uuid
+        ])->get();
+
+        foreach ($lesson_quizzes as $index => $lesson_quiz) {
+            $student_quiz = StudentQuiz::where([
+                'lesson_quiz_uuid' => $lesson_quiz->uuid,
+            ])->get();
+
+            foreach ($student_quiz as $key => $session) {
+                $student_session = [];
+                $data_question = json_decode($session->data_question);
+
+                foreach ($question_tests as $data) {
+                    $question_uuid = $data->question_uuid;
+                    $answers = [];
+                    $status = "";
+
+                    foreach ($data_question as $key1 => $data1) {
+                        // Melakukan pengecekan apakah $question_uuid ada dalam $data_question
+                        if ($data1->question_uuid == $question_uuid) {
+                            $answers = $data1->answers;
+                            break; // Keluar dari loop jika question_uuid ditemukan
+                        }
+                    }
+
+                    // Menyimpan data ke dalam $student_session
+                    $student_session[] = [
+                        'question_uuid' => $question_uuid,
+                        'answers' => $answers,
+                    ];
+                }
+
+                StudentQuiz::where([
+                    'uuid' => $student_quiz->uuid
+                ])->update([
+                    'data_question' => json_encode($student_session),
+                ]);
+            }
+        }
+    }
+
+    public function updatePretestPosttestQuestionsStudent($test){
+        // update session
+        $question_tests = QuestionTest::where([
+            'test_uuid' => $test['uuid']
+        ])->get();
+
+        $pretest_posttests = PretestPosttest::where([
+            'test_uuid' => $test->uuid
+        ])->get();
+
+        foreach ($pretest_posttests as $index => $pretest_posttest) {
+            $student_pretest_posttest = StudentPretestPosttest::where([
+                'pretest_posttest_uuid' => $pretest_posttest->uuid,
+            ])->get();
+
+            foreach ($student_pretest_posttest as $key => $session) {
+                $student_session = [];
+                $data_question = json_decode($session->data_question);
+
+                foreach ($question_tests as $data) {
+                    $question_uuid = $data->question_uuid;
+                    $answers = [];
+                    $status = "";
+
+                    foreach ($data_question as $key1 => $data1) {
+                        // Melakukan pengecekan apakah $question_uuid ada dalam $data_question
+                        if ($data1->question_uuid == $question_uuid) {
+                            $answers = $data1->answers;
+                            break; // Keluar dari loop jika question_uuid ditemukan
+                        }
+                    }
+
+                    // Menyimpan data ke dalam $student_session
+                    $student_session[] = [
+                        'question_uuid' => $question_uuid,
+                        'answers' => $answers,
+                    ];
+                }
+
+                StudentPretestPosttest::where([
+                    'uuid' => $session->uuid
+                ])->update([
+                    'data_question' => json_encode($student_session),
+                ]);
+
+            }
+        }
+
+    }
+
+    public function updateTryoutQuestionsStudent($test){
+        $question_tests = QuestionTest::where([
+            'test_uuid' => $test['uuid']
+        ])->get();
+
+        $package_tests = PackageTest::where([
+            'test_uuid' => $test->uuid
+        ])->get();
+
+        foreach ($package_tests as $index => $package_test) {
+            $student_tryout = StudentTryout::where([
+                'package_test_uuid' => $package_test->uuid,
+            ])->get();
+
+            foreach ($student_tryout as $key => $session) {
+                $student_session = [];
+                $data_question = json_decode($session->data_question);
+
+                foreach ($question_tests as $data) {
+                    $question_uuid = $data->question_uuid;
+                    $answers = [];
+                    $status = "";
+
+                    foreach ($data_question as $key1 => $data1) {
+                        // Melakukan pengecekan apakah $question_uuid ada dalam $data_question
+                        if ($data1->question_uuid == $question_uuid) {
+                            $answers = $data1->answers;
+                            break; // Keluar dari loop jika question_uuid ditemukan
+                        }
+                    }
+
+                    // Menyimpan data ke dalam $student_session
+                    $student_session[] = [
+                        'question_uuid' => $question_uuid,
+                        'answers' => $answers,
+                    ];
+                }
+
+                StudentTryout::where([
+                    'uuid' => $student_tryout->uuid
+                ])->update([
+                    'data_question' => json_encode($student_session),
+                ]);
+            }
+        }
     }
 
     public function update(Request $request, $uuid): JsonResponse{
