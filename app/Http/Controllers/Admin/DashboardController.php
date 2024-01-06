@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\PurchasedPackage;
 use App\Models\Transaction;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use App\Models\Package;
 
 class DashboardController extends Controller
 {
@@ -58,4 +60,6 @@ class DashboardController extends Controller
             'data' => $data,
         ], 200);
     }
+
+
 }

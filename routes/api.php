@@ -31,6 +31,10 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::get('payment-methods', 'AllRole\PaymentMethodController@index');
     Route::get('admin-fee', "AllRole\PaymentMethodController@adminFee");
 
+    Route::group(['prefix' => 'packages', 'as' => 'packages.',], function () {
+        Route::get('popular/{package_type}', 'AllRole\DashboardController@popularPackages')->name('popularPackages');
+    });
+
     // Blog for all role
     Route::group(['prefix' => 'blogs', 'as' => 'blogs.',], function () {
         Route::get('', 'AllRole\BlogController@index')->name('index');
@@ -66,6 +70,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::group(['middleware' => ['auth', 'admin', 'verified'], 'prefix' => 'admin', 'as' => 'admin.',], function () {
         // Dashboard
         Route::get('', 'Admin\DashboardController@index')->name('get');
+        Route::get('popular/{package_type}', 'Admin\DashboardController@popularPackages')->name('popular');
         // end dashboard
 
         // Manage Transaction
