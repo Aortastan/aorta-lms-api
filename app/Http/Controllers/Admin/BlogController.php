@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use App\Models\Category;
+use App\Models\Subcategory;
 use App\Models\Blog;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
@@ -30,6 +31,7 @@ class BlogController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string',
             'category_uuid' => 'required|string',
+            'subcategory_uuid' => 'required|string',
             'slug' => 'required|string|unique:blogs',
             'body' => 'required|string',
             'image' => 'required|image',
@@ -53,6 +55,14 @@ class BlogController extends Controller
             ], 422);
         }
 
+        $checkSubcategory = Subcategory::where(['uuid' => $request->subcategory_uuid])->first();
+        if(!$checkSubcategory){
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => ["subcategory_uuid" => ["Subcategory not found"]],
+            ], 422);
+        }
+
         $path = $request->image->store('blogs', 'public');
 
         $user = JWTAuth::parseToken()->authenticate();
@@ -61,6 +71,7 @@ class BlogController extends Controller
             'user_uuid' => $user->uuid,
             'title' => $request->title,
             'category_uuid' => $request->category_uuid,
+            'subcategory_uuid' => $request->subcategory_uuid,
             'slug' => $request->slug,
             'body' => $request->body,
             'image' => $path,
@@ -87,6 +98,7 @@ class BlogController extends Controller
         $validate = [
             'title' => 'required|string',
             'category_uuid' => 'required|string',
+            'subcategory_uuid' => 'required|string',
             'slug' => 'required|string',
             'body' => 'required|string',
             'image' => 'required',
@@ -124,6 +136,15 @@ class BlogController extends Controller
                 'errors' => "Category not found",
             ], 422);
         }
+
+        $checkSubcategory = Subcategory::where(['uuid' => $request->subcategory_uuid])->first();
+        if(!$checkSubcategory){
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => ["subcategory_uuid" => ["Subcategory not found"]],
+            ], 422);
+        }
+
         $path = $checkBlog->image;
         if(!is_string($request->image)){
             if (File::exists(public_path('storage/'.$checkBlog->image))) {
@@ -136,6 +157,7 @@ class BlogController extends Controller
         $validated = [
             'title' => $request->title,
             'category_uuid' => $request->category_uuid,
+            'subcategory_uuid' => $request->subcategory_uuid,
             'slug' => $request->slug,
             'body' => $request->body,
             'image' => $path,

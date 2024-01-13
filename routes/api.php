@@ -31,6 +31,10 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::get('payment-methods', 'AllRole\PaymentMethodController@index');
     Route::get('admin-fee', "AllRole\PaymentMethodController@adminFee");
 
+    Route::get('categories/{category_uuid}', "AllRole\CategoryController@show");
+    Route::get('categories', "AllRole\CategoryController@index");
+    Route::get('search', "AllRole\SearchController@index");
+
     Route::group(['prefix' => 'packages', 'as' => 'packages.',], function () {
         Route::get('popular/{package_type}', 'AllRole\DashboardController@popularPackages')->name('popularPackages');
     });

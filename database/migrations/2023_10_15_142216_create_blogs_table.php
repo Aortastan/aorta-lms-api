@@ -18,6 +18,7 @@ class CreateBlogsTable extends Migration
             $table->uuid('uuid')->unique();
             $table->string('user_uuid');
             $table->string('category_uuid');
+            $table->string('subcategory_uuid');
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('body');

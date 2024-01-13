@@ -19,6 +19,7 @@ class Blog extends Model
     protected $fillable = [
         'user_uuid',
         'category_uuid',
+        'subcategory_uuid',
         'title',
         'slug',
         'body',
@@ -37,6 +38,11 @@ class Blog extends Model
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_uuid', 'uuid');
+    }
+
+    public function subcategory()
+    {
+        return $this->belongsTo(Subcategory::class, 'subcategory_uuid', 'uuid');
     }
 
     protected static function boot()

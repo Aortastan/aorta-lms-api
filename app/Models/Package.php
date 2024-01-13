@@ -18,6 +18,7 @@ class Package extends Model
      */
     protected $fillable = [
         'category_uuid',
+        'subcategory_uuid',
         'package_type',
         'name',
         'description',
@@ -38,6 +39,11 @@ class Package extends Model
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_uuid', 'uuid');
+    }
+
+    public function subcategory()
+    {
+        return $this->belongsTo(Subcategory::class, 'subcategory_uuid', 'uuid');
     }
 
     public function packageTests()

@@ -229,6 +229,7 @@ class SubmitTestController extends Controller
         ->get();
 
         $wrong_answers = [];
+        $zero_student = false;
 
         foreach ($latestAttempts as $index => $test) {
             $data_question = json_decode($test->data_question);
@@ -250,6 +251,10 @@ class SubmitTestController extends Controller
                 if($no_anwer){
                     $wrong_answers[$index2] += 1;
                 }
+
+                if($wrong_answers[$index2] <= 0){
+                    $zero_student = true;
+                }
             }
         }
 
@@ -263,8 +268,12 @@ class SubmitTestController extends Controller
         $point_per_soal = [];
 
         foreach ($wrong_answers as $soal => $jumlah_salah) {
+            $jumlah= $jumlah_salah;
+            if($zero_student){
+                $jumlah = $jumlah_salah + 1;
+            }
             // Hitung point per soal berdasarkan jumlah yang salah
-            $point = $total_point * ($jumlah_salah / array_sum($wrong_answers)) * $scale_factor;
+            $point = $total_point * ($jumlah / array_sum($wrong_answers)) * $scale_factor;
 
             // Simpan point per soal
             $point_per_soal[$soal] = intval($point);

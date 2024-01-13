@@ -18,8 +18,9 @@ trait PackageTrait
                 $uuid = "package_uuid";
             }
             $packages = DB::table('packages')
-                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership', 'packages.test_type')
-                ->join('categories', 'packages.category_uuid', '=', 'categories.uuid');
+                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'subcategories.name as subcategory_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership', 'packages.test_type')
+                ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+                ->join('subcategories', 'packages.subcategory_uuid', '=', 'subcategories.uuid');
 
                 if($by_admin == false){
                     $packages = $packages->where('packages.status', 'Published');
@@ -52,7 +53,7 @@ trait PackageTrait
             if($package_type == 'test'){
                 $getPackage = Package::
                     where(['uuid' => $uuid, 'package_type' => $package_type])
-                    ->with(['category', 'packageTests', 'packageTests.test'])
+                    ->with(['category', 'subcategory', 'packageTests', 'packageTests.test'])
                     ->first();
 
                 if($getPackage == null){
@@ -102,6 +103,7 @@ trait PackageTrait
                         "created_at" => $getPackage->created_at,
                         "updated_at" => $getPackage->updated_at,
                         "category" => $getPackage->category->name,
+                        "subcategory" => $getPackage->subcategory->name,
                         "package_tests" => [],
                     ];
                     foreach ($getPackage->packageTests as $index => $test) {
@@ -117,7 +119,7 @@ trait PackageTrait
             }elseif($package_type == 'course'){
                 $getPackage = Package::
                     where('packages.uuid', $uuid)
-                    ->with(['category', 'packageCourses', 'packageCourses.course', 'packageCourses.course.lessons', 'packageCourses.course.lessons.lectures', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests', 'packageTests', 'packageTests.test'])
+                    ->with(['category', 'subcategory', 'packageCourses', 'packageCourses.course', 'packageCourses.course.lessons', 'packageCourses.course.lessons.lectures', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests', 'packageTests', 'packageTests.test'])
                     ->first();
 
                 if($getPackage == null){
@@ -165,6 +167,7 @@ trait PackageTrait
                         "created_at" => $getPackage->created_at,
                         "updated_at" => $getPackage->updated_at,
                         "category" => $getPackage->category->name,
+                        "subcategory" => $getPackage->subcategory->name,
                         "package_courses" => [],
                         "package_tests" => [],
                     ];

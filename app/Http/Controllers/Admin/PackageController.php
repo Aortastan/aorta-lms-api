@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Models\Package;
 use App\Models\Category;
+use App\Models\Subcategory;
 use App\Models\Course;
 use App\Models\Test;
 use App\Models\PackageTest;
@@ -26,7 +27,7 @@ class PackageController extends Controller
     }
 
     public function show($uuid){
-        $checkPackage = Package::where(['uuid' => $uuid])->with(['packageTests', 'packageTests.test', 'packageCourses', 'packageCourses.course', 'category'])->first();
+        $checkPackage = Package::where(['uuid' => $uuid])->with(['packageTests', 'packageTests.test', 'packageCourses', 'packageCourses.course', 'category', 'subcategory'])->first();
 
         if(!$checkPackage){
             return response()->json([
@@ -38,6 +39,9 @@ class PackageController extends Controller
             "description" => $checkPackage->description,
             "package_type" => $checkPackage->package_type,
             "category_name" => $checkPackage->category->name,
+            "subcategory_name" => $checkPackage->subcategory->name,
+            "category_uuid" => $checkPackage->category->uuid,
+            "subcategory_uuid" => $checkPackage->subcategory->uuid,
             "price_lifetime" => $checkPackage->price_lifetime,
             "price_one_month" => $checkPackage->price_one_month,
             "price_three_months" => $checkPackage->price_three_months,
@@ -87,6 +91,7 @@ class PackageController extends Controller
     public function store(Request $request){
         $validate = [
             'category_uuid' => 'required',
+            'subcategory_uuid' => 'required',
             'package_type' => 'required|in:course,test',
             'name' => 'required',
             'description' => 'required',
@@ -129,10 +134,19 @@ class PackageController extends Controller
             ], 422);
         }
 
+        $checkSubcategory = Subcategory::where(['uuid' => $request->subcategory_uuid])->first();
+        if(!$checkSubcategory){
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => ["subcategory_uuid" => ["Subcategory not found"]],
+            ], 422);
+        }
+
         $path = $request->image->store('packages', 'public');
 
         $validated = [
             'category_uuid' => $request->category_uuid,
+            'subcategory_uuid' => $request->subcategory_uuid,
             'package_type' => $request->package_type,
             'learner_accesibility' => $request->learner_accesibility,
             'name' => $request->name,
@@ -193,6 +207,7 @@ class PackageController extends Controller
 
         $validate = [
             'category_uuid' => 'required|string',
+            'subcategory_uuid' => 'required|string',
             'name' => 'required|string',
             'description' => 'required|string',
             'learner_accesibility' => 'required|in:paid,free',
@@ -253,6 +268,14 @@ class PackageController extends Controller
             ], 422);
         }
 
+        $checkSubcategory = Subcategory::where(['uuid' => $request->subcategory_uuid])->first();
+        if(!$checkSubcategory){
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => ["subcategory_uuid" => ["Subcategory not found"]],
+            ], 422);
+        }
+
         $path = $checkPackage->image;
         if($request->image instanceof \Illuminate\Http\UploadedFile && $request->image->isValid()){
             $path = $request->image->store('packages', 'public');
@@ -264,6 +287,7 @@ class PackageController extends Controller
 
         $validated = [
             'category_uuid' => $request->category_uuid,
+            'subcategory_uuid' => $request->subcategory_uuid,
             'name' => $request->name,
             'description' => $request->description,
             'learner_accesibility' => $request->learner_accesibility,
@@ -304,10 +328,6 @@ class PackageController extends Controller
         return response()->json([
             'message' => 'Success update package'
         ], 200);
-    }
-
-    public function duplicate(Request $request, $uuid){
-
     }
 
     public function packageLists(Request $request, $type, $uuid): JsonResponse{
