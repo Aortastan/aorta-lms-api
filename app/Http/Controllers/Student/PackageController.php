@@ -17,10 +17,11 @@ class PackageController extends Controller
         try{
             $user = JWTAuth::parseToken()->authenticate();
             $purchased_packages = DB::table('purchased_packages')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'subcategories.name as subcategory')
                 ->where('purchased_packages.user_uuid', $user->uuid)
                 ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+                ->join('subcategories', 'packages.subcategory_uuid', '=', 'subcategories.uuid')
                 ->distinct('package_uuid')
                 ->get();
 
@@ -31,10 +32,11 @@ class PackageController extends Controller
             }
 
             $membership_histories = DB::table('membership_histories')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'membership_histories.expired_date')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'subcategories.name as subcategory', 'membership_histories.expired_date')
                 ->where('membership_histories.user_uuid', $user->uuid)
                 ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+                ->join('subcategories', 'packages.subcategory_uuid', '=', 'subcategories.uuid')
                 ->whereNotIn('membership_histories.package_uuid', $uuid_packages)
                 ->whereDate('membership_histories.expired_date', '>', now())
                 ->distinct('package_uuid')
@@ -81,7 +83,7 @@ class PackageController extends Controller
         try{
             $user = JWTAuth::parseToken()->authenticate();
             $purchased_packages = DB::table('purchased_packages')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'subcategories.name as subcategory')
                 ->where('purchased_packages.user_uuid', $user->uuid)
                 ->where('purchased_packages.package_uuid', $uuid)
                 ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
@@ -89,7 +91,7 @@ class PackageController extends Controller
                 ->first();
 
             $membership_histories = DB::table('membership_histories')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'membership_histories.expired_date')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'subcategories.name as subcategory', 'membership_histories.expired_date')
                 ->where('membership_histories.user_uuid', $user->uuid)
                 ->where('membership_histories.package_uuid', $uuid)
                 ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
@@ -105,7 +107,7 @@ class PackageController extends Controller
 
             $getPackage = Package::
                     where('packages.uuid', $uuid)
-                    ->with(['category', 'packageCourses', 'packageCourses.course', 'packageCourses.course.lessons', 'packageCourses.course.lessons.lectures', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests', 'packageTests', 'packageTests.test'])
+                    ->with(['category', 'subcategory', 'packageCourses', 'packageCourses.course', 'packageCourses.course.lessons', 'packageCourses.course.lessons.lectures', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests', 'packageTests', 'packageTests.test'])
                     ->first();
 
                 if($getPackage == null){
@@ -135,6 +137,9 @@ class PackageController extends Controller
                         "created_at" => $getPackage->created_at,
                         "updated_at" => $getPackage->updated_at,
                         "category" => $getPackage->category->name,
+                        "subcategory" => $getPackage->subcategory->name,
+                        "category_uuid" => $getPackage->category->uuid,
+                        "subcategory_uuid" => $getPackage->subcategory->uuid,
                         "package_courses" => [],
                         "package_tests" => [],
                     ];

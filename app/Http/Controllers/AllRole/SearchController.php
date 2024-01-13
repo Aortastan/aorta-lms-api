@@ -11,21 +11,24 @@ class SearchController extends Controller
     public function index(Request $request){
         try{
             $blogs = DB::table('blogs')
-                ->select('blogs.uuid as blog_uuid', 'users.name as user_name', 'categories.name as category_name', 'blogs.title', 'blogs.slug', 'blogs.body', 'blogs.image', 'blogs.status', 'blogs.seo_title', 'blogs.seo_description', 'blogs.seo_keywords','blogs.created_at', 'blogs.updated_at')
+                ->select('blogs.uuid as blog_uuid', 'users.name as user_name', 'categories.name as category_name', 'subcategories.name as subcategory_name', 'blogs.title', 'blogs.slug', 'blogs.body', 'blogs.image', 'blogs.status', 'blogs.seo_title', 'blogs.seo_description', 'blogs.seo_keywords','blogs.created_at', 'blogs.updated_at')
                 ->join('users', 'blogs.user_uuid', '=', 'users.uuid')
-                ->join('categories', 'blogs.category_uuid', '=', 'categories.uuid');
+                ->join('categories', 'blogs.category_uuid', '=', 'categories.uuid')
+                ->join('subcategories', 'blogs.subcategory_uuid', '=', 'subcategories.uuid');
 
             $courses = DB::table('packages')
-                ->select('packages.uuid as course_uuid', 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months', 'packages.price_one_year', 'packages.learner_accesibility', 'packages.image','packages.discount', 'packages.is_membership', 'packages.created_at', 'packages.updated_at')
+                ->select('packages.uuid as course_uuid', 'categories.name as category_name', 'subcategories.name as subcategory_name', 'packages.name', 'packages.description', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months', 'packages.price_one_year', 'packages.learner_accesibility', 'packages.image','packages.discount', 'packages.is_membership', 'packages.created_at', 'packages.updated_at')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+                ->join('subcategories', 'packages.subcategory_uuid', '=', 'subcategories.uuid')
                 ->where([
                     'package_type' => 'course',
                     'status' => 'Published'
                 ]);
 
             $tryouts = DB::table('packages')
-            ->select('packages.uuid as course_uuid', 'categories.name as category_name', 'packages.name', 'packages.description', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months', 'packages.price_one_year', 'packages.learner_accesibility', 'packages.image','packages.discount', 'packages.is_membership', 'packages.created_at', 'packages.updated_at')
+            ->select('packages.uuid as course_uuid', 'categories.name as category_name', 'subcategories.name as subcategory_name', 'packages.name', 'packages.description', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months', 'packages.price_one_year', 'packages.learner_accesibility', 'packages.image','packages.discount', 'packages.is_membership', 'packages.created_at', 'packages.updated_at')
             ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
+            ->join('subcategories', 'packages.subcategory_uuid', '=', 'subcategories.uuid')
             ->where([
                 'package_type' => 'test',
                 'status' => 'Published'
