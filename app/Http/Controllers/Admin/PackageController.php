@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Subcategory;
 use App\Models\Course;
 use App\Models\Test;
+use App\Models\Tryout;
 use App\Models\PackageTest;
 use App\Models\PackageCourse;
 use Illuminate\Support\Facades\Validator;
@@ -424,10 +425,13 @@ class PackageController extends Controller
         $newLists = [];
 
         foreach ($request->tests as $index => $list) {
-            $checkTest = Test::where(['uuid' => $list['test_uuid']])->first();
-            if(!$checkTest){
+            $checkTryout = Tryout::where([
+                'uuid' => $list['test_uuid'],
+                'status' => 'Published'
+                ])->first();
+            if(!$checkTryout){
                 return response()->json([
-                    'message' => 'Test not found',
+                    'message' => 'Tryout not found / not published',
                 ], 404);
             }
             $checkList = PackageTest::where('uuid', $list['uuid'])->first();
@@ -444,6 +448,7 @@ class PackageController extends Controller
             }else{
                 $listsUuid[] = $list['uuid'];
                 $validatedList=[
+                    'test_uuid' => $list['test_uuid'],
                     'attempt' => $list['attempt'],
                     'duration' => $list['duration'],
                     'max_point' => $list['max_point'],

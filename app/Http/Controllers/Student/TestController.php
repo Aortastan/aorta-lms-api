@@ -131,46 +131,90 @@ class TestController extends Controller
             $packageUuid = $request->input('package_uuid');
             $get_package_test = PackageTest::where('package_uuid', $packageUuid)->with(['test'])->get();
 
+            $my_tests = [];
+            $tryout_uuids = [];
             foreach ($get_package_test as $index => $student_test) {
-                $my_tests[] = [
-                    "package_uuid" => $student_test->package_uuid,
-                    "tryout_uuid" => $student_test->uuid,
-                    "type" => "Membership",
-                    "title" => $student_test->test->title,
-                    'test_type' => $student_test->test->test_type,
-                ];
+                if (!in_array($student_test->uuid, $tryout_uuids)) {
+                    $tryout_uuids[] = $student_test->uuid;
+                    $tryout_segments = [];
+                    foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
+                        $tryout_segment_tests = [];
+                        foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
+                            $tryout_segment_tests[] = [
+                                'title_test' => $tryoutSegmentTests['test']['title'],
+                            ];
+                        }
+                        $tryout_segments[] = [
+                            'title_segment' => $tryout_segment['title'],
+                            'tryout_segment_tests' => $tryout_segment_tests,
+                        ];
+                    }
+                    $my_tests[] = [
+                        "package_uuid" => $student_test->package_uuid,
+                        "tryout_uuid" => $student_test->uuid,
+                        "type" => "Lifetime",
+                        "title" => $student_test->test->title,
+                        "tryout_segments" => $tryout_segments,
+                    ];
+                }
             }
         }else{
             $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
-            $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
+            $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
 
             $my_tests = [];
             $tryout_uuids = [];
             foreach ($get_test_purchased as $index => $student_test) {
                 if (!in_array($student_test->uuid, $tryout_uuids)) {
                     $tryout_uuids[] = $student_test->uuid;
+                    $tryout_segments = [];
+                    foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
+                        $tryout_segment_tests = [];
+                        foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
+                            $tryout_segment_tests[] = [
+                                'title_test' => $tryoutSegmentTests['test']['title'],
+                            ];
+                        }
+                        $tryout_segments[] = [
+                            'title_segment' => $tryout_segment['title'],
+                            'tryout_segment_tests' => $tryout_segment_tests,
+                        ];
+                    }
                     $my_tests[] = [
                         "package_uuid" => $student_test->package_uuid,
                         "tryout_uuid" => $student_test->uuid,
                         "type" => "Lifetime",
                         "title" => $student_test->test->title,
-                        'test_type' => $student_test->test->test_type,
+                        "tryout_segments" => $tryout_segments,
                     ];
                 }
             }
 
             $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
-            $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test'])->get();
+            $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
 
             foreach ($get_course_membership as $index => $student_test) {
                 if (!in_array($student_test->uuid, $tryout_uuids)) {
                     $tryout_uuids[] = $student_test->uuid;
+                    $tryout_segments = [];
+                    foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
+                        $tryout_segment_tests = [];
+                        foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
+                            $tryout_segment_tests[] = [
+                                'title_test' => $tryoutSegmentTests['test']['title'],
+                            ];
+                        }
+                        $tryout_segments[] = [
+                            'title_segment' => $tryout_segment['title'],
+                            'tryout_segment_tests' => $tryout_segment_tests,
+                        ];
+                    }
                     $my_tests[] = [
                         "package_uuid" => $student_test->package_uuid,
                         "tryout_uuid" => $student_test->uuid,
                         "type" => "Membership",
                         "title" => $student_test->test->title,
-                        'test_type' => $student_test->test->test_type,
+                        "tryout_segments" => $tryout_segments,
                     ];
                 }
             }

@@ -27,7 +27,7 @@ class PackageTest extends Model
 
     public function test()
     {
-        return $this->belongsTo(Test::class, 'test_uuid', 'uuid');
+        return $this->belongsTo(Tryout::class, 'test_uuid', 'uuid');
     }
 
     protected static function boot()
