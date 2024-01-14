@@ -182,6 +182,16 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // end test management
 
+        // tryout management
+        Route::group(['prefix' => 'tryouts', 'as' => 'tryouts.',], function () {
+            Route::get('', 'Admin\TryoutController@index')->name('get');
+            Route::get('{tryout_uuid}', 'Admin\TryoutController@show')->name('show');
+            Route::put('{tryout_uuid}', 'Admin\TryoutController@update')->name('update');
+            Route::put('add-tests/{tryout_uuid}', 'Admin\TryoutController@addTests')->name('addTests');
+            Route::post('', 'Admin\TryoutController@submit')->name('submit');
+        });
+        // end tryout management
+
         // pretest posttest management
         Route::group(['prefix' => 'pretest-posttests', 'as' => 'pretestPosttest.',], function () {
             Route::get('preview/{uuid}', 'Admin\PretestPosttestController@preview')->name('preview');
