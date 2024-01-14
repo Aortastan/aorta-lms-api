@@ -84,6 +84,9 @@ class TryoutController extends Controller
                 $segmentTests[] = [
                     'segment_test_uuid' => $data1['uuid'],
                     'test_uuid' => $data1['test_uuid'],
+                    'attempt' => $data1['attempt'],
+                    'duration' => $data1['duration'],
+                    'max_point' => $data1['max_point'],
                     'test_type' => $data1['test']['test_type'],
                     'test_title' => $data1['test']['test_title'],
                     'test_category' => $data1['test']['test_category'],
@@ -193,6 +196,9 @@ class TryoutController extends Controller
             'segments.*.title' => 'required',
             'segments.*.tests' => 'required|array',
             'segments.*.tests.*.test_uuid' => 'required',
+            'segments.*.tests.*.attempt' => 'required',
+            'segments.*.tests.*.duration' => 'required',
+            'segments.*.tests.*.max_point' => 'required',
         ];
         $validator = Validator::make($request->all(), $validate);
 
@@ -222,6 +228,9 @@ class TryoutController extends Controller
                 TryoutSegmentTest::create([
                     'tryout_segment_uuid' => $segment->uuid,
                     'test_uuid' => $test['test_uuid'],
+                    'attempt' => $test['attempt'],
+                    'duration' => $test['duration'],
+                    'max_point' => $test['max_point'],
                 ]);
             }
         }

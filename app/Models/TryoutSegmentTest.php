@@ -21,6 +21,9 @@ class TryoutSegmentTest extends Model
     protected $fillable = [
         'tryout_segment_uuid',
         'test_uuid',
+        'attempt',
+        'duration',
+        'max_point'
     ];
 
     public function test()

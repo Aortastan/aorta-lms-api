@@ -20,9 +20,6 @@ class PackageTest extends Model
     protected $fillable = [
         'package_uuid',
         'test_uuid',
-        'attempt',
-        'duration',
-        'max_point'
     ];
 
     public function test()

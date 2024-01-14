@@ -18,6 +18,9 @@ class CreateTryoutSegmentTestsTable extends Migration
             $table->uuid('uuid');
             $table->string('tryout_segment_uuid');
             $table->string('test_uuid');
+            $table->integer('attempt');
+            $table->integer('duration');
+            $table->integer('max_point');
             $table->timestamps();
         });
     }
