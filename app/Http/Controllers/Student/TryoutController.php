@@ -25,9 +25,6 @@ class TryoutController extends Controller
                 select(
                     'uuid',
                     'test_uuid',
-                    'attempt',
-
-                    'duration',
                 )
                 ->where(['uuid' => $tryout_uuid])
                 ->first();
@@ -44,19 +41,53 @@ class TryoutController extends Controller
                 return $checkTestIsPurchasedOrMembership;
             }
 
-            $pretest_posttests = StudentTryout::
-            select('uuid', 'score')
-            ->where([
-                'user_uuid' => $user->uuid,
-                'package_test_uuid' => $getTest->uuid,
-            ])->get();
+            $get_package_test = PackageTest::where('uuid', $tryout_uuid)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
 
-            $getTest['student_attempts'] = $pretest_posttests;
+            $my_tests = [];
+            $tryout_uuids = [];
+            foreach ($get_package_test as $index => $student_test) {
+                if (!in_array($student_test->uuid, $tryout_uuids)) {
+                    $tryout_uuids[] = $student_test->uuid;
+                    $tryout_segments = [];
+                    foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
+                        $tryout_segment_tests = [];
+                        foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
+                            $tryout_segment_tests[] = [
+                                'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
+                                'attempt' => $tryoutSegmentTests['attempt'],
+                                'duration' => $tryoutSegmentTests['duration'],
+                                'max_point' => $tryoutSegmentTests['max_point'],
+                                'title_test' => $tryoutSegmentTests['test']['title'],
+                            ];
+                        }
+                        $tryout_segments[] = [
+                            'title_segment' => $tryout_segment['title'],
+                            'tryout_segment_tests' => $tryout_segment_tests,
+                        ];
+                    }
+                    $my_tests[] = [
+                        "package_uuid" => $student_test->package_uuid,
+                        "test_uuid" => $student_test->uuid,
+                        "type" => "Lifetime",
+                        "title" => $student_test->test->title,
+                        "tryout_segments" => $tryout_segments,
+                    ];
+                }
 
-            return response()->json([
-                'message' => 'Success Get All Tryout Data',
-                'tryout' => $getTest,
-            ], 200);
+                // $pretest_posttests = StudentTryout::
+                // select('uuid', 'score')
+                // ->where([
+                //     'user_uuid' => $user->uuid,
+                //     'package_test_uuid' => $getTest->uuid,
+                // ])->get();
+
+                // $getTest['student_attempts'] = $pretest_posttests;
+
+                return response()->json([
+                    'message' => 'Success Get All Tryout Data',
+                    'tryout' => $my_tests,
+                ], 200);
+            }
         }
         catch(\Exception $e){
             return response()->json([

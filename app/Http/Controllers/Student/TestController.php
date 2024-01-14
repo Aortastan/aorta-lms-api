@@ -129,7 +129,7 @@ class TestController extends Controller
         $my_tests = [];
         if ($request->has('package_uuid')) {
             $packageUuid = $request->input('package_uuid');
-            $get_package_test = PackageTest::where('package_uuid', $packageUuid)->with(['test'])->get();
+            $get_package_test = PackageTest::where('package_uuid', $packageUuid)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
 
             $my_tests = [];
             $tryout_uuids = [];
@@ -141,7 +141,7 @@ class TestController extends Controller
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $tryout_segment_tests[] = [
-                                'tryout_segment_tests' => $tryoutSegmentTests['uuid'],
+                                'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
@@ -176,7 +176,7 @@ class TestController extends Controller
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $tryout_segment_tests[] = [
-                                'tryout_segment_tests' => $tryoutSegmentTests['uuid'],
+                                'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
@@ -209,7 +209,7 @@ class TestController extends Controller
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $tryout_segment_tests[] = [
-                                'tryout_segment_tests' => $tryoutSegmentTests['uuid'],
+                                'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
