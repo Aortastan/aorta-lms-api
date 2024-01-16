@@ -358,12 +358,12 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
         // Tryout
         Route::group(['prefix' => 'tryout', 'as' => 'tryout.',], function () {
-            Route::get('take-test/{pretest_posttest_uuid}', 'Student\TryoutController@takeTest')->name('takeTest');
-            Route::get('{pretest_posttest_uuid}', 'Student\TryoutController@index')->name('index');
+            Route::get('take-test/{tryout_uuid}', 'Student\TryoutController@takeTest')->name('takeTest');
+            Route::get('{tryout_uuid}', 'Student\TryoutController@index')->name('index');
             Route::get('review/{tryout_uuid}', 'Student\TryoutController@show')->name('show');
             Route::post('{package_uuid}/{quiz_uuid}', 'Student\TryoutController@store')->name('store');
-            Route::get('leaderboard/{package_uuid}', 'Student\TryoutController@getLeaderboard')->name('getLeaderboard');
-            Route::get('analytics/{package_uuid}', 'Student\TryoutController@getUserTryoutAnalytic')->name('getUserTryoutAnalytic');
+            Route::get('leaderboard/{tryout_uuid}', 'Student\TryoutController@getLeaderboard')->name('getLeaderboard');
+            Route::get('analytics/{tryout_uuid}', 'Student\TryoutController@getUserTryoutAnalytic')->name('getUserTryoutAnalytic');
         });
         // End Tryout
 

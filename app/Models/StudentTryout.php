@@ -24,6 +24,11 @@ class StudentTryout extends Model
         'score',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

@@ -155,8 +155,9 @@ class TestController extends Controller
                         ];
                     }
                     $my_tests[] = [
+                        "uuid" => $student_test->uuid,
                         "package_uuid" => $student_test->package_uuid,
-                        "test_uuid" => $student_test->uuid,
+                        "test_uuid" => $student_test->test_uuid,
                         "type" => "Lifetime",
                         "title" => $student_test->test->title,
                         "tryout_segments" => $tryout_segments,
@@ -224,8 +225,9 @@ class TestController extends Controller
                         ];
                     }
                     $my_tests[] = [
+                        "uuid" => $student_test->uuid,
                         "package_uuid" => $student_test->package_uuid,
-                        "test_uuid" => $student_test->uuid,
+                        "test_uuid" => $student_test->test_uuid,
                         "type" => "Membership",
                         "title" => $student_test->test->title,
                         "tryout_segments" => $tryout_segments,

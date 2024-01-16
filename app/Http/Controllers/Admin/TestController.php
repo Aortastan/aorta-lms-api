@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\SubmitTestController;
 use Illuminate\Http\Request;
 use App\Models\Test;
 use App\Models\Question;
 use App\Models\QuestionTest;
 use App\Models\SessionTest;
 use App\Models\Tag;
+use App\Models\IrtPoint;
+use App\Models\TryoutSegmentTest;
 use App\Models\StudentQuiz;
 use App\Models\LessonQuiz;
 use App\Models\StudentTryout;
@@ -486,7 +489,7 @@ class TestController extends Controller
             'test_uuid' => $test['uuid']
         ])->get();
 
-        $package_tests = PackageTest::where([
+        $package_tests = TryoutSegmentTest::where([
             'test_uuid' => $test->uuid
         ])->get();
 
@@ -525,6 +528,16 @@ class TestController extends Controller
                     'data_question' => json_encode($student_session),
                 ]);
             }
+
+            if(count($student_tryout) > 0){
+                $check_irt_point = IrtPoint::where([
+                    'package_test_uuid' => $package_test->uuid,
+                ])->first();
+                $SubmitTestController = new SubmitTestController();
+                $SubmitTestController->calculateIRT($package_test->uuid, $student_tryout[0]);
+                $SubmitTestController->RecalculatePoint($check_irt_point, $student_tryout);
+            }
+
         }
     }
 

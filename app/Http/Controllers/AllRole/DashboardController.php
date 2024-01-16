@@ -13,9 +13,20 @@ class DashboardController extends Controller
         $transactions = DB::table('transactions')
         ->select('detail_transactions.package_uuid', DB::raw('COUNT(*) as total_sales'))
         ->join('detail_transactions', 'transactions.uuid', '=', 'detail_transactions.transaction_uuid')
-        ->where('transactions.transaction_status', 'settled')
-        ->where('detail_transactions.transaction_type', $package_type)
-        ->groupBy('detail_transactions.package_uuid')
+        ->where('transactions.transaction_status', 'settled');
+
+        if($package_type != 'all'){
+            $transactions = $transactions->where('detail_transactions.transaction_type', $package_type);
+        }
+
+        if ($request->has('year')) {
+            $year = intval($request->input('year'));
+            if(is_int($year)){
+                $transactions = $transactions->where('transactions.created_at', '>=', now()->subYear($year));
+            }
+        }
+
+        $transactions = $transactions->groupBy('detail_transactions.package_uuid')
         ->orderByDesc('total_sales')
         ->limit(5)
         ->get();

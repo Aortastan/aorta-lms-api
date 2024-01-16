@@ -11,6 +11,9 @@ use App\Models\StudentTryout;
 use App\Models\Question;
 use App\Models\Package;
 use App\Models\PackageTest;
+use App\Models\TryoutSegmentTest;
+use App\Models\TryoutSegment;
+use App\Models\Tryout;
 use App\Models\IrtPoint;
 use Illuminate\Support\Facades\Validator;
 
@@ -108,8 +111,31 @@ class SubmitTestController extends Controller
                 'score' => $points,
             ]);
         }elseif($user_session->type_test == 'tryout'){
-            $get_package_test = PackageTest::where([
+            $check_tryout_segment_test = TryoutSegmentTest::where([
                 'uuid' => $user_session->package_test_uuid
+            ])->first();
+
+            if($check_tryout_segment_test == null){
+                return response()->json([
+                    'message' => 'Tryout segment not found',
+                ]);
+            }
+
+            // cek
+            $check_tryout_segment = TryoutSegment::where([
+                'uuid' => $check_tryout_segment_test->tryout_segment_uuid,
+            ])->first();
+
+            // cek
+            $check_tryout = Tryout::where([
+                'uuid' => $check_tryout_segment->tryout_uuid,
+            ])->first();
+
+
+
+            // cek package mana aja yang menyimpan course tersebut
+            $get_package_test = PackageTest::where([
+                'test_uuid' => $check_tryout->uuid,
             ])->first();
 
             $get_package = Package::where([
@@ -141,12 +167,18 @@ class SubmitTestController extends Controller
                     })
                     ->get();
 
+                    $allStudentAttempts = StudentTryout::whereIn('id', function ($query) use ($package_test_uuid) {
+                        $query
+                            ->from('student_tryouts')
+                            ->where('package_test_uuid', $package_test_uuid);
+                    })
+                    ->get();
                     foreach ($total_submit_IRT as $total_submiter) {
                         if($total_submiter > $check_irt_point->total_submit){
 
                             if(count($latestAttempts) > $total_submiter){
                                 $this->calculateIRT($package_test_uuid, $user_session);
-                                $this->RecalculatePoint($check_irt_point, $latestAttempts);
+                                $this->RecalculatePoint($check_irt_point, $allStudentAttempts);
                             }
                         }
                     }
@@ -218,7 +250,7 @@ class SubmitTestController extends Controller
     }
 
     public function calculateIRT($package_test_uuid, $user_session){
-        $get_package_test = PackageTest::where('uuid', $package_test_uuid)->first();
+        $get_package_test = TryoutSegmentTest::where('uuid', $package_test_uuid)->first();
         $get_package = Package::where('uuid', $get_package_test->package_uuid)->first();
         $latestAttempts = StudentTryout::whereIn('id', function ($query) use ($package_test_uuid) {
             $query->select(\DB::raw('MAX(id)'))
