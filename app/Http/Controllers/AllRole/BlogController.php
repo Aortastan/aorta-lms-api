@@ -12,8 +12,8 @@ class BlogController extends Controller
 {
     use BlogManagementTrait;
 
-    public function index(){
-        return $this->getAllBlogs();
+    public function index(Request $request){
+        return $this->getAllBlogs(false, 0, $request);
     }
 
     public function limit($number_of_limit){

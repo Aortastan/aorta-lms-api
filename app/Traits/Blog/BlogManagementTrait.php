@@ -1,10 +1,12 @@
 <?php
 namespace App\Traits\Blog;
 use Illuminate\Support\Facades\DB;
+use App\Models\Category;
+use App\Models\Subcategory;
 
 trait BlogManagementTrait
 {
-    public function getAllBlogs($byAdmin = false, $limit=0){
+    public function getAllBlogs($byAdmin = false, $limit=0, $request=""){
         try{
             $blogs = DB::table('blogs')
                 ->select('blogs.uuid', 'blogs.title', 'blogs.slug', 'blogs.body', 'blogs.image', 'blogs.status', 'blogs.seo_title', 'blogs.seo_description', 'blogs.seo_keywords', 'users.name as user_name', 'categories.name as category_name', 'subcategories.name as subcategory_name')
@@ -14,6 +16,27 @@ trait BlogManagementTrait
 
             if($byAdmin == false){
                 $blogs = $blogs->where(['blogs.status' => 1]);
+            }
+
+            if($request){
+                if ($request->has('category')) {
+                    $category_name = $request->input('category');
+                    if($category_name){
+                        $category = Category::where([
+                            'name' => $category_name
+                        ])->first();
+                        $blogs = $blogs->where('blogs.category_uuid', $category->uuid);
+                    }
+                }
+                if ($request->has('subcategory')) {
+                    $subcategory_name = $request->input('subcategory');
+                    if($subcategory_name){
+                        $subcategory = Subcategory::where([
+                            'name' => $subcategory_name
+                        ])->first();
+                        $blogs = $blogs->where('blogs.subcategory_uuid', $subcategory->uuid);
+                    }
+                }
             }
 
             if($limit > 0){

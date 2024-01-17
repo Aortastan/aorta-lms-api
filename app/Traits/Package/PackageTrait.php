@@ -3,6 +3,8 @@ namespace App\Traits\Package;
 use Illuminate\Support\Facades\DB;
 use App\Models\Package;
 use App\Models\PurchasedPackage;
+use App\Models\Category;
+use App\Models\Subcategory;
 use App\Models\MembershipHistory;
 use Ramsey\Uuid\Uuid;
 
@@ -29,7 +31,27 @@ trait PackageTrait
                 if($request){
                     if ($request->has('package_type')) {
                         $packageType = $request->input('package_type');
-                        $packages = $packages->where('packages.package_type', $packageType);
+                        if($packageType){
+                            $packages = $packages->where('packages.package_type', $packageType);
+                        }
+                    }
+                    if ($request->has('category')) {
+                        $category_name = $request->input('category');
+                        if($category_name){
+                            $category = Category::where([
+                                'name' => $category_name
+                            ])->first();
+                            $packages = $packages->where('packages.category_uuid', $category->uuid);
+                        }
+                    }
+                    if ($request->has('subcategory')) {
+                        $subcategory_name = $request->input('subcategory');
+                        if($subcategory_name){
+                            $subcategory = Subcategory::where([
+                                'name' => $subcategory_name
+                            ])->first();
+                            $packages = $packages->where('packages.subcategory_uuid', $subcategory->uuid);
+                        }
                     }
                 }
 
