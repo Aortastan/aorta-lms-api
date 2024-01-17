@@ -148,11 +148,17 @@ class SubmitTestController extends Controller
                 ])->first();
 
                 if($check_irt_point){
+                    $count = StudentTryout::where([
+                        'user_uuid' => $user_session->user_uuid,
+                        'package_test_uuid' => $user_session->package_test_uuid,
+                    ])->count();
+
                     $student_tryout = StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
                         'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
+                        'attempt' => $count+1,
                         'score' => $points,
                     ]);
 
@@ -199,20 +205,31 @@ class SubmitTestController extends Controller
                         $this->calculateIRT($package_test_uuid, $user_session);
                     }
 
+                    $count = StudentTryout::where([
+                        'user_uuid' => $user_session->user_uuid,
+                        'package_test_uuid' => $user_session->package_test_uuid,
+                    ])->count();
+
                     StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
                         'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
+                        'attempt' => $count+1,
                         'score' => $points,
                     ]);
                 }
             }else{
+                $count = StudentTryout::where([
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                ])->count();
                 StudentTryout::create([
                     'data_question' => json_encode($data_question),
                     'user_uuid' => $user_session->user_uuid,
                     'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
+                    'attempt' => $count+1,
                     'score' => $points,
                 ]);
 

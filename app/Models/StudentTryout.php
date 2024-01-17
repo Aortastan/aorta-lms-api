@@ -21,6 +21,7 @@ class StudentTryout extends Model
         'user_uuid',
         'package_uuid',
         'package_test_uuid',
+        'attempt',
         'score',
     ];
 

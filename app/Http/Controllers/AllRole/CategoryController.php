@@ -15,7 +15,7 @@ class CategoryController extends Controller
 
             return response()->json([
                 'message' => 'Success get data',
-                'subcategories' => $subcategories,
+                'categories' => $subcategories,
             ], 200);
         }
         catch(\Exception $e){

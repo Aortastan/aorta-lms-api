@@ -19,6 +19,7 @@ class CreateStudentTryoutsTable extends Migration
             $table->text('data_question');
             $table->string('user_uuid');
             $table->string('package_test_uuid');
+            $table->integer('attempt');
             $table->integer('score');
             $table->timestamps();
         });

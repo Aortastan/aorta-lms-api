@@ -401,7 +401,7 @@ class TryoutController extends Controller
                 $maxPoint = $tryout_segment_test['max_point'] ?? 0;
 
                 // Fetch corresponding records in student_tryouts
-                $attemptsData = StudentTryout::select('student_tryouts.score', 'student_tryouts.package_test_uuid', 'student_tryouts.uuid as tryout_uuid', 'student_tryouts.created_at')
+                $attemptsData = StudentTryout::select('student_tryouts.score', 'student_tryouts.uuid', 'student_tryouts.package_test_uuid', 'student_tryouts.uuid as tryout_uuid', 'student_tryouts.created_at')
                     ->where('student_tryouts.user_uuid', auth()->user()->uuid)
                     ->where('student_tryouts.package_test_uuid', $tryout_segment_test['uuid'])
                     ->orderBy('student_tryouts.created_at')
@@ -425,7 +425,7 @@ class TryoutController extends Controller
                 // Add the test data with attempts to the result
                 $formattedResult[] = [
                     'tryout_segment_test_uuid' => $tryout_segment_test['uuid'],
-                    'test_name' => $tryout_segment_test['test']['name'],
+                    'test_name' => $tryout_segment_test['test']['title'],
                     'max_point' => $maxPoint,
                     'attempts' => $attemptsResult,
                 ];
