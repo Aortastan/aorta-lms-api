@@ -34,7 +34,7 @@ class PretestPosttestController extends Controller
 
             if(!$getTest){
                 return response()->json([
-                    'message' => "Test not found",
+                    'message' => "Test tidak ditemukan",
                 ], 404);
             }
 
@@ -54,7 +54,7 @@ class PretestPosttestController extends Controller
             $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'pretest_posttest' => $getTest,
             ], 200);
         }
@@ -78,7 +78,7 @@ class PretestPosttestController extends Controller
 
             if($pretest_posttests == null){
                 return response()->json([
-                    'message' => 'Test not found'
+                    'message' => 'Test tidak ditemukan'
                 ], 404);
             }
 
@@ -95,7 +95,7 @@ class PretestPosttestController extends Controller
 
             if(!$getTest){
                 return response()->json([
-                    'message' => "Test not found",
+                    'message' => "Test tidak ditemukan",
                 ], 404);
             }
 
@@ -156,7 +156,7 @@ class PretestPosttestController extends Controller
         }
 
         return response()->json([
-            'message' => 'Success get data',
+            'message' => 'Sukses mengambil data',
             'score' => $pretest_posttests->score,
             'questions' => $questions
         ], 200);
@@ -186,7 +186,7 @@ class PretestPosttestController extends Controller
 
         if(count($package_uuids) <= 0){
             return response()->json([
-                'message' => "Package course not found",
+                'message' => "Paket kursus tidak ditemukan",
             ]);
         }
 
@@ -205,7 +205,7 @@ class PretestPosttestController extends Controller
 
             if($check_membership_package == null){
                 return response()->json([
-                    'message' => 'You can\'t access this course',
+                    'message' => 'Kamu tidak dapat mengakses kursus ini',
                 ]);
             }
         }
@@ -229,7 +229,7 @@ class PretestPosttestController extends Controller
 
         if(!$getTest){
             return response()->json([
-                'message' => "Test not found",
+                'message' => "Test tidak ditemukan",
             ], 404);
         }
 
@@ -295,7 +295,7 @@ class PretestPosttestController extends Controller
         ];
 
         return response()->json([
-            'message' => "Success get data",
+            'message' => "Sukses mengambil data",
             'question' => $test,
         ], 200);
         }catch(\Exception $e){
@@ -314,7 +314,7 @@ class PretestPosttestController extends Controller
         if($studentTest >= $test->max_attempt){
             return response()->json([
                 'success' => false,
-                'message' => "You have passed the maximum number of attempts",
+                'message' => "Kamu sudah memenuhi maksimum percobaan",
             ]);
         }
         return null;

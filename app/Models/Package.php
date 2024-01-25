@@ -36,11 +36,15 @@ class Package extends Model
         'max_point',
     ];
 
+    public function detailTransactions()
+    {
+        return $this->hasMany(DetailTransaction::class, 'package_uuid', 'uuid');
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_uuid', 'uuid');
     }
-
     public function subcategory()
     {
         return $this->belongsTo(Subcategory::class, 'subcategory_uuid', 'uuid');

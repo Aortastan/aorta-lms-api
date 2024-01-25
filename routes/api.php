@@ -108,6 +108,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::group(['prefix' => 'student', 'as' => 'student.',], function () {
                 Route::get('', 'Admin\UserController@indexStudent')->name('get');
                 Route::put('{uuid}', 'Admin\UserController@updateStudent')->name('update');
+                Route::get('export', 'Admin\UserController@exportStudent')->name('export');
             });
 
             Route::delete('{uuid}', 'Admin\UserController@delete')->name('delete');
@@ -179,6 +180,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
             Route::post('update-tags/{uuid}', 'Admin\TestController@updateTag')->name('update.tag');
             Route::get('preview/{uuid}', 'Admin\TestController@preview')->name('preview');
+            Route::delete('{uuid}', 'Admin\TestController@delete')->name('delete');
         });
         // end test management
 
@@ -189,6 +191,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::put('{tryout_uuid}', 'Admin\TryoutController@update')->name('update');
             Route::put('add-tests/{tryout_uuid}', 'Admin\TryoutController@addTests')->name('addTests');
             Route::post('', 'Admin\TryoutController@submit')->name('submit');
+            Route::delete('{uuid}', 'Admin\TryoutController@delete')->name('delete');
         });
         // end tryout management
 

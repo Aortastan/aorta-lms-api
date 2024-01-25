@@ -27,7 +27,7 @@ class LessonLectureController extends Controller
 
             if(!$getLecture){
                 return response()->json([
-                    'message' => "Lecture not found",
+                    'message' => "Materi tidak ditemukan",
                 ], 404);
             }
 
@@ -52,7 +52,7 @@ class LessonLectureController extends Controller
 
             if(count($package_uuids) <= 0){
                 return response()->json([
-                    'message' => "Package course not found",
+                    'message' => "Paket kursus tidak ditemukan",
                 ]);
             }
 
@@ -71,7 +71,7 @@ class LessonLectureController extends Controller
 
                 if($check_membership_package == null){
                     return response()->json([
-                        'message' => 'You can\'t access this course',
+                        'message' => 'Kamu tidak dapat mengakses kursus ini',
                     ]);
                 }
             }
@@ -109,7 +109,7 @@ class LessonLectureController extends Controller
 
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'lecture' => $lecture,
             ], 200);
         }

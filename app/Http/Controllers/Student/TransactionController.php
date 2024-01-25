@@ -42,7 +42,7 @@ class TransactionController extends Controller
             }
 
             return response()->json([
-                'message' => 'success get data',
+                'message' => 'Sukses mengambil data',
                 'transaction' => $transactions,
             ]);
         }catch (\Exception $e) {

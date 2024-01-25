@@ -27,7 +27,7 @@ class SessionController extends Controller
         $user_session = SessionTest::where(['uuid' => $session_uuid])->first();
         if($user_session == null){
             return response()->json([
-                'message'=>'Session not found'
+                'message'=>'Session tidak ditemukan'
             ], 404);
         }
 
@@ -37,7 +37,7 @@ class SessionController extends Controller
         ]);
 
         return response()->json([
-            'message'=>'Session updated'
+            'message'=>'Session berhasil diupdate'
         ], 200);
     }
 }

@@ -28,7 +28,7 @@ class AssignmentController extends Controller
 
             if(!$getAssignment){
                 return response()->json([
-                    'message' => "Assignment not found",
+                    'message' => "Tugas tidak ditemukan",
                 ], 404);
             }
 
@@ -55,7 +55,7 @@ class AssignmentController extends Controller
 
             if(count($package_uuids) <= 0){
                 return response()->json([
-                    'message' => "Package course not found",
+                    'message' => "Kursus tidak ditemukan",
                 ]);
             }
 
@@ -74,7 +74,7 @@ class AssignmentController extends Controller
 
                 if($check_membership_package == null){
                     return response()->json([
-                        'message' => 'You can\'t access this course',
+                        'message' => 'Kamu tidak dapat mengakses kursus ini',
                     ]);
                 }
             }
@@ -89,7 +89,7 @@ class AssignmentController extends Controller
             $getAssignment['student_assignments'] = $assignment;
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Berhasil mengambil data',
                 'assignment' => $getAssignment,
             ], 200);
         }
@@ -123,7 +123,7 @@ class AssignmentController extends Controller
 
             if(!$getAssignment){
                 return response()->json([
-                    'message' => "Assignment not found",
+                    'message' => "Tugas tidak ditemukan",
                 ], 404);
             }
 
@@ -148,7 +148,7 @@ class AssignmentController extends Controller
 
             if(count($package_uuids) <= 0){
                 return response()->json([
-                    'message' => "Package course not found",
+                    'message' => "Kursus tidak ditemukan",
                 ]);
             }
 
@@ -167,7 +167,7 @@ class AssignmentController extends Controller
 
                 if($check_membership_package == null){
                     return response()->json([
-                        'message' => 'You can\'t access this course',
+                        'message' => 'Kamu tidak dapat mengakses kursus ini',
                     ]);
                 }
             }
@@ -181,7 +181,7 @@ class AssignmentController extends Controller
             if($checkAssignment){
                 if($checkAssignment->status == 'Done'){
                     return response()->json([
-                        'message' => 'This assignment is done',
+                        'message' => 'Tugas ini sudah selesai',
                     ], 200);
                 }
 
@@ -191,7 +191,7 @@ class AssignmentController extends Controller
                     'assignment_uuid' => $getAssignment->uuid,
                 ])->update([
                     'assignment_url' => $request->assignment_url,
-                    'status' => "Waiting for Review",
+                    'status' => "Sedang menunggu review",
                 ]);
             }else{
                 $assignment = StudentAssignment::
@@ -199,14 +199,14 @@ class AssignmentController extends Controller
                         'student_uuid' => $user->uuid,
                         'assignment_uuid' => $getAssignment->uuid,
                         'assignment_url' => $request->assignment_url,
-                        'status' => "Waiting for Review",
+                        'status' => "Sedang menunggu review",
                     ]);
             }
 
 
 
             return response()->json([
-                'message' => 'Success post assignment',
+                'message' => 'Sukses mengirim tugas',
             ], 200);
         }
         catch(\Exception $e){

@@ -33,7 +33,7 @@ class QuizController extends Controller
 
             if(!$getQuiz){
                 return response()->json([
-                    'message' => "Quiz not found",
+                    'message' => "Kuis tidak ditemukan",
                 ], 404);
             }
 
@@ -118,7 +118,7 @@ class QuizController extends Controller
                 $get_answer = Answer::where([
                     'uuid' => $answer->answer_uuid,
                 ])->first();
-                
+
                 if($answer->is_correct) {
                     $answers[] = [
                         'answer_uuid' => $answer->answer_uuid,
@@ -154,7 +154,7 @@ class QuizController extends Controller
         }
 
         return response()->json([
-            'message' => 'Success get data',
+            'message' => 'Sukses mengambil data',
             'score' => $student_quiz->score,
             'questions' => $questions
         ], 200);
@@ -178,7 +178,7 @@ class QuizController extends Controller
 
         if(count($package_uuids) <= 0){
             return response()->json([
-                'message' => "Package course not found",
+                'message' => "Paket kursus tidak ditemukan",
             ]);
         }
 
@@ -197,7 +197,7 @@ class QuizController extends Controller
 
             if($check_membership_package == null){
                 return response()->json([
-                    'message' => 'You can\'t access this course',
+                    'message' => 'Kamu tidak dapat mengakses paket ini',
                 ]);
             }
         }
@@ -227,7 +227,7 @@ class QuizController extends Controller
 
             if(!$getPackage){
                 return response()->json([
-                    'message' => "Package not found",
+                    'message' => "Paket tidak ditemukan",
                 ], 404);
             }
 
@@ -238,7 +238,7 @@ class QuizController extends Controller
 
             if(!$getQuiz){
                 return response()->json([
-                    'message' => "Assignment not found",
+                    'message' => "Tugas tidak ditemukan",
                 ], 404);
             }
 
@@ -257,7 +257,7 @@ class QuizController extends Controller
 
             if(!$getAssignment){
                 return response()->json([
-                    'message' => "Package or assignment not valid",
+                    'message' => "Paket atau tugas tidak valid",
                 ], 404);
             }
 
@@ -288,7 +288,7 @@ class QuizController extends Controller
 
             if(count($getQuestions) != count($request->student_answers)){
                 return response()->json([
-                    'message' => 'Incomplete data',
+                    'message' => 'Data tidak lengkap',
                 ], 422);
             }
             $score = 0;
@@ -318,7 +318,7 @@ class QuizController extends Controller
                 'score' => $score,
             ]);
             return response()->json([
-                'message' => 'Success post data',
+                'message' => 'Sukses mengirim data',
             ], 200);
         }
         catch(\Exception $e){
@@ -338,7 +338,7 @@ class QuizController extends Controller
 
         if(!$getQuiz){
             return response()->json([
-                'message' => "Quiz not found",
+                'message' => "Kuis tidak ditemukan",
             ], 404);
         }
 
@@ -409,7 +409,7 @@ class QuizController extends Controller
         ];
 
         return response()->json([
-            'message' => "Success get data",
+            'message' => "Sukses mengambil data",
             'question' => $quiz,
         ], 200);
         }catch(\Exception $e){
@@ -428,7 +428,7 @@ class QuizController extends Controller
         if($studentQuiz >= $quiz->max_attempt){
             return response()->json([
                 'success' => false,
-                'message' => "You have passed the maximum number of attempts",
+                'message' => "Kamu telah memenuhi maksimum percobaan",
             ]);
         }
         return null;

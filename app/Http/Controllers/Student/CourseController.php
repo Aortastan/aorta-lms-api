@@ -112,7 +112,7 @@ class CourseController extends Controller
 
             if($course == null){
                 return response()->json([
-                    'message' => "Course not found",
+                    'message' => "Kursus tidak ditemukan",
                 ], 404);
             }
 
@@ -162,7 +162,7 @@ class CourseController extends Controller
                                     $course->course_pretest_posttests = $coursePretestPosttest;
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'course' => $course,
             ], 200);
         }
@@ -219,7 +219,7 @@ class CourseController extends Controller
         }
 
         return response()->json([
-            'message'=> "success get data",
+            'message'=> "Sukses mengambil data",
             "courses" => $my_courses,
         ], 200);
     }
@@ -238,7 +238,7 @@ class CourseController extends Controller
 
         if($course == null){
             return response()->json([
-                'message' => "Course not found",
+                'message' => "Kursus tidak ditemukan",
             ]);
         }
 
@@ -254,7 +254,7 @@ class CourseController extends Controller
 
         if(count($package_uuids) <= 0){
             return response()->json([
-                'message' => "Package course not found",
+                'message' => "Kursus tidak ditemukan",
             ]);
         }
 
@@ -273,7 +273,7 @@ class CourseController extends Controller
 
             if($check_membership_package == null){
                 return response()->json([
-                    'message' => 'You can\'t access this course',
+                    'message' => 'Kamu tidak dapat mengakses kursus',
                 ]);
             }
         }

@@ -635,4 +635,43 @@ class TestController extends Controller
         ], 200);
 
     }
+
+    public function delete($uuid){
+        $check_test = Test::where([
+            'uuid' => $uuid,
+        ])->first();
+
+        if($check_test == null){
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        $check_tryout_segment_test = TryoutSegmentTest::where([
+            'test_uuid' => $check_test->uuid,
+        ])->first();
+        $check_lesson_quiz = LessonQuiz::where([
+            'test_uuid' => $check_test->uuid,
+        ])->first();
+        $check_pretest_posttest = PretestPosttest::where([
+            'test_uuid' => $check_test->uuid,
+        ])->first();
+
+        if($check_tryout_segment_test || $check_lesson_quiz || $check_pretest_posttest){
+            return response()->json([
+                'message' => 'This test has published and used in tryouts. You can\'t delete it',
+            ], 404);
+        }
+
+        QuestionTest::where([
+            'test_uuid' => $check_test->uuid,
+        ])->delete();
+        Test::where([
+            'uuid' => $uuid,
+        ])->delete();
+
+        return response()->json([
+            'message' => 'Delete succesfully',
+        ], 200);
+    }
 }
