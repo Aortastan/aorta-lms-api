@@ -53,9 +53,9 @@ trait TestTrait
                 ])->first();
 
                 if($check_tryout_segment_test){
-                    $test->deletealbe = false;
+                    $test->deletalbe = false;
                 }else{
-                    $test->deleteable = true;
+                    $test->deletalbe = true;
                 }
             }
 

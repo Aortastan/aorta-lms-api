@@ -66,9 +66,9 @@ class TryoutController extends Controller
             ])->first();
 
             if($check_tryout){
-                $tryout->deletealbe = false;
+                $tryout->deletalbe = false;
             }else{
-                $tryout->deleteable = true;
+                $tryout->deletalbe = true;
             }
         }
 
@@ -269,7 +269,7 @@ class TryoutController extends Controller
             'test_uuid' => $uuid,
         ])->first();
 
-        if($check_package_test == null){
+        if($check_package_test){
             return response()->json([
                 'message' => 'This tryout has published and used in package. You can\'t delete it',
             ], 404);

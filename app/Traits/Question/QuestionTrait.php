@@ -65,9 +65,9 @@ trait QuestionTrait
                 ])->first();
 
                 if($check_question_test){
-                    $question->deletealbe = false;
+                    $question->deletalbe = false;
                 }else{
-                    $question->deleteable = true;
+                    $question->deletalbe = true;
                 }
             }
 
