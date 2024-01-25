@@ -1,6 +1,7 @@
 <?php
 namespace App\Traits\Question;
 use Illuminate\Support\Facades\DB;
+use App\Models\QuestionTest;
 
 trait QuestionTrait
 {
@@ -57,6 +58,18 @@ trait QuestionTrait
             }
 
             $questions = $questions->get();
+
+            foreach ($questions as $index => $question) {
+                $check_question_test = QuestionTest::where([
+                    'question_uuid' => $question->uuid,
+                ])->first();
+
+                if($check_question_test){
+                    $question->deletealbe = false;
+                }else{
+                    $question->deleteable = true;
+                }
+            }
 
             return response()->json([
                 'message' => 'Success get data',

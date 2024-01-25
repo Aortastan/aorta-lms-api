@@ -60,6 +60,18 @@ class TryoutController extends Controller
 
         $tryouts = $tryouts->get();
 
+        foreach ($tryouts as $index => $tryout) {
+            $check_tryout = PackageTest::where([
+                'test_uuid' => $tryout->uuid,
+            ])->first();
+
+            if($check_tryout){
+                $tryout->deletealbe = false;
+            }else{
+                $tryout->deleteable = true;
+            }
+        }
+
         return response()->json([
             'message' => 'Success get data',
             'tryouts' => $tryouts,
