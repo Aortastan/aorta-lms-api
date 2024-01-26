@@ -1,5 +1,6 @@
 <?php
 namespace App\Traits\Course;
+use App\Models\PackageCourse;
 use Illuminate\Support\Facades\DB;
 
 trait CourseTrait
@@ -38,6 +39,19 @@ trait CourseTrait
             }
 
             $courses = $courses->get();
+
+            foreach ($courses as $index => $course) {
+                $check_course = PackageCourse::where([
+                    'course_uuid' => $course->uuid,
+                ])->first();
+
+                if($check_course){
+                    $course->deletalbe = false;
+                }else{
+                    $course->deletalbe = true;
+                }
+            }
+
 
             return response()->json([
                 'message' => 'Success get data',

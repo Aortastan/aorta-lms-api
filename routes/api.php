@@ -217,6 +217,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('{uuid}', 'Admin\CourseController@update')->name('update');
             Route::post('update-tags/{uuid}', 'Admin\CourseController@updateTag')->name('update.tag');
             Route::get('preview/{course_uuid}', 'Admin\CourseController@preview')->name('preview');
+            Route::delete('{uuid}', 'Admin\CourseController@delete')->name('delete');
         });
         // end course management
 
