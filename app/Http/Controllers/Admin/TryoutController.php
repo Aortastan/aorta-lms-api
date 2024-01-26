@@ -66,9 +66,9 @@ class TryoutController extends Controller
             ])->first();
 
             if($check_tryout){
-                $tryout->deletalbe = false;
+                $tryout->deletable = false;
             }else{
-                $tryout->deletalbe = true;
+                $tryout->deletable = true;
             }
         }
 

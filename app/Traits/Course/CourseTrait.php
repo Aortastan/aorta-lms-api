@@ -46,9 +46,9 @@ trait CourseTrait
                 ])->first();
 
                 if($check_course){
-                    $course->deletalbe = false;
+                    $course->deletable = false;
                 }else{
-                    $course->deletalbe = true;
+                    $course->deletable = true;
                 }
             }
 
