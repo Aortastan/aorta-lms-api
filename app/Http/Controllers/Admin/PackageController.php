@@ -345,11 +345,11 @@ class PackageController extends Controller
             ], 404);
         }
 
-        if($checkPackage->status == 'Published'){
-            return response()->json([
-                'message' => 'You can\'t change the package, because this package already published'
-            ], 422);
-        }
+        // if($checkPackage->status == 'Published'){
+        //     return response()->json([
+        //         'message' => 'You can\'t change the package, because this package already published'
+        //     ], 422);
+        // }
 
        if($type == 'course'){
             $validate = [

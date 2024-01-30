@@ -11,7 +11,7 @@ class DashboardController extends Controller
         $data["total_course"] = 50;
         $data['total_tryout'] = 40;
         return response()->json([
-            'message' => 'Success get data',
+            'message' => 'Sukses mengambil data',
             'data' => $data,
         ], 200);
     }

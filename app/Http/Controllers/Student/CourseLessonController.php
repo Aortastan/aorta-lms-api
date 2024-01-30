@@ -21,7 +21,7 @@ class CourseLessonController extends Controller
 
             if(!$getPackage){
                 return response()->json([
-                    'message' => "Package not found",
+                    'message' => "Paket tidak ditemukan",
                 ], 404);
             }
 
@@ -48,7 +48,7 @@ class CourseLessonController extends Controller
 
             if(!$getCourse){
                 return response()->json([
-                    'message' => "Course not found",
+                    'message' => "Kursus tidak ditemukan",
                 ], 404);
             }
 
@@ -59,7 +59,7 @@ class CourseLessonController extends Controller
 
             if(!$getLesson){
                 return response()->json([
-                    'message' => "Lesson not found",
+                    'message' => "Lesson tidak ditemukan",
                 ], 404);
             }
 
@@ -99,7 +99,7 @@ class CourseLessonController extends Controller
 
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'lesson' => $lesson,
             ], 200);
         }

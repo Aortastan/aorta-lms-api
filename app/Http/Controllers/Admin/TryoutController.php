@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Tryout;
 use App\Models\TryoutSegmentTest;
 use App\Models\TryoutSegment;
+use App\Models\PackageTest;
 
 class TryoutController extends Controller
 {
@@ -58,6 +59,18 @@ class TryoutController extends Controller
         }
 
         $tryouts = $tryouts->get();
+
+        foreach ($tryouts as $index => $tryout) {
+            $check_tryout = PackageTest::where([
+                'test_uuid' => $tryout->uuid,
+            ])->first();
+
+            if($check_tryout){
+                $tryout->deletable = false;
+            }else{
+                $tryout->deletable = true;
+            }
+        }
 
         return response()->json([
             'message' => 'Success get data',
@@ -238,6 +251,46 @@ class TryoutController extends Controller
 
         return response()->json([
             'message' => 'Add tests success',
+        ], 200);
+    }
+
+    public function delete($uuid){
+        $check_tryout = Tryout::where([
+            'uuid' => $uuid,
+        ])->first();
+
+        if($check_tryout == null){
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        $check_package_test = PackageTest::where([
+            'test_uuid' => $uuid,
+        ])->first();
+
+        if($check_package_test){
+            return response()->json([
+                'message' => 'This tryout has published and used in package. You can\'t delete it',
+            ], 404);
+        }
+
+        $check_tryout_segment = TryoutSegment::where([
+            'tryout_uuid' => $uuid,
+        ])->get();
+
+        foreach ($check_tryout_segment as $index => $segment) {
+            TryoutSegmentTest::where([
+                'tryout_segment_uuid' => $segment->uuid,
+            ])->delete();
+        }
+
+        TryoutSegment::where([
+            'tryout_uuid' => $uuid,
+        ])->delete();
+
+        return response()->json([
+            'message' => 'Delete succesfully',
         ], 200);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 namespace App\Traits\Test;
 use Illuminate\Support\Facades\DB;
+use App\Models\TryoutSegmentTest;
 
 trait TestTrait
 {
@@ -45,6 +46,18 @@ trait TestTrait
             }
 
             $tests = $tests->get();
+
+            foreach ($tests as $index => $test) {
+                $check_tryout_segment_test = TryoutSegmentTest::where([
+                    'test_uuid' => $test->uuid,
+                ])->first();
+
+                if($check_tryout_segment_test){
+                    $test->deletable = false;
+                }else{
+                    $test->deletable = true;
+                }
+            }
 
             return response()->json([
                 'message' => 'Success get data',

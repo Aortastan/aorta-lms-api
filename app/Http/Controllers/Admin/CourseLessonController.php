@@ -262,11 +262,11 @@ class CourseLessonController extends Controller
             'uuid' => $get_lesson->course_uuid,
         ])->first();
 
-        if($get_course->status == 'Published'){
-            return response()->json([
-                'message' => 'You cannot delete it, this course has published'
-            ]);
-        }
+        // if($get_course->status == 'Published'){
+        //     return response()->json([
+        //         'message' => 'You cannot delete it, this course has published'
+        //     ]);
+        // }
 
         $lectures = LessonLecture::where([
             'lesson_uuid' => $get_lesson->uuid,

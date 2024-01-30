@@ -35,7 +35,7 @@ class TryoutController extends Controller
                 ->first();
             if(!$getTest){
                 return response()->json([
-                    'message' => "Test not found",
+                    'message' => "Tes tidak ditemukan",
                 ], 404);
             }
             $checkTestIsPurchasedOrMembership = $this->checkTestIsPurchasedOrMembership($user, $getTest->uuid);
@@ -51,7 +51,7 @@ class TryoutController extends Controller
             $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
-                'message' => 'Success Get All Tryout Data',
+                'message' => 'Sukses mengambil data',
                 'tryout' => $getTest,
             ], 200);
         }
@@ -74,7 +74,7 @@ class TryoutController extends Controller
 
             if($tryout == null){
                 return response()->json([
-                    'message' => "Test not found",
+                    'message' => "Tes tidak ditemukan",
                 ], 404);
             }
 
@@ -90,7 +90,7 @@ class TryoutController extends Controller
 
             if(!$getTest){
                 return response()->json([
-                    'message' => "Test not found",
+                    'message' => "Tes tidak ditemukan",
                 ], 404);
             }
 
@@ -149,7 +149,7 @@ class TryoutController extends Controller
             }
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'score' => $tryout->score,
                 'questions' => $questions
             ], 200);
@@ -169,7 +169,7 @@ class TryoutController extends Controller
 
         if($check_tryout_segment_test == null){
             return response()->json([
-                'message' => 'Tryout segment not found',
+                'message' => 'Sub tryout tidak ditemukan',
             ]);
         }
 
@@ -197,7 +197,7 @@ class TryoutController extends Controller
 
         if(count($package_uuids) <= 0){
             return response()->json([
-                'message' => "Package test not found",
+                'message' => "Paket tes tidak ditemukan",
             ]);
         }
 
@@ -216,7 +216,7 @@ class TryoutController extends Controller
 
             if($check_membership_package == null){
                 return response()->json([
-                    'message' => 'You can\'t access this course',
+                    'message' => 'Kamu tidak dapat mengakses paket ini',
                 ]);
             }
         }
@@ -240,7 +240,7 @@ class TryoutController extends Controller
 
         if(!$getTest){
             return response()->json([
-                'message' => "Test not found",
+                'message' => "Tes tidak ditemukan",
             ], 404);
         }
 
@@ -306,7 +306,7 @@ class TryoutController extends Controller
         ];
 
         return response()->json([
-            'message' => "Success get data",
+            'message' => "Sukses mengambil data",
             'question' => $test,
         ], 200);
         }catch(\Exception $e){
@@ -325,7 +325,7 @@ class TryoutController extends Controller
         if($studentTest >= $test->attempt){
             return response()->json([
                 'success' => false,
-                'message' => "You have passed the maximum number of attempts",
+                'message' => "Kamu telah memenuhi maksimum percobaan",
             ]);
         }
         return null;
@@ -480,7 +480,7 @@ class TryoutController extends Controller
 
         if($tryout == null) {
             return response()->json([
-                'message' => "Data not found",
+                'message' => "Data tidak ditemukan",
             ], 404);
         }
 
@@ -584,7 +584,7 @@ class TryoutController extends Controller
 
 
         return response()->json([
-            'message' => 'Success get user tryout analytics',
+            'message' => 'Berhasil mengambil data analitik',
             'status' => true,
             'data' => $student_attempts,
         ], 200);
@@ -597,7 +597,7 @@ class TryoutController extends Controller
 
         if($tryout == null) {
             return response()->json([
-                'message' => "Data not found",
+                'message' => "Data tidak ditemukan",
             ], 404);
         }
 
@@ -737,7 +737,7 @@ class TryoutController extends Controller
         $data['allLeaderboard'] = $tryout_result;
 
         return response()->json([
-            'message' => 'Success get Tryout Leaderboard',
+            'message' => 'Berhasil mengambil data leaderboard',
             'status' => true,
             'data' => $data
         ], 200);

@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Validator;
 class SubmitTestController extends Controller
 {
     public function submitTest(Request $request, $session_uuid){
-        $total_submit_IRT = [1, 3, 5, 6];
+        $total_submit_IRT = [10, 25, 50, 100];
         $validate = [
             'duration_left' => 'required',
             'data_question' => 'required',
@@ -117,7 +117,7 @@ class SubmitTestController extends Controller
 
             if($check_tryout_segment_test == null){
                 return response()->json([
-                    'message' => 'Tryout segment not found',
+                    'message' => 'Sub tryout tidak ditemukan',
                 ]);
             }
 
@@ -173,16 +173,16 @@ class SubmitTestController extends Controller
                     })
                     ->get();
 
-                    $allStudentAttempts = StudentTryout::whereIn('id', function ($query) use ($package_test_uuid) {
-                        $query
-                            ->from('student_tryouts')
-                            ->where('package_test_uuid', $package_test_uuid);
-                    })
-                    ->get();
-                    foreach ($total_submit_IRT as $total_submiter) {
-                        if($total_submiter > $check_irt_point->total_submit){
 
-                            if(count($latestAttempts) > $total_submiter){
+
+                    $allStudentAttempts = StudentTryout::where([
+                        'package_test_uuid' => $package_test_uuid,
+                    ])->get();
+
+                    foreach ($total_submit_IRT as $total_submiter) {
+
+                        if($total_submiter > $check_irt_point->total_submit){
+                            if(count($latestAttempts) >= $total_submiter){
                                 $this->calculateIRT($package_test_uuid, $user_session);
                                 $this->RecalculatePoint($check_irt_point, $allStudentAttempts);
                             }
@@ -203,6 +203,14 @@ class SubmitTestController extends Controller
 
                     if(count($latestAttempts) > $total_submit_IRT[0]){
                         $this->calculateIRT($package_test_uuid, $user_session);
+                        $allStudentAttempts = StudentTryout::where([
+                            'package_test_uuid' => $package_test_uuid,
+                        ])->get();
+
+                        $check_irt_point = IrtPoint::where([
+                            'package_test_uuid' => $package_test_uuid
+                        ])->first();
+                        $this->RecalculatePoint($check_irt_point, $allStudentAttempts);
                     }
 
                     $count = StudentTryout::where([
@@ -240,7 +248,7 @@ class SubmitTestController extends Controller
         SessionTest::where(['uuid' => $session_uuid])->delete();
 
         return response()->json([
-            'message'=>'Test submitted',
+            'message'=>'Test berhasil dikirim',
             'score' => $points,
         ], 200);
     }

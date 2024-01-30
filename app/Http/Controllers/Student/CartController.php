@@ -44,7 +44,7 @@ class CartController extends Controller
             }
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'carts' => $carts,
             ], 200);
         }
@@ -64,7 +64,7 @@ class CartController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation failed',
+                'message' => 'Validasi error',
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -75,7 +75,7 @@ class CartController extends Controller
 
         if (!$checkPackage) {
             return response()->json([
-                'message' => 'Package not found',
+                'message' => 'Paket tidak ditemukan',
             ], 422);
         }
 
@@ -94,7 +94,7 @@ class CartController extends Controller
         }
 
         return response()->json([
-            'message' => 'Success add package to cart',
+            'message' => 'Sukses menambahkan ke keranjang',
         ], 200);
     }
 
@@ -106,7 +106,7 @@ class CartController extends Controller
             ])->delete();
 
             return response()->json([
-                'message' => 'Success delete data',
+                'message' => 'Berhasil menghapus data',
             ], 200);
         }
         catch(\Exception $e){

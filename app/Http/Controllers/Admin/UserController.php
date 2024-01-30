@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Traits\User\UserManagementTrait;
+use App\Exports\StudentExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class UserController extends Controller
 {
@@ -35,6 +37,10 @@ class UserController extends Controller
 
         return $this->usersByRole('student');
 
+    }
+
+    public function exportStudent(){
+        return Excel::download(new StudentExport, 'student_list.xlsx');
     }
 
     public function storeAdmin(Request $request): JsonResponse{

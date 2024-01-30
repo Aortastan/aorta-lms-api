@@ -171,11 +171,11 @@ class LessonLectureController extends Controller
             'uuid' => $get_lesson->course_uuid,
         ])->first();
 
-        if($get_course->status == 'Published'){
-            return response()->json([
-                'message' => 'You cannot delete it, this course has published'
-            ]);
-        }
+        // if($get_course->status == 'Published'){
+        //     return response()->json([
+        //         'message' => 'You cannot delete it, this course has published'
+        //     ]);
+        // }
 
         if($get_lecture->file_path){
             if (File::exists(public_path('storage/'.$get_lecture->file_path))) {

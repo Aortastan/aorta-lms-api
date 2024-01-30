@@ -7,11 +7,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use App\Models\PretestPosttest;
 use App\Models\Course;
+use App\Models\PackageCourse;
+use App\Models\LessonLecture;
+use App\Models\LessonQuiz;
+use App\Models\Assignment;
+use App\Models\CourseLesson;
 use App\Models\User;
 use App\Models\Test;
 use App\Models\Tag;
 use App\Models\CourseTag;
-use App\Models\CourseLesson;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\StudentProgress;
 use App\Models\StudentAssignment;
@@ -564,5 +568,58 @@ class CourseController extends Controller
             'message' => 'Success update tag',
         ], 200);
 
+    }
+
+    public function delete($uuid){
+        $check_course = Course::where([
+            'uuid' => $uuid,
+        ])->first();
+
+        if($check_course == null){
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        $check_package_course = PackageCourse::where([
+            'course_uuid' => $uuid,
+        ])->first();
+
+        if($check_package_course){
+            return response()->json([
+                'message' => 'This course has published and used in package. You can\'t delete it',
+            ], 404);
+        }
+
+        $check_lesson = CourseLesson::where([
+            'course_uuid' => $uuid,
+        ])->get();
+
+        foreach ($check_lesson as $index => $lesson) {
+            LessonLecture::where([
+                'lesson_uuid' => $lesson->uuid,
+            ])->delete();
+
+            LessonQuiz::where([
+                'lesson_uuid' => $lesson->uuid,
+            ])->delete();
+
+            Assignment::where([
+                'lesson_uuid' => $lesson->uuid,
+            ])->delete();
+        }
+
+        CourseLesson::where([
+            'course_uuid' => $uuid,
+        ])->delete();
+
+        PretestPosttest::where([
+            'course_uuid' => $uuid,
+        ])->delete();
+
+
+        return response()->json([
+            'message' => 'Delete succesfully',
+        ], 200);
     }
 }

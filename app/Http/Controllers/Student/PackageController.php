@@ -13,11 +13,11 @@ use App\Traits\Package\PackageTrait;
 class PackageController extends Controller
 {
     use PackageTrait;
-    public function index(){
+    public function index(Request $request){
         try{
             $user = JWTAuth::parseToken()->authenticate();
             $purchased_packages = DB::table('purchased_packages')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'subcategories.name as subcategory')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image','packages.test_type', 'categories.name as category', 'subcategories.name as subcategory')
                 ->where('purchased_packages.user_uuid', $user->uuid)
                 ->join('packages', 'purchased_packages.package_uuid', '=', 'packages.uuid')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
@@ -32,7 +32,7 @@ class PackageController extends Controller
             }
 
             $membership_histories = DB::table('membership_histories')
-                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'categories.name as category', 'subcategories.name as subcategory', 'membership_histories.expired_date')
+                ->select('packages.uuid as package_uuid', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image','packages.test_type',  'categories.name as category', 'subcategories.name as subcategory', 'membership_histories.expired_date')
                 ->where('membership_histories.user_uuid', $user->uuid)
                 ->join('packages', 'membership_histories.package_uuid', '=', 'packages.uuid')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
@@ -50,7 +50,9 @@ class PackageController extends Controller
                     'name' => $package->name,
                     'description' => $package->description,
                     'image' => $package->image,
+                    'test_type' => $package->test_type,
                     'category' => $package->category,
+                    'subcategory' => $package->subcategory,
                     'expired_date' => null,
                 ];
             }
@@ -62,13 +64,28 @@ class PackageController extends Controller
                     'name' => $package->name,
                     'description' => $package->description,
                     'image' => $package->image,
+                    'test_type' => $package->test_type,
                     'category' => $package->category,
+                    'subcategory' => $package->subcategory,
                     'expired_date' => $package->expired_date,
                 ];
             }
 
+        if ($request->has('package_type')) {
+            $package_type = $request->input('package_type');
+            if($package_type){
+                $testPackages = [];
+                foreach ($packages as $package) {
+                    if ($package["package_type"] == $package_type) {
+                        $testPackages[] = $package;
+                    }
+                }
+                $packages = $testPackages;
+            }
+        }
+
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'packages' => $packages,
             ], 200);
         }
@@ -101,7 +118,7 @@ class PackageController extends Controller
 
             if(!$purchased_packages && !$membership_histories){
                 return response()->json([
-                    'message' => 'Data not found',
+                    'message' => 'Data tidak ditemukan',
                 ], 404);
             }
 
@@ -112,7 +129,7 @@ class PackageController extends Controller
 
                 if($getPackage == null){
                     return response()->json([
-                        'message' => 'Package not found',
+                        'message' => 'Package tidak ditemukan',
                     ], 404);
                 }
 
@@ -195,7 +212,7 @@ class PackageController extends Controller
                 }
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'package' => $package,
             ], 200);
         }
@@ -213,7 +230,7 @@ class PackageController extends Controller
     public function show($package_type, $uuid){
         if($package_type != 'test' && $package_type != 'course'){
             return response()->json([
-                'message' => 'Package type not valid',
+                'message' => 'Tipe paket tidak valid',
             ], 404);
         }
 

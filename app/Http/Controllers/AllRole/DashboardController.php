@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Package;
+use App\Models\DetailTransaction;
 
 class DashboardController extends Controller
 {
@@ -36,7 +37,25 @@ class DashboardController extends Controller
             $package_uuids[] = $transaction->package_uuid;
         }
 
-        $packages = Package::whereIn('uuid' ,$package_uuids)->get();
+        $packages = Package::whereIn('uuid', $package_uuids)
+            ->withCount(['packageTests', 'packageCourses'])
+            ->get();
+
+            foreach ($packages as $index => $package) {
+                $getData = DetailTransaction::where('package_uuid', $package->uuid)
+                    ->whereHas('transaction', function ($query) use ($request) {
+                        if ($request->has('year')) {
+                            $year = intval($request->input('year'));
+                            if (is_int($year)) {
+                                $query->where('created_at', '>=', now()->subYear($year));
+                            }
+                        }
+                    })
+                    ->with(['transaction']);
+
+                $totalTransactions = $getData->count();
+                $package->total_transactions = $totalTransactions;
+            }
 
         return response()->json([
             'message' => 'Success get data',

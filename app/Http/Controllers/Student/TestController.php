@@ -27,7 +27,7 @@ class TestController extends Controller
 
             if($test == null){
                 return response()->json([
-                    'message' => "Test not found",
+                    'message' => "Tes tidak ditemukan",
                 ], 404);
             }
 
@@ -44,7 +44,7 @@ class TestController extends Controller
             }
 
             return response()->json([
-                'message' => 'Success get data',
+                'message' => 'Sukses mengambil data',
                 'test' => $test,
             ], 200);
         }
@@ -69,7 +69,7 @@ class TestController extends Controller
 
         if($test == null){
             return response()->json([
-                'message' => "Test not found",
+                'message' => "Test tidak ditemukan",
             ]);
         }
 
@@ -85,7 +85,7 @@ class TestController extends Controller
 
         if(count($package_uuids) <= 0){
             return response()->json([
-                'message' => "Package test not found",
+                'message' => "Paket tes tidak ditemukan",
             ]);
         }
 
@@ -141,7 +141,7 @@ class TestController extends Controller
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $tryout_segment_tests[] = [
-                                'tryout_segment_tests_uuid_uuid' => $tryoutSegmentTests['uuid'],
+                                'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'test_uuid' => $tryoutSegmentTests['test_uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
@@ -178,7 +178,7 @@ class TestController extends Controller
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $tryout_segment_tests[] = [
-                                'tryout_segment_tests_uuid_uuid' => $tryoutSegmentTests['uuid'],
+                                'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'test_uuid' => $tryoutSegmentTests['test_uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
@@ -212,7 +212,7 @@ class TestController extends Controller
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $tryout_segment_tests[] = [
-                                'tryout_segment_tests_uuid_uuid' => $tryoutSegmentTests['uuid'],
+                                'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
@@ -236,8 +236,9 @@ class TestController extends Controller
             }
         }
 
+
         return response()->json([
-            'message'=> "success get data",
+            'message'=> "Sukses mengambil data",
             "tests" => $my_tests,
         ], 200);
     }

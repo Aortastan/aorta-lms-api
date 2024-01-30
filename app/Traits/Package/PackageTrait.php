@@ -75,7 +75,7 @@ trait PackageTrait
             if($package_type == 'test'){
                 $getPackage = Package::
                     where(['uuid' => $uuid, 'package_type' => $package_type])
-                    ->with(['category', 'subcategory', 'packageTests', 'packageTests.test'])
+                    ->with(['category', 'subcategory', 'packageTests', 'packageTests.test', 'packageTests.test.tryoutSegments', 'packageTests.test.tryoutSegments.tryoutSegmentTests', 'packageTests.test.tryoutSegments.tryoutSegmentTests.test'])
                     ->first();
 
                 if($getPackage == null){
@@ -129,12 +129,17 @@ trait PackageTrait
                         "package_tests" => [],
                     ];
                     foreach ($getPackage->packageTests as $index => $test) {
+                        $total_segments = 0;
+                        $total_segment_test = 0;
+                        foreach ($test->test['tryoutSegments'] as $key => $segment) {
+                            $total_segments += 1;
+                            $total_segment_test += count($segment['tryoutSegmentTests']);
+                        }
                         $package['package_tests'][] = [
                             "test_uuid" => $test->test->uuid,
                             "title" => $test->test->title,
-                            "test_category" => $test->test->test_category,
-                            "attempt" => $test->attempt,
-                            "duration" => $test->duration,
+                            'total_segments' => $total_segments,
+                            'total_segment_test' => $total_segment_test,
                         ];
                     }
                 }

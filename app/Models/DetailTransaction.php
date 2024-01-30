@@ -29,6 +29,10 @@ class DetailTransaction extends Model
         return $this->belongsTo(Package::class, 'package_uuid', 'uuid');
     }
 
+    public function transaction(){
+        return $this->belongsTo(Transaction::class, 'transaction_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
