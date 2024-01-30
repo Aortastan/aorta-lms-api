@@ -45,8 +45,12 @@ class AuthController extends Controller
         }
         //Verify login information
         $credentials = $request->only(['email','password']);
+        $user = User::where('email', $request->email)->first();
         if (! $token = auth()->attempt($credentials)) {
             return response()->json(['message' => 'Incorrect credentials'], 401);
+        }
+        if($user->email_verified_at === null) {
+            return response()->json(['message' => 'Please verify your email first'], 403);
         }
         return $this->respondWithToken($token);
 
