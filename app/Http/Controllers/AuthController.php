@@ -48,6 +48,15 @@ class AuthController extends Controller
         if (! $token = auth()->attempt($credentials)) {
             return response()->json(['message' => 'Incorrect credentials'], 401);
         }
+
+        $user = JWTAuth::parseToken()->authenticate();
+        if (!$user->hasVerifiedEmail()) {
+            auth()->logout();
+            return response()->json([
+                'message' => 'Verify your email',
+            ], 403);
+        }
+
         return $this->respondWithToken($token);
 
     }
