@@ -46,7 +46,7 @@ class ProfileController extends Controller
             'name' => 'required|string',
             'username' => 'required|string',
             'mobile_number' => "required|string",
-            'gender' => "required|string|in:male,female",
+            'gender' => "string|in:male,female",
         ];
 
         if($this->user->username != $request->username){
@@ -88,14 +88,15 @@ class ProfileController extends Controller
         }
 
         $cleanedNumber = preg_replace('/[^0-9]/', '', $request->mobile_number);
-            // Menambahkan awalan + jika belum dimulai dengan +
-            if (substr($cleanedNumber, 0, 1) !== '+') {
-                // Menghapus angka 0 di depan jika ada
-                $cleanedNumber = ltrim($cleanedNumber, '0');
 
-                // Menambahkan awalan +62
-                $cleanedNumber = '+62' . $cleanedNumber;
-            }
+        // Menambahkan awalan + jika belum dimulai dengan +
+        if (substr($cleanedNumber, 0, 1) !== '+') {
+            // Menghapus angka 0 di depan jika ada
+            $cleanedNumber = ltrim($cleanedNumber, '0');
+        
+            // Menambahkan awalan +62 jika tidak sudah dimulai dengan 62
+            $cleanedNumber = (substr($cleanedNumber, 0, 2) !== '62') ? '+62' . $cleanedNumber : '+' . $cleanedNumber;
+        }
 
         User::where([
             'uuid' => $this->user->uuid,
