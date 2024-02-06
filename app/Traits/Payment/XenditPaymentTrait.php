@@ -354,7 +354,7 @@ trait XenditPaymentTrait
         $user = JWTAuth::parseToken()->authenticate();
         if($user->mobile_number == null){
             return response()->json([
-                'message' => 'Add your phone number',
+                'message' => 'Tambahkan Nomor Handphone Validmu',
             ], 400);
         }
 
@@ -479,7 +479,7 @@ trait XenditPaymentTrait
         $params = [
             'external_id' => Uuid::uuid4()->toString(),
             'amount' => $total_amount,
-            'success_redirect_url' => 'https://aortastan-5a3a6.web.app/dashboard/student/transactions',
+            'success_redirect_url' => 'https://dev.aortastan.com/dashboard/student/transactions',
             "customer"=> [
                 "given_names" => $user->name,
                 "email" => $user->email,

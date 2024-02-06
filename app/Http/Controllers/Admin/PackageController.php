@@ -291,6 +291,7 @@ class PackageController extends Controller
             'subcategory_uuid' => $request->subcategory_uuid,
             'name' => $request->name,
             'description' => $request->description,
+            'package_type' => $request->package_type,
             'learner_accesibility' => $request->learner_accesibility,
             'status' => $request->status,
             'image' => $path,
@@ -337,7 +338,7 @@ class PackageController extends Controller
                 'message' => 'Type not valid'
             ], 422);
         }
-        $checkPackage = Package::where(['uuid' => $uuid, "package_type" => $type])->first();
+        $checkPackage = Package::where(['uuid' => $uuid])->first();
 
         if(!$checkPackage){
             return response()->json([
