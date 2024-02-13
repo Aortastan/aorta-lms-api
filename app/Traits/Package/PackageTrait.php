@@ -262,7 +262,7 @@ trait PackageTrait
             ], 404);
         }
     }
-
+    
     // insert purchased package
     public function purchasedPackages($transaction_uuid, $user_uuid, $packages){
 
