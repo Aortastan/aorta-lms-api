@@ -113,6 +113,8 @@ class TestController extends Controller
             ], 404);
         }
 
+        $test->questions = $test->questions->sortBy('question.title');
+
         $getQuestion = [];
         foreach ($test->questions as $key => $data) {
             $getQuestion[] = [
