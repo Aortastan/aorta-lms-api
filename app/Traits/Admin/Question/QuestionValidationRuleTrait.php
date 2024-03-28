@@ -18,7 +18,7 @@ trait QuestionValidationRuleTrait
             'status' => 'required|in:Published,Waiting for review,Draft',
             'different_point' => 'required|in:1,0',
             'answers' => 'required|array',
-            'answers.*' => 'array',
+            'answers.*' => 'required|array',
             'answers.*.answer' => 'required|string',
         ];
 

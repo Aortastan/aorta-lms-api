@@ -17,13 +17,13 @@ class StudentMiddleware
     public function handle($request, Closure $next)
     {
         try{
-            $headerSecretJWT = $request->header('secret');
+            // $headerSecretJWT = $request->header('secret');
 
-            if ($headerSecretJWT !== env('JWT_SECRET')) {
-                return response()->json([
-                    'message' => 'Secret not valid',
-                ], 401);
-            }
+            // if ($headerSecretJWT !== env('JWT_SECRET')) {
+            //     return response()->json([
+            //         'message' => 'Secret not valid',
+            //     ], 401);
+            // }
 
             if(! $user = JWTAuth::parseToken()->authenticate()){
                 return response()->json([

@@ -24,6 +24,16 @@ class SessionController extends Controller
             ], 422);
         }
 
+        foreach ($request->data_question as $index => $question) {
+            if($question['status'] == 2){
+                if(($question["answer_uuid"]) <= 0){
+                    return response()->json([
+                        'message'=>'Session berhasil diupdate'
+                    ], 200);
+                }
+            }
+        }
+
         $user_session = SessionTest::where(['uuid' => $session_uuid])->first();
         if($user_session == null){
             return response()->json([

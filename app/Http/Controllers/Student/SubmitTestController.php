@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Answer;
 use Illuminate\Http\Request;
 use App\Models\SessionTest;
 use App\Models\StudentQuiz;
@@ -55,7 +56,11 @@ class SubmitTestController extends Controller
             $answers = [];
             $is_true = 1; // Assume all answers are correct by default
 
-            foreach ($get_question->answers as $index1 => $answer) {
+            $get_answers = Answer::where([
+                'question_uuid' => $data['question_uuid']
+            ])->get();
+
+            foreach ($get_answers as $index1 => $answer) {
                 $is_selected = in_array($answer['uuid'], $data['answer_uuid']) ? 1 : 0;
 
                 if ($answer['is_correct'] == 1 && $is_selected == 0) {
@@ -69,12 +74,16 @@ class SubmitTestController extends Controller
                         'is_selected' => $is_selected,
                     ];
                 } else {
-                    if ($answer['is_correct'] == 1) {
-                        $points += $answer['point'];
-                    } elseif ($is_selected == 1) {
+                    if ($is_selected == 1) {
                         // Only subtract points for incorrect selected answers
-                        $points -= abs($answer['point']);
+                        $points += abs($answer['point']);
                     }
+
+                    $answers[] = [
+                        'answer_uuid' => $answer['uuid'],
+                        'is_correct' => 1,
+                        'is_selected' => $is_selected,
+                    ];
                 }
 
                 // // Debugging statements
