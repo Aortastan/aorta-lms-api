@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Password;
 
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
+Route::get('email/verify/manual/{email}', 'Auth\VerificationController@manualVerification')->name('verification.email');
 
 Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], function () {
     Route::post('payments/webhook/xendit/paid', 'API\Payment\XenditController@webhook')->name('xendit.webhook');

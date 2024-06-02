@@ -262,7 +262,6 @@ class CourseController extends Controller
     public function store(Request $request){
         $validate = [
             'title' => 'required',
-            'description' => 'required',
             'image' => 'required|image',
             'number_of_meeting' => 'required|numeric',
             'is_have_pretest_posttest' => 'required',
@@ -373,7 +372,6 @@ class CourseController extends Controller
         }
         $validate = [
             'title' => 'required',
-            'description' => 'required',
             'number_of_meeting' => 'required|numeric',
             'is_have_pretest_posttest' => 'required',
             'instructor_uuid' => 'required',
