@@ -71,7 +71,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
     // End Pauli Test
 
-    /* KOMEN MULAI DI SINI BUAT TEST API
     Route::group(['middleware' => ['auth', 'verified']], function () {
         // profile management
         Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
@@ -410,8 +409,5 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // End Manage Assignment
 
-
     });
-    // */
-    // SAMPAI SINI
 });
