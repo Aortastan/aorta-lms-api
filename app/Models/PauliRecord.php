@@ -1,18 +1,15 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\User;
-use App\Models\PauliRecordDetail;
+use Ramsey\Uuid\Uuid;
 
 class PauliRecord extends Model
 {
-    use HasFactory;
+    protected $table = 'pauli_records';
 
     protected $fillable = [
-        'user_id',
         'selected_time',
         'questions_attempted',
         'total_correct',
@@ -20,15 +17,30 @@ class PauliRecord extends Model
         'time_start',
         'time_end',
         'date',
+        'user_uuid',
     ];
 
-    public function user()
+    public function packages()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsToMany(Package::class, 'package_pauli_record', 'pauli_record_id', 'package_uuid');
     }
 
     public function details()
     {
         return $this->hasMany(PauliRecordDetail::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->uuid = Uuid::uuid4()->toString();
+        });
     }
 }

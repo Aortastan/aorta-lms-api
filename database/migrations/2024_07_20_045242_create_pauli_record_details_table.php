@@ -16,9 +16,9 @@ class CreatePauliRecordDetailsTable extends Migration
         Schema::create('pauli_record_details', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('pauli_record_id');
-            $table->boolean('correct');
-            $table->boolean('wrong');
-            $table->timestamp('time');
+            $table->boolean('correct')->nullable();
+            $table->boolean('wrong')->nullable();
+            $table->timestamp('time')->nullable();
             $table->timestamps();
 
             $table->foreign('pauli_record_id')->references('id')->on('pauli_records')->onUpdate('cascade')->onDelete('cascade');

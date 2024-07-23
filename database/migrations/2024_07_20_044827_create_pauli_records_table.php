@@ -15,17 +15,14 @@ class CreatePauliRecordsTable extends Migration
     {
         Schema::create('pauli_records', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->enum('selected_time', [1, 2, 5, 10, 15, 30, 60]);
-            $table->integer('questions_attempted');
-            $table->integer('total_correct');
-            $table->integer('total_wrong');
-            $table->timestamp('time_start');
-            $table->timestamp('time_end');
-            $table->date('date');
+            $table->enum('selected_time', [1, 2, 5, 10, 15, 30, 60])->nullable();
+            $table->integer('questions_attempted')->nullable();
+            $table->integer('total_correct')->nullable();
+            $table->integer('total_wrong')->nullable();
+            $table->timestamp('time_start')->nullable();
+            $table->timestamp('time_end')->nullable();
+            $table->date('date')->nullable();
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
         });
     }
 
