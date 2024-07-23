@@ -1,14 +1,13 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\PauliRecord;
+use Ramsey\Uuid\Uuid;
 
 class PauliRecordDetail extends Model
 {
-    use HasFactory;
+    protected $table = 'pauli_record_details';
 
     protected $fillable = [
         'pauli_record_id',
@@ -20,5 +19,14 @@ class PauliRecordDetail extends Model
     public function pauliRecord()
     {
         return $this->belongsTo(PauliRecord::class);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->uuid = Uuid::uuid4()->toString();
+        });
     }
 }

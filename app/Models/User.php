@@ -70,4 +70,9 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             $model->uuid = Uuid::uuid4()->toString();
         });
     }
+
+    public function pauliRecords()
+    {
+        return $this->hasMany(PauliRecord::class, 'user_uuid', 'uuid');
+    }
 }

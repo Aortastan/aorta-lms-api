@@ -62,9 +62,20 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
     // End Course
 
+    // Pauli Test
+    Route::group(['prefix'=> 'pauli', 'as'=> 'pauli.',], function() {
+        Route::post('assign-to-package', 'Pauli\PackageAssignmentController@assignToPackage')->name('assignToPackage');
+        Route::post('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
+        Route::post('record', 'Pauli\RecordDataController@postRecord')->name('postRecord');
+        Route::post('record-detail', 'Pauli\RecordDetailController@postRecordDetail')->name('postRecordDetail');
+        Route::post('leaderboard', 'Pauli\RecordDataController@getLeaderboard')->name('getLeaderboard');
+    });
+    // End Pauli Test
+
+    // /* KOMEN MULAI DI SINI BUAT TEST API
     Route::group(['middleware' => ['auth', 'verified']], function () {
-       // profile management
-       Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
+        // profile management
+        Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
             Route::get('', 'AllRole\ProfileController@index')->name('get');
             Route::post('', 'AllRole\ProfileController@update')->name('update');
             Route::put('change-password', 'AllRole\ProfileController@changePassword')->name('changePassword');
@@ -402,4 +413,5 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
 
     });
+    // */ SAMPAI SINI
 });
