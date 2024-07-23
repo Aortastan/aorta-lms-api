@@ -62,9 +62,9 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     // End Course
 
     // Pauli Test
-    Route::group(['prefix'=> 'pauli', 'as'=> 'pauli.',], function() {
+    Route::group(['prefix' => 'pauli', 'as' => 'pauli.',], function () {
         Route::post('assign-to-package', 'Pauli\PackageAssignmentController@assignToPackage')->name('assignToPackage');
-        Route::post('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
+        Route::get('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
         Route::post('record', 'Pauli\RecordDataController@postRecord')->name('postRecord');
         Route::post('record-detail', 'Pauli\RecordDetailController@postRecordDetail')->name('postRecordDetail');
         Route::post('leaderboard', 'Pauli\LeaderboardController@getLeaderboard')->name('getLeaderboard');
@@ -309,8 +309,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
         // Manage Test
         Route::group(['prefix' => 'tests', 'as' => 'test.',], function () {
-        Route::get('', 'Student\TestController@getStudentTests');
-        Route::post('submit/{session_uuid}', 'Student\SubmitTestController@submitTest');
+            Route::get('', 'Student\TestController@getStudentTests');
+            Route::post('submit/{session_uuid}', 'Student\SubmitTestController@submitTest');
             // Route::get('{tryout_uuid}', 'Student\TestController@detailPurchasedTest')->name('detailPurchasedTest');
         });
         // End Manage Test
@@ -329,7 +329,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{uuid}', 'Student\PackageController@showDetailPurchasedPackage')->name('show');
             Route::post('expired/{transaction_uuid}', 'API\Payment\XenditController@expired')->name('expired');
             Route::get('', 'Student\PackageController@index')->name('index');
-
         });
         // End Package
 
