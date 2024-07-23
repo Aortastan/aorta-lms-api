@@ -20,13 +20,4 @@ class PauliRecordDetail extends Model
     {
         return $this->belongsTo(PauliRecord::class);
     }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            $model->uuid = Uuid::uuid4()->toString();
-        });
-    }
 }
