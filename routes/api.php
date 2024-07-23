@@ -67,11 +67,11 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::post('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
         Route::post('record', 'Pauli\RecordDataController@postRecord')->name('postRecord');
         Route::post('record-detail', 'Pauli\RecordDetailController@postRecordDetail')->name('postRecordDetail');
-        Route::post('leaderboard', 'Pauli\RecordDataController@getLeaderboard')->name('getLeaderboard');
+        Route::post('leaderboard', 'Pauli\LeaderboardController@getLeaderboard')->name('getLeaderboard');
     });
     // End Pauli Test
 
-    // /* KOMEN MULAI DI SINI BUAT TEST API
+    /* KOMEN MULAI DI SINI BUAT TEST API
     Route::group(['middleware' => ['auth', 'verified']], function () {
         // profile management
         Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
@@ -412,5 +412,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
 
     });
-    // */ SAMPAI SINI
+    // */
+    // SAMPAI SINI
 });
