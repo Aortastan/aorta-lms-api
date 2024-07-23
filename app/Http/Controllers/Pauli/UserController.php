@@ -11,21 +11,16 @@ use App\Models\Test;
 use App\Models\MembershipHistory;
 use App\Models\PackageTest;
 use Carbon\Carbon;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Namshi\JOSE\JWT;
 
 class UserController extends Controller
 {
     public function checkEligibility(Request $request)
     {
-        // Validasi request
-        $validator = Validator::make($request->all(), [
-            'user_uuid' => 'required|string|exists:users,uuid',
-        ]);
+        $user = JWTAuth::parseToken()->authenticate();
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $userUuid = $request->input('user_uuid');
+        $userUuid = $user->uuid;
 
         // Cek apakah user dengan user_uuid ada
         $user = User::find($userUuid);
