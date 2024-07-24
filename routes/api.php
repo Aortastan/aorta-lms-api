@@ -67,7 +67,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::get('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
         Route::post('record', 'Pauli\RecordDataController@postRecord')->name('postRecord');
         Route::post('record-detail', 'Pauli\RecordDetailController@postRecordDetail')->name('postRecordDetail');
-        Route::post('leaderboard', 'Pauli\LeaderboardController@getLeaderboard')->name('getLeaderboard');
+        Route::get('leaderboard/{selected_time}', 'Pauli\LeaderboardController@getLeaderboard')->name('getLeaderboard');
     });
     // End Pauli Test
 

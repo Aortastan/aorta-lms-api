@@ -17,7 +17,6 @@ class RecordDetailController extends Controller
             'details' => 'required|array',
             'details.*.pauli_record_id' => 'required|exists:pauli_records,id',
             'details.*.correct' => 'required|boolean',
-            'details.*.wrong' => 'required|boolean',
             'details.*.time' => 'required|date_format:H:i:s',
         ]);
 
