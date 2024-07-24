@@ -11,17 +11,14 @@ use App\Models\PauliRecord;
 
 class LeaderboardController extends Controller
 {
-    public function getLeaderboard(Request $request)
+    public function getLeaderboard($selected_time)
     {
-        $validator = Validator::make($request->all(), [
-            'selected_time' => 'required|integer|in:1,2,5,10,15,30,60'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        // Selected time minimum 30 minutes
+        if ($selected_time < 30) {
+            return response()->json(['error' => 'Selected time must be at least 30 minutes'], 422);
         }
 
-        $selectedTime = $request->input('selected_time');
+        $selectedTime = $selected_time;
 
         $records = PauliRecord::where('selected_time', $selectedTime)
             ->with('user')
