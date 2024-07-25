@@ -72,13 +72,13 @@ class PackageController extends Controller
 
         $package['package_tests'] = [];
         foreach ($checkPackage->packageTests as $index2 => $list) {
-            if (stripos($list['test']['title'], 'Pauli') !== false || stripos($list['test']['title'], 'Koran') !== false) {
-                continue;
-            }
+            // if (stripos($list['test']['title'], 'Pauli') !== false || stripos($list['test']['title'], 'Koran') !== false) {
+            //     continue;
+            // }
 
             $package['package_tests'][] = [
                 "uuid" => $list['uuid'],
-                "test_uuid" => $list['test']['uuid'],
+                // "test_uuid" => $list['test']['uuid'],
                 "title" => $list['test']['title'],
                 "attempt" => $list['attempt'],
                 "duration" => $list['duration'],
