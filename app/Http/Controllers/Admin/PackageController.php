@@ -72,6 +72,10 @@ class PackageController extends Controller
 
         $package['package_tests'] = [];
         foreach ($checkPackage->packageTests as $index2 => $list) {
+            if (stripos($list['test']['title'], 'Pauli') !== false || stripos($list['test']['title'], 'Koran') !== false) {
+                continue;
+            }
+
             $package['package_tests'][] = [
                 "uuid" => $list['uuid'],
                 "test_uuid" => $list['test']['uuid'],
@@ -80,9 +84,7 @@ class PackageController extends Controller
                 "duration" => $list['duration'],
                 "max_point" => $list['max_point'],
             ];
-
         }
-
         return response()->json([
             'message' => 'Successful get data',
             'package' => $package,
