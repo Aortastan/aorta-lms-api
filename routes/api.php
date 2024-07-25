@@ -63,6 +63,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
     // Pauli Test
     Route::group(['prefix' => 'pauli', 'as' => 'pauli.',], function () {
+        Route::get('/record/{pauli_id}', 'Pauli\RecordDataController@getPauli')->name('getPauli');
         Route::post('assign-to-package', 'Pauli\PackageAssignmentController@assignToPackage')->name('assignToPackage');
         Route::post('unassign-from-package', 'Pauli\PackageAssignmentController@unassignFromPackage')->name('unassignFromPackage');
         Route::get('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
