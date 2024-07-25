@@ -11,6 +11,19 @@ use App\Models\PauliRecord;
 
 class RecordDataController extends Controller
 {
+    public function getPauli($pauli_id){
+        $pauli = PauliRecord::where('id', $pauli_id)->first();
+        if($pauli){
+            return response()->json([
+                'message' => 'Pauli record found',
+                'pauli' => $pauli
+            ], 200);
+        }else{
+            return response()->json([
+                'message' => 'Pauli record not found',
+            ], 404);
+        }
+    }
     public function postRecord(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
