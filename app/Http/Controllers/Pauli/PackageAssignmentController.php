@@ -145,7 +145,6 @@ class PackageAssignmentController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'package_uuid' => 'required|string|exists:packages,uuid',
-            'test_uuid' => 'required|string|exists:tests,uuid',
         ]);
 
         if ($validator->fails()) {
@@ -153,29 +152,42 @@ class PackageAssignmentController extends Controller
         }
 
         $packageUuid = $request->input('package_uuid');
-        $testUuid = $request->input('test_uuid');
 
-        $packageTest = PackageTest::where('package_uuid', $packageUuid)
-            ->where('test_uuid', $testUuid)
-            ->first();
+        // Find the tests with titles containing "Pauli" or "Koran"
+        $tests = Test::where(function ($query) {
+            $query->where('title', 'LIKE', '%Pauli%')
+                ->orWhere('title', 'LIKE', '%pauli%')
+                ->orWhere('title', 'LIKE', '%Koran%')
+                ->orWhere('title', 'LIKE', '%koran%');
+        })->pluck('uuid');
 
-        if (!$packageTest) {
+        if ($tests->isEmpty()) {
             return response()->json([
-                'error' => 'Assignment not found',
+                'error' => 'No tests found with titles containing "Pauli" or "Koran"',
                 'status' => "ERROR"
             ], 404);
         }
 
         try {
-            $packageTest->delete();
+            // Delete the entries in the pivot table
+            $deletedCount = PackageTest::where('package_uuid', $packageUuid)
+                ->whereIn('test_uuid', $tests)
+                ->delete();
+
+            if ($deletedCount == 0) {
+                return response()->json([
+                    'error' => 'No matching assignments found to delete',
+                    'status' => "ERROR"
+                ], 404);
+            }
 
             return response()->json([
-                'message' => "Test berhasil di-unassign dari Package",
+                'message' => "Tests with titles containing 'Pauli' or 'Koran' successfully unassigned from package",
                 'status' => "OK"
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Failed to unassign test from package',
+                'error' => 'Failed to unassign tests from package',
                 'details' => $e->getMessage(),
                 'status' => "ERROR"
             ], 500);
