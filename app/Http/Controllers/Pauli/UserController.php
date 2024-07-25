@@ -10,6 +10,7 @@ use App\Models\Package;
 use App\Models\Test;
 use App\Models\MembershipHistory;
 use App\Models\PackageTest;
+use App\Models\PauliRecord;
 use Carbon\Carbon;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Namshi\JOSE\JWT;
@@ -64,5 +65,35 @@ class UserController extends Controller
                 'message' => "Student {$user->name} tidak memiliki package yang mengandung paket tes pauli"
             ], 200);
         }
+    }
+
+    // Pauli Test History
+    public function userHistory(Request $request)
+    {
+        // $user = JWTAuth::parseToken()->authenticate();
+
+        // $userUuid = $user->uuid;
+
+        $userUuid = $request->user_uuid;
+
+        // Cek apakah user dengan user_uuid ada
+        $user = User::where('uuid', $userUuid)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $user = User::find($userUuid);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $pauliRecords = PauliRecord::where('user_uuid', $userUuid)
+            ->with('details')
+            ->orderBy('date', 'desc')
+            ->get();
+
+        return response()->json(['data' => $pauliRecords], 200);
     }
 }

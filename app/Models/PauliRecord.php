@@ -18,6 +18,13 @@ class PauliRecord extends Model
         'time_end',
         'date',
         'user_uuid',
+        'correct_datas',
+        'incorrect_datas'
+    ];
+
+    protected $casts = [
+        'correct_datas' => 'array',
+        'incorrect_datas' => 'array',
     ];
 
     public function packages()
