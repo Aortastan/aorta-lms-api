@@ -20,6 +20,8 @@ class RecordDataController extends Controller
             'time_start' => 'required|date_format:H:i:s',
             'time_end' => 'required|date_format:H:i:s',
             'date' => 'required|date_format:Y-m-d',
+            'correct_datas' => 'required|array',
+            'incorrect_datas' => 'required|array',
         ]);
 
         if ($validator->fails()) {
@@ -35,6 +37,8 @@ class RecordDataController extends Controller
             'time_start' => $request->time_start,
             'time_end' => $request->time_end,
             'date' => $request->date,
+            'correct_datas' => $request->correct_datas,
+            'incorrect_datas' => $request->incorrect_datas,
         ]);
 
         return response()->json([

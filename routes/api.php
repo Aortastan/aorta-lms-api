@@ -65,10 +65,13 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     // Pauli Test
     Route::group(['prefix' => 'pauli', 'as' => 'pauli.',], function () {
         Route::post('assign-to-package', 'Pauli\PackageAssignmentController@assignToPackage')->name('assignToPackage');
+        Route::post('unassign-from-package', 'Pauli\PackageAssignmentController@unassignFromPackage')->name('unassignFromPackage');
         Route::get('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
         Route::post('record', 'Pauli\RecordDataController@postRecord')->name('postRecord');
         Route::post('record-detail', 'Pauli\RecordDetailController@postRecordDetail')->name('postRecordDetail');
         Route::get('leaderboard/{selected_time}', 'Pauli\LeaderboardController@getLeaderboard')->name('getLeaderboard');
+        Route::get('package-check', 'Pauli\PackageAssignmentController@checkPackage')->name('checkPackage');
+        Route::get('user-history', 'Pauli\UserController@userHistory')->name('userHistory');
     });
     // End Pauli Test
 
