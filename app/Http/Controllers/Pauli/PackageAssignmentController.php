@@ -95,17 +95,17 @@ class PackageAssignmentController extends Controller
         }
     }
 
-    public function checkPackage(Request $request)
+    public function checkPackage($package_uuid)
     {
-        $validator = Validator::make($request->all(), [
-            'package_uuid' => 'required|string|exists:packages,uuid',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        $package = Package::find($package_uuid);
+        if (!$package) {
+            return response()->json([
+                'error' => 'Package not found',
+                'status' => "ERROR"
+            ], 404);
         }
 
-        $packageUuid = $request->input('package_uuid');
+        $packageUuid = $package_uuid;
 
         $package = Package::find($packageUuid);
 

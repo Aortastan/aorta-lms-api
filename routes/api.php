@@ -70,7 +70,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::post('record', 'Pauli\RecordDataController@postRecord')->name('postRecord');
         Route::post('record-detail', 'Pauli\RecordDetailController@postRecordDetail')->name('postRecordDetail');
         Route::get('leaderboard/{selected_time}', 'Pauli\LeaderboardController@getLeaderboard')->name('getLeaderboard');
-        Route::get('package-check', 'Pauli\PackageAssignmentController@checkPackage')->name('checkPackage');
+        Route::get('package-check/{package_uuid}', 'Pauli\PackageAssignmentController@checkPackage')->name('checkPackage');
         Route::get('user-history', 'Pauli\UserController@userHistory')->name('userHistory');
     });
     // End Pauli Test

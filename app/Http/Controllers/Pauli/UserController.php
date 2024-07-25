@@ -68,14 +68,20 @@ class UserController extends Controller
     }
 
     // Pauli Test History
-    public function userHistory(Request $request)
+    public function userHistory()
     {
-        // $user = JWTAuth::parseToken()->authenticate();
+        $user = JWTAuth::parseToken()->authenticate();
 
-        // $userUuid = $user->uuid;
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
 
-        $userUuid = $request->user_uuid;
+        $userUuid = $user->uuid;
 
+
+        // $userUuid = $request->user_uuid;
+
+        /*
         // Cek apakah user dengan user_uuid ada
         $user = User::where('uuid', $userUuid)->first();
 
@@ -83,11 +89,14 @@ class UserController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
+
         $user = User::find($userUuid);
 
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
+
+        */
 
         $pauliRecords = PauliRecord::where('user_uuid', $userUuid)
             ->with('details')
