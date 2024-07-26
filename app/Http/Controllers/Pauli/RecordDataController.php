@@ -31,6 +31,7 @@ class RecordDataController extends Controller
         $userUuid = $user->uuid;
 
         $validator = Validator::make($request->all(), [
+            // "user_uuid" => "required|string",
             'selected_time' => 'required|in:1,2,5,10,15,30,60',
             'questions_attempted' => 'required|integer|min:0',
             'total_correct' => 'required|integer|min:0',
@@ -44,6 +45,7 @@ class RecordDataController extends Controller
         }
 
         $pauliRecord = PauliRecord::create([
+            // 'user_uuid' => $request->user_uuid,
             'user_uuid' => $userUuid,
             'selected_time' => $request->selected_time,
             'questions_attempted' => $request->questions_attempted,
