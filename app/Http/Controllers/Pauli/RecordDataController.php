@@ -34,8 +34,6 @@ class RecordDataController extends Controller
             'selected_time' => 'required|in:1,2,5,10,15,30,60',
             'questions_attempted' => 'required|integer|min:0',
             'total_correct' => 'required|integer|min:0',
-            'time_start' => 'required|date_format:H:i:s',
-            'time_end' => 'required|date_format:H:i:s',
             'date' => 'required|date_format:Y-m-d',
             'correct_datas' => 'required|array',
             'incorrect_datas' => 'required|array',
