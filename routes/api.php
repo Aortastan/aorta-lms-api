@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Password;
 |
 */
 
-
+Route::get('', function () {
+    return response()->json(['message' => 'Welcome to Production API']);
+});
 
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
