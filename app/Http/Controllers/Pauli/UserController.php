@@ -78,30 +78,10 @@ class UserController extends Controller
 
         $userUuid = $user->uuid;
 
-
-        // $userUuid = $request->user_uuid;
-
-        /*
-        // Cek apakah user dengan user_uuid ada
-        $user = User::where('uuid', $userUuid)->first();
-
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
-
-        $user = User::find($userUuid);
-
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
-        */
-
         $pauliRecords = PauliRecord::where('user_uuid', $userUuid)
-            ->with('details')
-            ->orderBy('date', 'desc')
-            ->get();
+        ->orderBy('date', 'desc')
+        ->get()
+        ->makeHidden(['correct_datas', 'incorrect_datas', 'created_at', 'updated_at', 'time_end', 'time_start']);
 
         return response()->json(['data' => $pauliRecords], 200);
     }

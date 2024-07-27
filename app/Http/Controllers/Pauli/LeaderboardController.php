@@ -18,7 +18,8 @@ class LeaderboardController extends Controller
             return response()->json(['error' => 'Selected time must be at least 30 minutes'], 422);
         }
 
-        $selectedTime = $selected_time;
+        // Change data type to integer
+        $selectedTime = (int) $selected_time;
 
         $records = PauliRecord::where('selected_time', $selectedTime)
             ->with('user')
