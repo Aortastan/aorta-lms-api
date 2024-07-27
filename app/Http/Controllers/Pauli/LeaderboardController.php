@@ -30,6 +30,7 @@ class LeaderboardController extends Controller
             $percentageCorrect = $totalQuestions > 0 ? ($record->total_correct / $totalQuestions) * 100 : 0;
 
             return [
+                'id' => $record->id,
                 'user_uuid' => $record->user->uuid,
                 'user_name' => $record->user->name,
                 'total_questions' => $totalQuestions,

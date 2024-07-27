@@ -25,6 +25,8 @@ class ModifySelectedTimeEnumInt extends Migration
                 WHEN selected_time = '30' THEN 30
                 WHEN selected_time = '45' THEN 45
                 WHEN selected_time = '60' THEN 60
+                WHEN selected_time = '120' THEN 120
+                WHEN selected_time = '180' THEN 180
                 ELSE selected_time
             END")
         ]);
