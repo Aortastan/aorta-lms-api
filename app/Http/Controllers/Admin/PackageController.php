@@ -448,8 +448,12 @@ class PackageController extends Controller
                 PackageTest::where('uuid', $list['uuid'])->update($validatedList);
             }
         }
-
-        PackageTest::where(['package_uuid' => $uuid])->whereNotIn('uuid', $listsUuid)->delete();
+        $pauli_uuid = Test::where('title', 'like', '%Pauli%')->first();
+        
+        PackageTest::where(['package_uuid' => $uuid])
+            ->whereNotIn('uuid', $listsUuid)
+            ->whereNotIn('test_uuid', $pauli_uuid)
+            ->delete();
         if(count($newLists) > 0){
             PackageTest::insert($newLists);
         }
