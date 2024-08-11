@@ -27,6 +27,11 @@ class PackageTest extends Model
         return $this->belongsTo(Tryout::class, 'test_uuid', 'uuid');
     }
 
+    public function delyn()
+    {
+        return $this->belongsTo(Test::class, 'test_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

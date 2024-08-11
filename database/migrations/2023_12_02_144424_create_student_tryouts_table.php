@@ -16,7 +16,7 @@ class CreateStudentTryoutsTable extends Migration
         Schema::create('student_tryouts', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->text('data_question');
+            $table->mediumText('data_question');
             $table->string('user_uuid');
             $table->string('package_test_uuid');
             $table->integer('attempt');

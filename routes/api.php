@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Password;
 |
 */
 
-
+Route::get('', function () {
+    return response()->json(['message' => 'Welcome to Production API']);
+});
 
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
@@ -62,9 +64,23 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
     // End Course
 
+    // Pauli Test
+    Route::group(['prefix' => 'pauli', 'as' => 'pauli.',], function () {
+        Route::get('/record/{pauli_id}', 'Pauli\RecordDataController@getPauli')->name('getPauli');
+        Route::post('assign-to-package', 'Pauli\PackageAssignmentController@assignToPackage')->name('assignToPackage');
+        Route::post('unassign-from-package', 'Pauli\PackageAssignmentController@unassignFromPackage')->name('unassignFromPackage');
+        Route::get('user', 'Pauli\UserController@checkEligibility')->name('checkEligiblement');
+        Route::post('record', 'Pauli\RecordDataController@postRecord')->name('postRecord');
+        Route::post('record-detail', 'Pauli\RecordDetailController@postRecordDetail')->name('postRecordDetail');
+        Route::get('leaderboard/{selected_time}', 'Pauli\LeaderboardController@getLeaderboard')->name('getLeaderboard');
+        Route::get('package-check/{package_uuid}', 'Pauli\PackageAssignmentController@checkPackage')->name('checkPackage');
+        Route::get('user-history', 'Pauli\UserController@userHistory')->name('userHistory');
+    });
+    // End Pauli Test
+
     Route::group(['middleware' => ['auth', 'verified']], function () {
-       // profile management
-       Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
+        // profile management
+        Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
             Route::get('', 'AllRole\ProfileController@index')->name('get');
             Route::post('', 'AllRole\ProfileController@update')->name('update');
             Route::put('change-password', 'AllRole\ProfileController@changePassword')->name('changePassword');
@@ -300,8 +316,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
         // Manage Test
         Route::group(['prefix' => 'tests', 'as' => 'test.',], function () {
-        Route::get('', 'Student\TestController@getStudentTests');
-        Route::post('submit/{session_uuid}', 'Student\SubmitTestController@submitTest');
+            Route::get('', 'Student\TestController@getStudentTests');
+            Route::post('submit/{session_uuid}', 'Student\SubmitTestController@submitTest');
             // Route::get('{tryout_uuid}', 'Student\TestController@detailPurchasedTest')->name('detailPurchasedTest');
         });
         // End Manage Test
@@ -320,7 +336,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{uuid}', 'Student\PackageController@showDetailPurchasedPackage')->name('show');
             Route::post('expired/{transaction_uuid}', 'API\Payment\XenditController@expired')->name('expired');
             Route::get('', 'Student\PackageController@index')->name('index');
-
         });
         // End Package
 
@@ -399,7 +414,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('{student_assignment_uuid}', 'Instructor\AssignmentController@review')->name('review');
         });
         // End Manage Assignment
-
 
     });
 });

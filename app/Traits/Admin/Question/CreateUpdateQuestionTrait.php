@@ -107,7 +107,7 @@ trait CreateUpdateQuestionTrait
                     'answer' => $answer['answer'],
                     'image' => $path,
                     'is_correct' => $is_correct,
-                    'correct_answer_explanation' => $correct_answer_explanation,
+                    'correct_answer_explanation' => $answer['correct_answer_explanation'],
                     'point' => $point,
                 ];
             }
@@ -149,7 +149,7 @@ trait CreateUpdateQuestionTrait
                         'answer' => $answer['answer'],
                         'image' => $path,
                         'is_correct' => $is_correct,
-                        'correct_answer_explanation' => $correct_answer_explanation,
+                        'correct_answer_explanation' => $answer['correct_answer_explanation'],
                         'point' => $point,
                     ];
                 }
@@ -213,7 +213,7 @@ trait CreateUpdateQuestionTrait
                             'answer' => $answer['answer'],
                             'image' => $path,
                             'is_correct' => $is_correct,
-                            'correct_answer_explanation' => $correct_answer_explanation,
+                            'correct_answer_explanation' => $answer['correct_answer_explanation'],
                             'point' => $point,
                         ];
                         Answer::where('uuid', $checkAnswer->uuid)->update($validatedAnswer);
@@ -277,7 +277,7 @@ trait CreateUpdateQuestionTrait
                         'answer' => $answer['answer'],
                         'image' => $path,
                         'is_correct' => $is_correct,
-                        'correct_answer_explanation' => $correct_answer_explanation,
+                        'correct_answer_explanation' => $answer['correct_answer_explanation'],
                         'point' => $point,
                     ];
                 }
@@ -342,7 +342,7 @@ trait CreateUpdateQuestionTrait
                             'answer' => $answer['answer'],
                             'image' => $path,
                             'is_correct' => $is_correct,
-                            'correct_answer_explanation' => $correct_answer_explanation,
+                            'correct_answer_explanation' => $answer['correct_answer_explanation'],
                             'point' => $point,
                         ];
                         Answer::where('uuid', $checkAnswer->uuid)->update($validatedAnswer);

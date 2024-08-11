@@ -73,7 +73,7 @@ class XenditController extends Controller
         $params = [
             'external_id' => Uuid::uuid4()->toString(),
             'amount' => $get_transaction->transaction_amount,
-            'success_redirect_url' => 'https://dev.aortastan.com/dashboard/student/transactions',
+            'success_redirect_url' => 'https://aortastan.com/dashboard/student/transactions',
             "customer"=> [
                 "given_names" => $user->name,
                 "email" => $user->email,
