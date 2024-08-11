@@ -146,7 +146,25 @@ trait PackageTrait
             }elseif($package_type == 'course'){
                 $getPackage = Package::
                     where('packages.uuid', $uuid)
-                    ->with(['category', 'subcategory', 'packageCourses', 'packageCourses.course', 'packageCourses.course.lessons', 'packageCourses.course.lessons.lectures', 'packageCourses.course.instructor', 'packageCourses.course.pretestPosttests', 'packageTests', 'packageTests.test'])
+                    ->with([
+                        'category',
+                        'subcategory',
+                        'packageCourses',
+                        'packageCourses.course',
+                        'packageCourses.course.lessons',
+                        'packageCourses.course.lessons.lectures',
+                        'packageCourses.course.instructor',
+                        'packageCourses.course.pretestPosttests',
+                        'packageTests' => function ($query) {
+                            $query->whereDoesntHave('delyn', function ($q) {
+                                $q->where('title', 'LIKE', '%Pauli%')
+                                ->where('title', 'LIKE', '%pauli%')
+                                ->where('title', 'LIKE', '%Koran%')
+                                ->where('title', 'LIKE', '%koran%');
+                            });
+                        },
+                        'packageTests.test'
+                    ])
                     ->first();
 
                 if($getPackage == null){
@@ -262,7 +280,7 @@ trait PackageTrait
             ], 404);
         }
     }
-    
+
     // insert purchased package
     public function purchasedPackages($transaction_uuid, $user_uuid, $packages){
 

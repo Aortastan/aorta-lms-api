@@ -130,11 +130,13 @@ class PackageAssignmentController extends Controller
 
         if ($hasValidTest) {
             return response()->json([
+                'validation' => 1,
                 'message' => "Package {$package->name} valid mengandung Tes Pauli Durasi 60 Menit",
                 'status' => 'OK'
             ], 200);
         } else {
             return response()->json([
+                'validation' => 0,
                 'message' => "Package {$package->name} tidak memiliki test yang valid",
                 'status' => 'NOT OK'
             ], 200);
