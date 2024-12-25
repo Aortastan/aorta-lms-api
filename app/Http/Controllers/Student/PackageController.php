@@ -72,11 +72,20 @@ class PackageController extends Controller
             }
 
         if ($request->has('package_type')) {
+            foreach ($packages as $key => $package) {
+                $packageUuid = $package['package_uuid'];
+                $exists = DB::table('package_tests')->where('package_uuid', $packageUuid)->exists();
+                $packages[$key]['exists_in_tests'] = $exists;
+            }
             $package_type = $request->input('package_type');
             if($package_type){
                 $testPackages = [];
                 foreach ($packages as $package) {
                     if ($package["package_type"] == $package_type) {
+                        $testPackages[] = $package;
+                    }
+                    if($package["package_type"] == 'course' && $package["exists_in_tests"] == true) {
+                        $package["package_type"] = "test";
                         $testPackages[] = $package;
                     }
                 }

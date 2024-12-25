@@ -129,7 +129,15 @@ class TestController extends Controller
         $my_tests = [];
         if ($request->has('package_uuid')) {
             $packageUuid = $request->input('package_uuid');
-            $get_package_test = PackageTest::where('package_uuid', $packageUuid)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
+            $get_package_test = PackageTest::where('package_uuid', $packageUuid)
+            ->whereDoesntHave('delyn', function($query) {
+                $query->where('title', 'LIKE', '%Pauli%')
+                    ->orWhere('title', 'LIKE', '%pauli%')
+                    ->orWhere('title', 'LIKE', '%Koran%')
+                    ->orWhere('title', 'LIKE', '%koran%');
+            })
+            ->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])
+            ->get();
 
             $my_tests = [];
             $tryout_uuids = [];
