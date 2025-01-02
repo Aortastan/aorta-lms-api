@@ -45,6 +45,7 @@ class SubmitTestController extends Controller
 
         $data_question = [];
         $points = 0;
+        $total_questions = count($request->data_question) * 1.0;
 
         foreach ($request->data_question as $index => $data) {
             $get_question = Question::where([
@@ -236,7 +237,39 @@ class SubmitTestController extends Controller
                         'score' => $points,
                     ]);
                 }
-            }else{
+            }
+            else if ($get_package->test_type == 'Tes Potensi')
+            {
+                $count = StudentTryout::where([
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                ])->count();
+                StudentTryout::create([
+                    'data_question' => json_encode($data_question),
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_uuid' => $get_package->uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                    'attempt' => $count+1,
+                    'score' => round(($points * 600.0 / $total_questions) + 200.0),
+                ]);
+            }
+            else if ($get_package->test_type == 'TSKKWK')
+            {
+                $count = StudentTryout::where([
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                ])->count();
+                StudentTryout::create([
+                    'data_question' => json_encode($data_question),
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_uuid' => $get_package->uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                    'attempt' => $count+1,
+                    'score' => round($points * 2.0 / 3.0),
+                ]);
+            }
+            else
+            {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
