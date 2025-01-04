@@ -549,7 +549,7 @@ class TryoutController extends Controller
                 $segment_results[] = [
                     "tryout_segment_uuid" => $tryout_segment['uuid'],
                     'segment_name' => $tryout_segment['title'],
-                    'segment_score' => $total,
+                    'segment_score' => intval($total),
                     'segment_result' => $formattedResult,
                 ];
             }
