@@ -199,7 +199,7 @@ class PackageController extends Controller
                 'message' => 'Type not valid'
             ], 422);
         }
-        $checkPackage = Package::where(['uuid' => $uuid])->first();
+        $checkPackage = Package::where(['uuid' => $uuid, "package_type" => $type])->first();
 
         if(!$checkPackage){
             return response()->json([
@@ -286,13 +286,11 @@ class PackageController extends Controller
             }
         }
 
-
         $validated = [
             'category_uuid' => $request->category_uuid,
             'subcategory_uuid' => $request->subcategory_uuid,
             'name' => $request->name,
             'description' => $request->description,
-            'package_type' => $request->package_type,
             'learner_accesibility' => $request->learner_accesibility,
             'status' => $request->status,
             'image' => $path,
@@ -339,7 +337,7 @@ class PackageController extends Controller
                 'message' => 'Type not valid'
             ], 422);
         }
-        $checkPackage = Package::where(['uuid' => $uuid])->first();
+        $checkPackage = Package::where(['uuid' => $uuid, "package_type" => $type])->first();
 
         if(!$checkPackage){
             return response()->json([
@@ -353,7 +351,7 @@ class PackageController extends Controller
         //     ], 422);
         // }
 
-       if($type == 'course'){
+        if($type == 'course'){
             $validate = [
                 'courses' => 'required|array',
                 'courses.*' => 'required',
@@ -403,7 +401,7 @@ class PackageController extends Controller
             if(count($newCourses) > 0){
                 PackageCourse::insert($newCourses);
             }
-       }
+        }
 
         $validate = [
             'tests' => 'array',
@@ -450,7 +448,7 @@ class PackageController extends Controller
             }
         }
         $pauli_uuid = Test::where('title', 'like', '%Pauli%')->first();
-        
+
         PackageTest::where(['package_uuid' => $uuid])
             ->whereNotIn('uuid', $listsUuid)
             ->whereNotIn('test_uuid', $pauli_uuid)
