@@ -55,6 +55,7 @@ class CartController extends Controller
             return response()->json([
                 'message' => 'Sukses mengambil data',
                 'carts' => $carts,
+                'phone_status' => $phone_status,
             ], 200);
         }
         catch(\Exception $e){
