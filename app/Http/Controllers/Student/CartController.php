@@ -43,9 +43,19 @@ class CartController extends Controller
                 ];
             }
 
+            $phone_status = $this->user->mobile_number ? true : false;
+
+            if (!$phone_status) {
+                return response()->json([
+                    'message' => 'Silahkan lengkapi nomor telepon anda',
+                    'phone_status' => $phone_status,
+                ], 422);
+            }
+
             return response()->json([
                 'message' => 'Sukses mengambil data',
                 'carts' => $carts,
+                'phone_status' => $phone_status,
             ], 200);
         }
         catch(\Exception $e){
