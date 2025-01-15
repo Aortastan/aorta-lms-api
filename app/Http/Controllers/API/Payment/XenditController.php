@@ -53,6 +53,15 @@ class XenditController extends Controller
 
         $user = JWTAuth::parseToken()->authenticate();
 
+        $phone_status = $this->user->mobile_number ? true : false;
+
+        if (!$phone_status) {
+            return response()->json([
+                'message' => 'Validation failed!',
+                'errors' => 'Silahkan lengkapi nomor telepon anda terlebih dahulu sebelum checkout',
+            ], 422);
+        }
+
         return $this->buyPackages($request, $user);
     }
 
