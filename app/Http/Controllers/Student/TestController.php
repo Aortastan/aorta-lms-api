@@ -154,7 +154,7 @@ class TestController extends Controller
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
-                                'title_test' => $tryoutSegmentTests['test']['title'],
+                                'title_test' => $tryoutSegmentTests['test']['student_title_display'],
                             ];
                         }
                         $tryout_segments[] = [
@@ -191,7 +191,7 @@ class TestController extends Controller
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
-                                'title_test' => $tryoutSegmentTests['test']['title'],
+                                'title_test' => $tryoutSegmentTests['test']['student_title_display'],
                             ];
                         }
                         $tryout_segments[] = [
@@ -224,7 +224,7 @@ class TestController extends Controller
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
-                                'title_test' => $tryoutSegmentTests['test']['title'],
+                                'title_test' => $tryoutSegmentTests['test']['student_title_display'],
                             ];
                         }
                         $tryout_segments[] = [
