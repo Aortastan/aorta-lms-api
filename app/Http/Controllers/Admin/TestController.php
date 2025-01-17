@@ -102,7 +102,7 @@ class TestController extends Controller
     }
 
     public function show(Request $request, $uuid){
-        $test = Test::select('uuid', 'test_type', 'title', 'status', 'test_category')
+        $test = Test::select('uuid', 'test_type', 'title', 'student_title_display', 'status', 'test_category')
         ->where([
             'uuid' => $uuid
         ])->with(['questions.question.subject'])->first();
@@ -133,6 +133,7 @@ class TestController extends Controller
             'uuid' => $test['uuid'],
             'test_type' => $test['test_type'],
             'title' => $test['title'],
+            'student_title_display' => $test['student_title_display'],
             'status' => $test['status'],
             'test_category' => $test['test_category'],
             'questions' => $getQuestion,
