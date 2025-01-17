@@ -22,6 +22,7 @@ class Test extends Model
         'title',
         'status',
         'test_category',
+        'student_title_display'
     ];
 
     public function questions()

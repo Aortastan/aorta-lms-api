@@ -236,6 +236,7 @@ class TestController extends Controller
         $validated = [
             'test_type' => $request->test_type,
             'title' => $request->title,
+            'student_title_display' => $request->student_title_display,
             'status' => 'Draft',
             'test_category' => $request->test_category,
         ];
@@ -558,6 +559,7 @@ class TestController extends Controller
         $validate = [
             'test_type' => 'required|in:classical,IRT',
             'title' => 'required',
+            'student_title_display' => 'required',
             'test_category' => 'required|in:quiz,tryout',
             'status' => 'required|in:Published,Waiting for review,Draft',
         ];
@@ -574,6 +576,7 @@ class TestController extends Controller
         Test::where(['uuid' => $uuid])->update([
             'test_type' => $request->test_type,
             'title' => $request->title,
+            'student_title_display' => $request->student_title_display,
             'test_category' => $request->test_category,
             'status' => $request->status,
         ]);
