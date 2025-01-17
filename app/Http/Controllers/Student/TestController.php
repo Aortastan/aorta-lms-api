@@ -149,7 +149,7 @@ class TestController extends Controller
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $title_test = $tryoutSegmentTests['test']['title'];
-                            if($tryoutSegmentTests['test']['title'] == null){
+                            if($tryoutSegmentTests['test']['student_title_display']){
                                 $title_test = $tryoutSegmentTests['test']['student_title_display'];
                             }
 
@@ -192,7 +192,7 @@ class TestController extends Controller
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
 
                             $title_test = $tryoutSegmentTests['test']['title'];
-                            if($tryoutSegmentTests['test']['title'] == null){
+                            if($tryoutSegmentTests['test']['student_title_display']){
                                 $title_test = $tryoutSegmentTests['test']['student_title_display'];
                             }
 
@@ -230,7 +230,7 @@ class TestController extends Controller
                     foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
 
                         $title_test = $tryoutSegmentTests['test']['title'];
-                        if($tryoutSegmentTests['test']['title'] == null){
+                        if($tryoutSegmentTests['test']['student_title_display']){
                             $title_test = $tryoutSegmentTests['test']['student_title_display'];
                         }
 
