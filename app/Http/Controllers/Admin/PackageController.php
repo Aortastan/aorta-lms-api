@@ -72,17 +72,18 @@ class PackageController extends Controller
 
         $package['package_tests'] = [];
         foreach ($checkPackage->packageTests as $index2 => $list) {
+
+            $test = $list->test ?? $list->delyn;
+
             $package['package_tests'][] = [
                 "uuid" => $list['uuid'],
-                "test_uuid" => $list['test']['uuid'],
-                "title" => $list['test']['title'],
+                "test_uuid" => $test->uuid ?? null,
+                "title" => $test->title ?? null,
                 "attempt" => $list['attempt'],
                 "duration" => $list['duration'],
                 "max_point" => $list['max_point'],
             ];
-
         }
-
         return response()->json([
             'message' => 'Successful get data',
             'package' => $package,
@@ -285,7 +286,6 @@ class PackageController extends Controller
             }
         }
 
-
         $validated = [
             'category_uuid' => $request->category_uuid,
             'subcategory_uuid' => $request->subcategory_uuid,
@@ -351,7 +351,7 @@ class PackageController extends Controller
         //     ], 422);
         // }
 
-       if($type == 'course'){
+        if($type == 'course'){
             $validate = [
                 'courses' => 'required|array',
                 'courses.*' => 'required',
@@ -401,7 +401,7 @@ class PackageController extends Controller
             if(count($newCourses) > 0){
                 PackageCourse::insert($newCourses);
             }
-       }
+        }
 
         $validate = [
             'tests' => 'array',
@@ -447,8 +447,12 @@ class PackageController extends Controller
                 PackageTest::where('uuid', $list['uuid'])->update($validatedList);
             }
         }
+        $pauli_uuid = Test::where('title', 'like', '%Pauli%')->first();
 
-        PackageTest::where(['package_uuid' => $uuid])->whereNotIn('uuid', $listsUuid)->delete();
+        PackageTest::where(['package_uuid' => $uuid])
+            ->whereNotIn('uuid', $listsUuid)
+            ->whereNotIn('test_uuid', $pauli_uuid)
+            ->delete();
         if(count($newLists) > 0){
             PackageTest::insert($newLists);
         }

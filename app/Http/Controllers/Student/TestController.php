@@ -129,7 +129,15 @@ class TestController extends Controller
         $my_tests = [];
         if ($request->has('package_uuid')) {
             $packageUuid = $request->input('package_uuid');
-            $get_package_test = PackageTest::where('package_uuid', $packageUuid)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
+            $get_package_test = PackageTest::where('package_uuid', $packageUuid)
+            ->whereDoesntHave('delyn', function($query) {
+                $query->where('title', 'LIKE', '%Pauli%')
+                    ->orWhere('title', 'LIKE', '%pauli%')
+                    ->orWhere('title', 'LIKE', '%Koran%')
+                    ->orWhere('title', 'LIKE', '%koran%');
+            })
+            ->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])
+            ->get();
 
             $my_tests = [];
             $tryout_uuids = [];
@@ -140,13 +148,18 @@ class TestController extends Controller
                     foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
+                            $title_test = $tryoutSegmentTests['test']['title'];
+                            if($tryoutSegmentTests['test']['student_title_display']){
+                                $title_test = $tryoutSegmentTests['test']['student_title_display'];
+                            }
+
                             $tryout_segment_tests[] = [
                                 'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'test_uuid' => $tryoutSegmentTests['test_uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
-                                'title_test' => $tryoutSegmentTests['test']['title'],
+                                'title_test' => $title_test,
                             ];
                         }
                         $tryout_segments[] = [
@@ -177,13 +190,19 @@ class TestController extends Controller
                     foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
+
+                            $title_test = $tryoutSegmentTests['test']['title'];
+                            if($tryoutSegmentTests['test']['student_title_display']){
+                                $title_test = $tryoutSegmentTests['test']['student_title_display'];
+                            }
+
                             $tryout_segment_tests[] = [
                                 'tryout_segment_tests_uuid' => $tryoutSegmentTests['uuid'],
                                 'test_uuid' => $tryoutSegmentTests['test_uuid'],
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
-                                'title_test' => $tryoutSegmentTests['test']['title'],
+                                'title_test' => $title_test,
                             ];
                         }
                         $tryout_segments[] = [
@@ -209,6 +228,12 @@ class TestController extends Controller
                     $tryout_uuids[] = $student_test->uuid;
                     $tryout_segments = [];
                     foreach ($student_test->test->tryoutSegments as $key1 => $tryout_segment) {
+
+                        $title_test = $tryoutSegmentTests['test']['title'];
+                        if($tryoutSegmentTests['test']['student_title_display']){
+                            $title_test = $tryoutSegmentTests['test']['student_title_display'];
+                        }
+
                         $tryout_segment_tests = [];
                         foreach ($tryout_segment['tryoutSegmentTests'] as $key => $tryoutSegmentTests) {
                             $tryout_segment_tests[] = [
@@ -216,7 +241,7 @@ class TestController extends Controller
                                 'attempt' => $tryoutSegmentTests['attempt'],
                                 'duration' => $tryoutSegmentTests['duration'],
                                 'max_point' => $tryoutSegmentTests['max_point'],
-                                'title_test' => $tryoutSegmentTests['test']['title'],
+                                'title_test' => $title_test,
                             ];
                         }
                         $tryout_segments[] = [

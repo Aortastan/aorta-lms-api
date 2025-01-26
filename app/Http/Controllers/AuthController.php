@@ -50,6 +50,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Incorrect credentials'], 401);
         }
         if($user->email_verified_at === null) {
+            $user->sendEmailVerificationNotification();
             return response()->json(['message' => 'Please verify your email first'], 403);
         }
         return $this->respondWithToken($token);

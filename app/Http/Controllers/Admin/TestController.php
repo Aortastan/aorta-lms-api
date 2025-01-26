@@ -102,7 +102,7 @@ class TestController extends Controller
     }
 
     public function show(Request $request, $uuid){
-        $test = Test::select('uuid', 'test_type', 'title', 'status', 'test_category')
+        $test = Test::select('uuid', 'test_type', 'title', 'student_title_display', 'status', 'test_category')
         ->where([
             'uuid' => $uuid
         ])->with(['questions.question.subject'])->first();
@@ -133,6 +133,7 @@ class TestController extends Controller
             'uuid' => $test['uuid'],
             'test_type' => $test['test_type'],
             'title' => $test['title'],
+            'student_title_display' => $test['student_title_display'],
             'status' => $test['status'],
             'test_category' => $test['test_category'],
             'questions' => $getQuestion,
@@ -219,7 +220,7 @@ class TestController extends Controller
 
     public function store(Request $request): JsonResponse{
         $validate = [
-            'test_type' => 'required|in:classical,IRT',
+            'test_type' => 'required|in:classical,IRT,Tes Potensi,TSKKWK',
             'title' => 'required|string',
             'test_category' => 'required|in:quiz,tryout',
         ];
@@ -236,6 +237,7 @@ class TestController extends Controller
         $validated = [
             'test_type' => $request->test_type,
             'title' => $request->title,
+            'student_title_display' => $request->student_title_display,
             'status' => 'Draft',
             'test_category' => $request->test_category,
         ];
@@ -558,6 +560,7 @@ class TestController extends Controller
         $validate = [
             'test_type' => 'required|in:classical,IRT',
             'title' => 'required',
+            'student_title_display' => 'required',
             'test_category' => 'required|in:quiz,tryout',
             'status' => 'required|in:Published,Waiting for review,Draft',
         ];
@@ -574,6 +577,7 @@ class TestController extends Controller
         Test::where(['uuid' => $uuid])->update([
             'test_type' => $request->test_type,
             'title' => $request->title,
+            'student_title_display' => $request->student_title_display,
             'test_category' => $request->test_category,
             'status' => $request->status,
         ]);

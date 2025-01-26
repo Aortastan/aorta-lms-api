@@ -54,6 +54,19 @@ class VerificationController extends Controller
         return redirect('https://aortastan.com/');
     }
 
+    public function manualVerification(Request $request, $email){
+        User::where([
+            'email' => $email,
+            'email_verified_at' => null,
+        ])->update([
+            'email_verified_at' => date("Y-m-d H:i:s")
+        ]);
+
+        return response()->json([
+            'message' => 'Email has been verified'
+        ]);
+    }
+
     public function resend(){
         if(Auth::user()->hasVerifiedEmail()){
             return response()->json([

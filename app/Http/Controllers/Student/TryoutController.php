@@ -29,7 +29,7 @@ class TryoutController extends Controller
                     'uuid',
                     'test_uuid',
                     'attempt',
-                    'duration',
+                    'duration'
                 )
                 ->where(['uuid' => $tryout_uuid])
                 ->first();
@@ -83,7 +83,7 @@ class TryoutController extends Controller
                     'uuid',
                     'test_uuid',
                     'attempt',
-                    'duration',
+                    'duration'
                 )
                 ->where(['uuid' => $tryout->package_test_uuid])
                 ->first();
@@ -549,7 +549,7 @@ class TryoutController extends Controller
                 $segment_results[] = [
                     "tryout_segment_uuid" => $tryout_segment['uuid'],
                     'segment_name' => $tryout_segment['title'],
-                    'segment_score' => $average,
+                    'segment_score' => intval($total),
                     'segment_result' => $formattedResult,
                 ];
             }
@@ -565,7 +565,7 @@ class TryoutController extends Controller
             $tryout_result = [
                 "tryout_uuid" => $tryout_uuid,
                 'tryout_name' => $tryout['title'],
-                'score' => intval($average),
+                'score' => intval($total),
                 'tryout_result' => $segment_results,
             ];
 
@@ -624,7 +624,7 @@ class TryoutController extends Controller
                 $user_uuids[] = $value->user_uuid;
                 $users[] = [
                     "user_uuid" => $value->user_uuid,
-                    "user_name" => $value->user->name,
+                    "user_name" => $value->user->username,
                 ];
             }
 
@@ -689,7 +689,7 @@ class TryoutController extends Controller
                 $segment_results[] = [
                     "tryout_segment_uuid" => $tryout_segment['uuid'],
                     'segment_name' => $tryout_segment['title'],
-                    'segment_score' => $average,
+                    'segment_score' => $total,
                     'segment_result' => $formattedResult,
                 ];
             }
@@ -707,7 +707,7 @@ class TryoutController extends Controller
                 "name" => $user_attempt['user_name'],
                 "tryout_uuid" => $tryout_uuid,
                 'tryout_name' => $tryout['title'],
-                'score' => intval($average),
+                'score' => intval($total),
             ];
         }
 

@@ -12,12 +12,16 @@ trait TestTrait
                     'tests.uuid',
                     'tests.test_type',
                     'tests.title',
+                    'tests.student_title_display',
                     'tests.status',
                     'tests.test_category'
                 );
 
             if($search != null){
-                $tests->where('tests.title', 'LIKE', '%'.$search.'%');
+                $tests->where(function($query) use ($search) {
+                    $query->where('tests.title', 'LIKE', '%'.$search.'%')
+                        ->orWhere('tests.student_title_display', 'LIKE', '%'.$search.'%');
+                });
             }
 
             if($test_type != null){
@@ -37,7 +41,7 @@ trait TestTrait
             }
 
             if($orderBy != null && $order != null){
-                $orderByArray = ['test_type', 'type', 'title', 'status', 'test_category'];
+                $orderByArray = ['test_type', 'type', 'title', 'student_title_display', 'status', 'test_category'];
                 $orderArray = ['asc', 'desc'];
 
                 if(in_array($orderBy, $orderByArray) && in_array($order, $orderArray)){

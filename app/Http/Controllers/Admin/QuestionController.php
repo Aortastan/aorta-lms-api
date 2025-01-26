@@ -91,6 +91,9 @@ class QuestionController extends Controller
         if(isset($_GET['orderBy']) && isset($_GET['order'])){
             $orderBy = $_GET['orderBy'];
             $order = $_GET['order'];
+        }else{
+            $orderBy = 'title';
+            $order = 'asc';
         }
 
         return $this->getQuestions($search, $question_type, $type, $status, $orderBy, $order, $subject_uuid);

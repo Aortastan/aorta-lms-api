@@ -14,7 +14,7 @@ class CartController extends Controller
     public $user;
 
     public function __construct(){
-        $this->user = JWTAuth::parseToken()->authenticate();
+        // $this->user = JWTAuth::parseToken()->authenticate();
     }
 
     public function index(){
@@ -43,9 +43,13 @@ class CartController extends Controller
                 ];
             }
 
+            $phone_status = $this->user->mobile_number ? true : false;
+            $message = $phone_status ? 'Sukses mengambil data' : 'Silahkan lengkapi nomor telepon anda';
+
             return response()->json([
-                'message' => 'Sukses mengambil data',
+                'message' => $message,
                 'carts' => $carts,
+                'phone_status' => $phone_status,
             ], 200);
         }
         catch(\Exception $e){
