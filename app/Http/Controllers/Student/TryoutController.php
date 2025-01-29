@@ -484,8 +484,6 @@ class TryoutController extends Controller
             ], 404);
         }
 
-
-
         $student_attempts = [];
         $do_repeat = true;
         $attempt = 1;
@@ -517,11 +515,14 @@ class TryoutController extends Controller
                         $do_repeat = true;
                         $first_score = $attemptsData->score;
                         $percentage = $attemptsData->score ? ($attemptsData->score / $maxPoint) * 100 : 0;
+                        $passing_score = $tryout_segment_test['test']['passing_score'] ?? 0;
+                        $status = $attemptsData->score >= $passing_score ? 'passed' : 'failed';
                         $attemptResult = [
                             'attempt_uuid' => $attemptsData->uuid,
                             'package_test_uuid' => $attemptsData->package_test_uuid,
                             'score' => $attemptsData->score ?: 0,
                             'percentage' => $percentage,
+                            'status' => $status,
                         ];
                     }
 
@@ -629,9 +630,6 @@ class TryoutController extends Controller
             }
 
         }
-
-
-
 
         foreach ($users as $index => $user_attempt) {
             $list_score_per_segment = [];

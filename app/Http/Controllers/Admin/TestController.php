@@ -223,6 +223,7 @@ class TestController extends Controller
             'test_type' => 'required|in:classical,IRT,Tes Potensi,TSKKWK',
             'title' => 'required|string',
             'test_category' => 'required|in:quiz,tryout',
+            'passing_score' => 'required|numeric',
         ];
 
         $validator = Validator::make($request->all(), $validate);
@@ -238,6 +239,7 @@ class TestController extends Controller
             'test_type' => $request->test_type,
             'title' => $request->title,
             'student_title_display' => $request->student_title_display,
+            'passing_score' => $request->passing_score,
             'status' => 'Draft',
             'test_category' => $request->test_category,
         ];
@@ -551,16 +553,11 @@ class TestController extends Controller
             ], 404);
         }
 
-        if($test->status == "Published"){
-            return response()->json([
-                'message' => 'Test already published, you cannot edit this test.',
-            ], 422);
-        }
-
         $validate = [
             'test_type' => 'required|in:classical,IRT',
             'title' => 'required',
             'student_title_display' => 'required',
+            'passing_score' => 'required|numeric',
             'test_category' => 'required|in:quiz,tryout',
             'status' => 'required|in:Published,Waiting for review,Draft',
         ];
@@ -578,6 +575,7 @@ class TestController extends Controller
             'test_type' => $request->test_type,
             'title' => $request->title,
             'student_title_display' => $request->student_title_display,
+            'passing_score' => $request->passing_score,
             'test_category' => $request->test_category,
             'status' => $request->status,
         ]);
