@@ -26,13 +26,22 @@ class Transaction extends Model
         'url',
         'expiry_date',
         'updated_at',
+        'created_at'
     ];
 
     public function detailTransaction()
     {
         return $this->hasMany(DetailTransaction::class, 'transaction_uuid', 'uuid');
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
+    }
 
+    public function payment()
+    {
+        return $this->belongsTo(PaymentGatewaySetting::class, 'payment_method_uuid', 'uuid');
+    }
     protected static function boot()
     {
         parent::boot();
