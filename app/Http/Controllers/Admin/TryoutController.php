@@ -102,6 +102,8 @@ class TryoutController extends Controller
                     'max_point' => $data1['max_point'],
                     'test_type' => $data1['test']['test_type'],
                     'test_title' => $data1['test']['test_title'],
+                    'test_student_title_display' => $data1['test']['student_title_display'],
+                    'test_passing_score' => $data1['test']['passing_score'],
                     'test_category' => $data1['test']['test_category'],
                     'test_status' => $data1['test']['status'],
                 ];
