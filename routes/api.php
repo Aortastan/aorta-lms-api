@@ -97,6 +97,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // Manage Transaction
         Route::group(['prefix' => 'transactions', 'as' => 'transactions.',], function () {
             Route::get('', 'Admin\TransactionController@index');
+            Route::get('export', 'Admin\TransactionController@exportTransaction')->name('export');
         });
         // End Manage Transaction
 
