@@ -53,7 +53,7 @@ class XenditController extends Controller
 
         $user = JWTAuth::parseToken()->authenticate();
 
-        $phone_status = $this->user->mobile_number ? true : false;
+        $phone_status = $user->mobile_number ? true : false;
 
         if (!$phone_status) {
             return response()->json([

@@ -78,6 +78,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
     // End Pauli Test
 
+    Route::get('admin-t/transactions/export', 'Admin\TransactionController@exportTransaction');
+
     Route::group(['middleware' => ['auth', 'verified']], function () {
         // profile management
         Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
@@ -97,6 +99,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // Manage Transaction
         Route::group(['prefix' => 'transactions', 'as' => 'transactions.',], function () {
             Route::get('', 'Admin\TransactionController@index');
+            Route::get('export', 'Admin\TransactionController@exportTransaction')->name('export');
         });
         // End Manage Transaction
 
