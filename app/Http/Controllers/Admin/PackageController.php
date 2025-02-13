@@ -449,7 +449,8 @@ class PackageController extends Controller
         }
 
         $pauli_uuid = Test::where('title', 'like', '%Pauli%')->pluck('uuid')->toArray();
-        $listsUuid[] = $pauli_uuid;
+        $pauli_packagetest_uuid = PackageTest::where('test_uuid', $pauli_uuid)->pluck('uuid')->toArray();
+        $listsUuid[] = $pauli_packagetest_uuid;
 
         PackageTest::where(['package_uuid' => $uuid])
             ->whereNotIn('uuid', $listsUuid)
