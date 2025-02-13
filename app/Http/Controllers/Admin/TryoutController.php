@@ -94,6 +94,9 @@ class TryoutController extends Controller
         foreach ($tryout->tryoutSegments as $key => $data) {
             $segmentTests = [];
             foreach ($data['tryoutSegmentTests'] as $key1 => $data1) {
+                if($data1['passing_score'] == NULL){
+                    $data1['passing_score'] = $data1['test']['passing_score'];
+                }
                 $segmentTests[] = [
                     'segment_test_uuid' => $data1['uuid'],
                     'test_uuid' => $data1['test_uuid'],
@@ -103,7 +106,7 @@ class TryoutController extends Controller
                     'test_type' => $data1['test']['test_type'],
                     'test_title' => $data1['test']['test_title'],
                     'test_student_title_display' => $data1['test']['student_title_display'],
-                    'test_passing_score' => $data1['test']['passing_score'],
+                    'test_passing_score' => $data1['passing_score'],
                     'test_category' => $data1['test']['test_category'],
                     'test_status' => $data1['test']['status'],
                 ];
@@ -214,6 +217,7 @@ class TryoutController extends Controller
             'segments.*.tests.*.attempt' => 'required',
             'segments.*.tests.*.duration' => 'required',
             'segments.*.tests.*.max_point' => 'required',
+            'segmentes.*.tests.*.test_passing_score' => 'required'
         ];
         $validator = Validator::make($request->all(), $validate);
 
@@ -246,6 +250,7 @@ class TryoutController extends Controller
                     'attempt' => $test['attempt'],
                     'duration' => $test['duration'],
                     'max_point' => $test['max_point'],
+                    'passing_score' => $test['test_passing_score']
                 ]);
             }
         }

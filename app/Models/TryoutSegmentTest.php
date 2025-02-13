@@ -23,7 +23,8 @@ class TryoutSegmentTest extends Model
         'test_uuid',
         'attempt',
         'duration',
-        'max_point'
+        'max_point',
+        'passing_score',
     ];
 
     public function test()
