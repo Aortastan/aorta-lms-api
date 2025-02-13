@@ -217,7 +217,7 @@ class PackageController extends Controller
         ];
 
         if($request->test_type != null){
-            $validate['test_type'] = 'required|in:classical,IRT';
+            $validate['test_type'] = 'required|in:classical,IRT,Tes Potensi,TSKKWK';
         }
 
         if($request->learner_accesibility == 'paid'){
@@ -447,11 +447,12 @@ class PackageController extends Controller
                 PackageTest::where('uuid', $list['uuid'])->update($validatedList);
             }
         }
-        $pauli_uuid = Test::where('title', 'like', '%Pauli%')->first();
+
+        $pauli_uuid = Test::where('title', 'like', '%Pauli%')->pluck('uuid')->toArray();
+        $listsUuid[] = $pauli_uuid;
 
         PackageTest::where(['package_uuid' => $uuid])
             ->whereNotIn('uuid', $listsUuid)
-            ->whereNotIn('test_uuid', $pauli_uuid)
             ->delete();
         if(count($newLists) > 0){
             PackageTest::insert($newLists);
