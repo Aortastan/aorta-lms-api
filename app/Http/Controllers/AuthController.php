@@ -147,31 +147,23 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $checkToken = PasswordReset::where([
-            'token' => $request->token,
-            'email' => $request->email,
-        ])->first();
+        $checkToken = PasswordReset::where('email', $request->email)->first();
 
-        if(!$checkToken){
+        if (!$checkToken || !Hash::check($request->token, $checkToken->token)) {
             return response()->json([
                 'message' => 'Credential not valid',
             ], 422);
         }
 
-        User::where([
-            'email' => $request->email,
-        ])->update([
+        User::where('email', $request->email)->update([
             'password' => Hash::make($request->password),
         ]);
 
-        PasswordReset::where([
-            'token' => $request->token,
-        ])->delete();
+        PasswordReset::where('email', $request->email)->delete();
 
         return response()->json([
             'message' => 'Success',
-        ], 422);
-
+        ], 200);
     }
 
     /**
