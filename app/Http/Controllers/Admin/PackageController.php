@@ -102,7 +102,7 @@ class PackageController extends Controller
         ];
 
         if($request->test_type != null){
-            $validate['test_type'] = 'required|in:classical,IRT';
+            $validate['test_type'] = 'required|in:classical,IRT,Tes Potensi,TSKKWK';
         }
 
         if($request->learner_accesibility == 'paid'){
