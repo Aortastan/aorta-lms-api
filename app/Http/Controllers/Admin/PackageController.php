@@ -297,12 +297,12 @@ class PackageController extends Controller
         ];
 
         if($request->learner_accesibility == 'paid'){
-            $validated['price_lifetime'] = $request->price_lifetime;
-            $validated['price_one_month'] = $request->price_one_month;
-            $validated['price_three_months'] = $request->price_three_months;
-            $validated['price_six_months'] = $request->price_six_months;
-            $validated['price_one_year'] = $request->price_one_year;
-            $validated['discount'] = $request->discount;
+            $validated['price_lifetime'] = $request->price_lifetime ?? 0;
+            $validated['price_one_month'] = $request->price_one_month ?? 0;
+            $validated['price_three_months'] = $request->price_three_months ?? 0;
+            $validated['price_six_months'] = $request->price_six_months ?? 0;
+            $validated['price_one_year'] = $request->price_one_year ?? 0;
+            $validated['discount'] = $request->discount ?? 0;
             $validated['is_membership'] = $request->is_membership;
         }else{
             $validated['price_lifetime'] = 0;
