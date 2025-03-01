@@ -221,12 +221,12 @@ class PackageController extends Controller
         }
 
         if($request->learner_accesibility == 'paid'){
-            $validate['price_lifetime'] = 'required|numeric';
-            $validate['price_one_month'] = 'required|numeric';
-            $validate['price_three_months'] = 'required|numeric';
-            $validate['price_six_months'] = 'required|numeric';
-            $validate['price_one_year'] = 'required|numeric';
-            $validate['discount'] = 'required|numeric';
+            $validate['price_lifetime'] = 'numeric';
+            $validate['price_one_month'] = 'numeric';
+            $validate['price_three_months'] = 'numeric';
+            $validate['price_six_months'] = 'numeric';
+            $validate['price_one_year'] = 'numeric';
+            $validate['discount'] = 'numeric';
             $validate['is_membership'] = 'required|boolean';
         }
 
