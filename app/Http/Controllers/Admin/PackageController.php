@@ -247,21 +247,6 @@ class PackageController extends Controller
             ], 422);
         }
 
-        if($checkPackage->status == 'Published'){
-            if($request->status != $checkPackage->status){
-                return response()->json([
-                    'message' => 'You can\'t change the package status, because this package already published',
-                    'errors' => [
-                        "status" => [
-                            'You can\'t change the package status, because this package already published'
-                        ]
-                    ]
-                ], 422);
-            }
-        }
-
-
-
         $checkCategory = Category::where(['uuid' => $request->category_uuid])->first();
         if(!$checkCategory){
             return response()->json([
