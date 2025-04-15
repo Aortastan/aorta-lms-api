@@ -16,3 +16,12 @@ use Illuminate\Support\Facades\Route;
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
+Route::get('/storage-cors/{type}/{file}', function ($type, $file) {
+  $path = storage_path('app/public/' . $type . '/' . $file);
+  if (!file_exists($path)) abort(404);
+
+  return response()->file($path, [
+      'Access-Control-Allow-Origin' => '*',
+      'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+  ]);
+});
