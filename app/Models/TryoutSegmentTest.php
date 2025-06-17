@@ -32,6 +32,11 @@ class TryoutSegmentTest extends Model
         return $this->belongsTo(Test::class, 'test_uuid', 'uuid');
     }
 
+    public function studentTryouts()
+    {
+        return $this->hasMany(StudentTryout::class, 'package_test_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
