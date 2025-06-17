@@ -80,6 +80,9 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
     Route::get('admin-t/transactions/export', 'Admin\TransactionController@exportTransaction');
 
+    Route::get('leaderboard-old/{tryout_uuid}', 'Admin\TryoutController@getTryoutLeaderboard')->name('getTryoutLeaderboard');
+    Route::get('leaderboard-new/{tryout_uuid}', 'Admin\TryoutController@getLeaderboardNew')->name('getLeaderboardNew');
+
     Route::group(['middleware' => ['auth', 'verified']], function () {
         // profile management
         Route::group(['prefix' => 'profile', 'as' => 'profile.',], function () {
