@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 use App\Models\Tryout;
 use App\Models\TryoutSegmentTest;
 use App\Models\TryoutSegment;
@@ -441,107 +442,324 @@ class TryoutController extends Controller
     }
 
     public function getLeaderboardNew($tryout_uuid) {
-    try {
+        try {
 
-        // Eager load all necessary relationships
-        $tryout = Tryout::with([
-            'tryoutSegments.tryoutSegmentTests.test',
-            'tryoutSegments.tryoutSegmentTests.studentTryouts.user'
-        ])->where('uuid', $tryout_uuid)->first();
+            // Eager load all necessary relationships
+            $tryout = Tryout::with([
+                'tryoutSegments.tryoutSegmentTests.test',
+                'tryoutSegments.tryoutSegmentTests.studentTryouts.user'
+            ])->where('uuid', $tryout_uuid)->first();
 
-        if (!$tryout) {
+            if (!$tryout) {
+                return response()->json([
+                    'message' => "Data tidak ditemukan",
+                ], 404);
+            }
+
+            // Get all test UUIDs
+            $tryout_segment_test_uuids = $tryout->tryoutSegments->flatMap(function ($segment) {
+                return $segment->tryoutSegmentTests->pluck('uuid');
+            })->toArray();
+
+            // Get all unique users who attempted this tryout
+            $users = StudentTryout::whereIn('package_test_uuid', $tryout_segment_test_uuids)
+                ->with('user')
+                ->get()
+                ->unique('user_uuid')
+                ->map(function ($attempt) {
+                    return [
+                        "user_uuid" => $attempt->user_uuid,
+                        "user_name" => $attempt->user->username ?? 'Unknown',
+                    ];
+                });
+
+            $tryout_result = [];
+
+            foreach ($users as $user_attempt) {
+                $total_score = 0;
+                $segment_count = 0;
+
+                foreach ($tryout->tryoutSegments as $tryout_segment) {
+                    $segment_score = 0;
+                    $test_count = 0;
+
+                    foreach ($tryout_segment->tryoutSegmentTests as $tryout_segment_test) {
+                        $maxPoint = $tryout_segment_test->max_point ?? 0;
+
+                        // Get first attempt score
+                        $first_attempt = $tryout_segment_test->studentTryouts
+                            ->where('user_uuid', $user_attempt['user_uuid'])
+                            ->sortBy('created_at')
+                            ->first();
+
+                        if ($first_attempt) {
+                            $segment_score += $first_attempt->score ?? 0;
+                            $test_count++;
+                        }
+                    }
+
+                    // Calculate segment average if there are tests
+                    if ($test_count > 0) {
+                        $total_score += ($segment_score / max(1, $test_count));
+                        $segment_count++;
+                    }
+                }
+
+                // Calculate overall average if there are segments
+                if ($segment_count > 0) {
+                    $tryout_result[] = [
+                        "user_uuid" => $user_attempt['user_uuid'],
+                        "name" => $user_attempt['user_name'],
+                        "tryout_uuid" => $tryout_uuid,
+                        'tryout_name' => $tryout->title,
+                        'score' => intval($total_score),
+                    ];
+                }
+            }
+
+            // Sort by score descending
+            usort($tryout_result, function ($a, $b) {
+                return $b['score'] - $a['score'];
+            });
+
+            // Add rankings
+            $ranking = 1;
+            foreach ($tryout_result as &$item) {
+                $item['ranking'] = $ranking++;
+            }
+
+            $data = [
+                'allLeaderboard' => $tryout_result,
+            ];
+
+            return response()->json([
+                'message' => 'Berhasil mengambil data leaderboard',
+                'status' => true,
+                'data' => $data
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan server',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getUserTryoutAnalytic($tryout_uuid, $user_uuid)
+    {
+        $tryout = Tryout::where([
+            'uuid' => $tryout_uuid
+        ])->with(['tryoutSegments', 'tryoutSegments.tryoutSegmentTests', 'tryoutSegments.tryoutSegmentTests.test'])->first();
+
+        if($tryout == null) {
             return response()->json([
                 'message' => "Data tidak ditemukan",
             ], 404);
         }
 
-        // Get all test UUIDs
-        $tryout_segment_test_uuids = $tryout->tryoutSegments->flatMap(function ($segment) {
-            return $segment->tryoutSegmentTests->pluck('uuid');
-        })->toArray();
+        $student_attempts = [];
+        $do_repeat = true;
+        $attempt = 1;
+        while ($do_repeat) {
+            $do_repeat = false;
+            $list_score_per_segment = [];
+            $segment_results=[];
+            foreach ($tryout['tryoutSegments'] as $index => $tryout_segment) {
+                $list_score=[];
+                $formattedResult=[];
+                $countSegment = 0;
+                foreach ($tryout_segment['tryoutSegmentTests'] as $index1 => $tryout_segment_test) {
+                    $countSegment += 1;
+                    $packageTestUuid = $tryout_segment_test['uuid'];
+                    $maxPoint = $tryout_segment_test['max_point'] ?? 0;
 
-        // Get all unique users who attempted this tryout
-        $users = StudentTryout::whereIn('package_test_uuid', $tryout_segment_test_uuids)
-            ->with('user')
-            ->get()
-            ->unique('user_uuid')
-            ->map(function ($attempt) {
-                return [
-                    "user_uuid" => $attempt->user_uuid,
-                    "user_name" => $attempt->user->username ?? 'Unknown',
-                ];
-            });
-
-        $tryout_result = [];
-
-        foreach ($users as $user_attempt) {
-            $total_score = 0;
-            $segment_count = 0;
-
-            foreach ($tryout->tryoutSegments as $tryout_segment) {
-                $segment_score = 0;
-                $test_count = 0;
-
-                foreach ($tryout_segment->tryoutSegmentTests as $tryout_segment_test) {
-                    $maxPoint = $tryout_segment_test->max_point ?? 0;
-
-                    // Get first attempt score
-                    $first_attempt = $tryout_segment_test->studentTryouts
-                        ->where('user_uuid', $user_attempt['user_uuid'])
-                        ->sortBy('created_at')
+                    // Fetch corresponding records in student_tryouts
+                    $attemptsData = StudentTryout::select('student_tryouts.score', 'student_tryouts.uuid', 'student_tryouts.package_test_uuid', 'student_tryouts.uuid as tryout_uuid', 'student_tryouts.created_at')
+                        ->where('student_tryouts.user_uuid', $user_uuid)
+                        ->where('student_tryouts.package_test_uuid', $tryout_segment_test['uuid'])
+                        ->where('student_tryouts.attempt', $attempt)
+                        // ->orderBy('student_tryouts.created_at')
                         ->first();
+                    // Process each attempt for the test
+                    $attemptResult = null;
+                    $first_score = 0;
 
-                    if ($first_attempt) {
-                        $segment_score += $first_attempt->score ?? 0;
+                    if($attemptsData){
+                        $do_repeat = true;
+                        $first_score = $attemptsData->score;
+                        $percentage = $attemptsData->score ? ($attemptsData->score / $maxPoint) * 100 : 0;
+                        $passing_score = $tryout_segment_test['test']['passing_score'] ?? 0;
+                        $status = $attemptsData->score >= $passing_score ? 'passed' : 'failed';
+                        $attemptResult = [
+                            'attempt_uuid' => $attemptsData->uuid,
+                            'package_test_uuid' => $attemptsData->package_test_uuid,
+                            'score' => $attemptsData->score ?: 0,
+                            'percentage' => $percentage,
+                            'status' => $status,
+                        ];
+                    }
+
+                    $list_score[] = $first_score;
+
+                    // Add the test data with attempts to the result
+                    $formattedResult[] = [
+                        'tryout_segment_test_uuid' => $tryout_segment_test['uuid'],
+                        'test_name' => $tryout_segment_test['test']['title'],
+                        'max_point' => $maxPoint,
+                        'attempt' => $attemptResult,
+                    ];
+                }
+                // Menghitung total nilai
+                $total = array_sum($list_score);
+
+                if($countSegment <= 0){
+                    $countSegment = 1;
+                }
+
+                // Menghitung rata-rata
+                $average = $total / $countSegment;
+
+                $list_score_per_segment[] = $average;
+                $segment_results[] = [
+                    "tryout_segment_uuid" => $tryout_segment['uuid'],
+                    'segment_name' => $tryout_segment['title'],
+                    'segment_score' => intval($total),
+                    'segment_result' => $formattedResult,
+                ];
+            }
+
+
+            $count = count($list_score_per_segment);
+
+            // Menghitung total nilai
+            $total = array_sum($list_score_per_segment);
+
+            // Menghitung rata-rata
+            $average = $total / $count;
+            $tryout_result = [
+                "tryout_uuid" => $tryout_uuid,
+                'tryout_name' => $tryout['title'],
+                'score' => intval($total),
+                'tryout_result' => $segment_results,
+            ];
+
+
+            $student_attempts[] = [
+                'title' => 'Percobaan ' . $attempt,
+                'result' => $tryout_result,
+            ];
+            $attempt += 1;
+        }
+
+        if(count($student_attempts) > 1){
+            array_pop($student_attempts);
+        }
+
+        return response()->json([
+            'message' => 'Berhasil mengambil data analitik',
+            'status' => true,
+            'data' => $student_attempts,
+        ], 200);
+    }
+
+    public function getUserTryoutAnalyticNew($tryout_uuid, $user_uuid)
+    {
+        try {
+            // Validate user_uuid exists
+            $user = User::where('uuid', $user_uuid)->first();
+            if (!$user) {
+                return response()->json(['message' => 'User tidak ditemukan'], 404);
+            }
+
+            $tryout = Tryout::with([
+                'tryoutSegments.tryoutSegmentTests.test',
+                'tryoutSegments.tryoutSegmentTests.studentTryouts' => function($q) use ($user_uuid) {
+                    $q->where('user_uuid', $user_uuid)
+                    ->orderBy('attempt')
+                    ->orderBy('created_at');
+                }
+            ])->where('uuid', $tryout_uuid)->first();
+
+            if (!$tryout) {
+                return response()->json(['message' => "Tryout tidak ditemukan"], 404);
+            }
+
+            $student_attempts = [];
+            $max_attempts = 10;
+
+            for ($attempt = 1; $attempt <= $max_attempts; $attempt++) {
+                $hasAttemptData = false;
+                $segment_results = [];
+                $total_score = 0;
+
+                foreach ($tryout->tryoutSegments as $tryout_segment) {
+                    $segment_score = 0;
+                    $test_count = 0;
+                    $formattedResult = [];
+
+                    foreach ($tryout_segment->tryoutSegmentTests as $test) {
+                        $attemptData = $test->studentTryouts->firstWhere('attempt', $attempt);
+
+                        if (!$attemptData) continue;
+
+                        $hasAttemptData = true;
+                        $maxPoint = $test->max_point ?? 1; // Avoid division by zero
+                        $score = $attemptData->score ?? 0;
+                        $percentage = ($score / $maxPoint) * 100;
+                        $passing_score = $test->test->passing_score ?? 0;
+
+                        $formattedResult[] = [
+                            'tryout_segment_test_uuid' => $test->uuid,
+                            'test_name' => $test->test->title,
+                            'max_point' => $maxPoint,
+                            'attempt' => [
+                                'attempt_uuid' => $attemptData->uuid,
+                                'package_test_uuid' => $test->uuid,
+                                'score' => $score,
+                                'percentage' => $percentage,
+                                'status' => $score >= $passing_score ? 'passed' : 'failed',
+                            ],
+                        ];
+
+                        $segment_score += $score;
                         $test_count++;
                     }
+
+                    $segment_results[] = [
+                        "tryout_segment_uuid" => $tryout_segment->uuid,
+                        'segment_name' => $tryout_segment->title,
+                        'segment_score' => intval($test_count ? $segment_score : 0),
+                        'segment_result' => $formattedResult,
+                    ];
+
+                    $total_score += $test_count ? $segment_score : 0;
                 }
 
-                // Calculate segment average if there are tests
-                if ($test_count > 0) {
-                    $total_score += ($segment_score / max(1, $test_count));
-                    $segment_count++;
-                }
-            }
+                if (!$hasAttemptData) break;
 
-            // Calculate overall average if there are segments
-            if ($segment_count > 0) {
-                $tryout_result[] = [
-                    "user_uuid" => $user_attempt['user_uuid'],
-                    "name" => $user_attempt['user_name'],
-                    "tryout_uuid" => $tryout_uuid,
-                    'tryout_name' => $tryout->title,
-                    'score' => intval($total_score),
+                $student_attempts[] = [
+                    'title' => 'Percobaan ' . $attempt,
+                    'result' => [
+                        "tryout_uuid" => $tryout_uuid,
+                        'tryout_name' => $tryout->title,
+                        'score' => intval($total_score),
+                        'tryout_result' => $segment_results,
+                    ],
                 ];
             }
+
+            return response()->json([
+                'message' => 'Berhasil mengambil data analitik',
+                'status' => true,
+                'data' => $student_attempts,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan server',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Sort by score descending
-        usort($tryout_result, function ($a, $b) {
-            return $b['score'] - $a['score'];
-        });
-
-        // Add rankings
-        $ranking = 1;
-        foreach ($tryout_result as &$item) {
-            $item['ranking'] = $ranking++;
-        }
-
-        $data = [
-            'allLeaderboard' => $tryout_result,
-        ];
-
-        return response()->json([
-            'message' => 'Berhasil mengambil data leaderboard',
-            'status' => true,
-            'data' => $data
-        ], 200);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Terjadi kesalahan server',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
 }
