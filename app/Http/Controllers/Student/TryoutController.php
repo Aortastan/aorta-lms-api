@@ -625,7 +625,7 @@ class TryoutController extends Controller
                 $user_uuids[] = $value->user_uuid;
                 $users[] = [
                     "user_uuid" => $value->user_uuid,
-                    "user_name" => $value->user->username,
+                    "user_name" => $value->user->username ?? 'Unknown',
                 ];
             }
 
