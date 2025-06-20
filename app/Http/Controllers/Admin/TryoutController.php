@@ -762,4 +762,40 @@ class TryoutController extends Controller
             ], 500);
         }
     }
+
+    public function getTryout($tryout_uuid, $user_uuid){
+        try{
+            $getTest = TryoutSegmentTest::
+                select(
+                    'uuid',
+                    'test_uuid',
+                    'attempt',
+                    'duration'
+                )
+                ->where(['uuid' => $tryout_uuid])
+                ->first();
+            if(!$getTest){
+                return response()->json([
+                    'message' => "Tes tidak ditemukan",
+                ], 404);
+            }
+            $pretest_posttests = StudentTryout::
+            select('uuid', 'score')
+            ->where([
+                'user_uuid' => $user_uuid,
+                'package_test_uuid' => $getTest->uuid,
+            ])->get();
+            $getTest['student_attempts'] = $pretest_posttests;
+
+            return response()->json([
+                'message' => 'Sukses mengambil data',
+                'tryout' => $getTest,
+            ], 200);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
 }
