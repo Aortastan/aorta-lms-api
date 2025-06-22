@@ -14,6 +14,8 @@ use App\Models\TryoutSegmentTest;
 use App\Models\TryoutSegment;
 use App\Models\PackageTest;
 use App\Models\StudentTryout;
+use App\Models\Question;
+use App\Models\Answer;
 
 class TryoutController extends Controller
 {
@@ -790,6 +792,98 @@ class TryoutController extends Controller
             return response()->json([
                 'message' => 'Sukses mengambil data',
                 'tryout' => $getTest,
+            ], 200);
+        }
+        catch(\Exception $e){
+            return response()->json([
+                'message' => $e,
+            ], 404);
+        }
+    }
+
+    public function adminReview($tryout_uuid, $user_uuid){
+        try{
+            $tryout = StudentTryout::
+            select('uuid', 'score', 'package_test_uuid', 'data_question')
+            ->where([
+                'user_uuid' => $user_uuid,
+                'uuid' => $tryout_uuid,
+            ])->first();
+
+            if($tryout == null){
+                return response()->json([
+                    'message' => "Tes tidak ditemukan",
+                ], 404);
+            }
+
+            $getTest = TryoutSegmentTest::
+                select(
+                    'uuid',
+                    'test_uuid',
+                    'attempt',
+                    'duration'
+                )
+                ->where(['uuid' => $tryout->package_test_uuid])
+                ->first();
+
+            if(!$getTest){
+                return response()->json([
+                    'message' => "Tes tidak ditemukan",
+                ], 404);
+            }
+
+            $data_question = json_decode($tryout->data_question);
+
+            $questions = [];
+            foreach ($data_question as $index => $data) {
+                $get_question = Question::where([
+                    'uuid' => $data->question_uuid,
+                ])->first();
+
+                $answers = [];
+                foreach ($data->answers as $index => $answer) {
+                    $get_answer = Answer::where([
+                        'uuid' => $answer->answer_uuid,
+                    ])->first();
+
+                    if($answer->is_correct) {
+                        $answers[] = [
+                            'answer_uuid' => $answer->answer_uuid,
+                            'is_correct' => $answer->is_correct,
+                            'correct_answer_explanation' => $get_answer->correct_answer_explanation,
+                            'is_selected' => $answer->is_selected,
+                            'answer' => $get_answer->answer,
+                            'image' => $get_answer->image,
+                        ];
+                    } else {
+                        $answers[] = [
+                            'answer_uuid' => $answer->answer_uuid,
+                            'is_correct' => $answer->is_correct,
+                            'is_selected' => $answer->is_selected,
+                            'answer' => $get_answer->answer,
+                            'image' => $get_answer->image,
+                        ];
+                    }
+                }
+
+                $questions[] = [
+                    'question_uuid' => $get_question->uuid,
+                    'question_type' => $get_question->question_type,
+                    'question' => $get_question->question,
+                    'file_path' => $get_question->file_path,
+                    'url_path' => $get_question->url_path,
+                    'file_size' => $get_question->file_size,
+                    'file_duration' => $get_question->file_duration,
+                    'type' => $get_question->type,
+                    'hint' => $get_question->hint,
+                    'answers' => $answers,
+                ];
+            }
+
+            return response()->json([
+                'message' => 'Sukses mengambil data',
+                'score' => $tryout->score,
+                'questions' => $questions
             ], 200);
         }
         catch(\Exception $e){
