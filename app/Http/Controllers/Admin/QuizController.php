@@ -73,6 +73,7 @@ class QuizController extends Controller
     }
 
     public function reviewTryout($student_quiz_uuid, $user_uuid){
+        dd($student_quiz_uuid, $user_uuid);
         $student_quiz = StudentQuiz::
         select('uuid', 'data_question', 'score', 'lesson_quiz_uuid')
         ->where([
