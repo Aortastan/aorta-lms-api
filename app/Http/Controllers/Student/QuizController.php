@@ -71,7 +71,6 @@ class QuizController extends Controller
 
     public function show(Request $request, $student_quiz_uuid){
         $user = JWTAuth::parseToken()->authenticate();
-        dd($student_quiz_uuid, $user->uuid);
         $student_quiz = StudentQuiz::
         select('uuid', 'data_question', 'score', 'lesson_quiz_uuid')
         ->where([

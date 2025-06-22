@@ -87,7 +87,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::get('analytics-new/{tryout_uuid}/{user_uuid}', 'Admin\TryoutController@getUserTryoutAnalyticNew')->name('getUserTryoutAnalyticsNew');
 
     Route::get('get-tryout/{tryout_uuid}/{user_uuid}', 'Admin\TryoutController@getTryout')->name('tryoutAdmin.getTryout');
-    Route::get('admin-review/{student_quiz_uuid}/{user_uuid}', 'Admin\QuizController@reviewTryout')->name('reviewTryout');
+    Route::get('admin-review/{student_quiz_uuid}/{user_uuid}', 'Admin\TryoutController@adminReview')->name('adminReview');
 
     Route::group(['middleware' => ['auth', 'verified']], function () {
         // profile management
