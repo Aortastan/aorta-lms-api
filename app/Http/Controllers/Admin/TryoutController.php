@@ -894,7 +894,7 @@ class TryoutController extends Controller
     }
 
     public function rankingQuestion($tryout_uuid, Request $request) {
-        $sortBy = $request->post('sorting');
+        $sortBy = $request->query('sort');
         try {
             $tryout = Tryout::where('uuid', $tryout_uuid)
                 ->with(['tryoutSegments.tryoutSegmentTests.studentTryouts'])
