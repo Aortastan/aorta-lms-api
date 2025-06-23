@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use App\Models\Question;
 use App\Models\Tryout;
 use App\Models\TryoutSegmentTest;
 use App\Models\TryoutSegment;
@@ -798,4 +799,95 @@ class TryoutController extends Controller
             ], 404);
         }
     }
+
+    public function rankingQuestion($tryout_uuid, Request $request) {
+        $sortBy = $request->post('sorting');
+        try {
+            $tryout = Tryout::where('uuid', $tryout_uuid)
+                ->with(['tryoutSegments.tryoutSegmentTests.studentTryouts'])
+                ->first();
+    
+            if (!$tryout) {
+                return response()->json([
+                    'message' => "Tes tidak ditemukan",
+                ], 404);
+            }
+    
+            $studentTryouts = $tryout->tryoutSegments->flatMap->tryoutSegmentTests->flatMap->studentTryouts;
+    
+            $studentTryouts = $studentTryouts->map(function ($item) {
+                $item->data_question = json_decode($item->data_question, true);
+                return $item;
+            });
+    
+            $summary = collect();
+    
+            foreach ($studentTryouts as $tryout) {
+                foreach ($tryout->data_question ?? [] as $question) {
+                    if (!isset($question['question_uuid'])) {
+                        continue;
+                    }
+    
+                    $questionUuid = $question['question_uuid'];
+                    $answers = collect($question['answers'] ?? []);
+    
+                    $isCorrectSelected = $answers->where('is_correct', 1)->where('is_selected', 1)->count();
+                    $isIncorrectSelected = $answers->where('is_correct', 0)->where('is_selected', 1)->count();
+    
+                    if (!$summary->has($questionUuid)) {
+                        $summary->put($questionUuid, [
+                            'question_uuid' => $questionUuid,
+                            'question' => Question::where('uuid', $questionUuid)->first()->question,
+                            'total_correct_selected' => 0,
+                            'total_incorrect_selected' => 0,
+                            'total_participant' => 0,
+                        ]);
+                    }
+    
+                    $current = $summary->get($questionUuid);
+    
+                    $current['total_correct_selected'] += $isCorrectSelected;
+                    $current['total_incorrect_selected'] += $isIncorrectSelected;
+                    $current['total_participant'] += 1;
+    
+                    $summary->put($questionUuid, $current);
+                }
+            }
+
+              // Sorting logic
+        $sorted = $summary->values();
+
+        switch ($sortBy) {
+            case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
+                $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+                break;
+            case 'correct_desc': // Soal benar terbanyak ke paling sedikit
+                $sorted = $sorted->sortByDesc('total_correct_selected')->values();
+                break;
+            case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
+                $sorted = $sorted->sortBy('total_incorrect_selected')->values();
+                break;
+            case 'correct_asc': // Soal benar paling sedikit ke paling banyak
+                $sorted = $sorted->sortBy('total_correct_selected')->values();
+                break;
+            default:
+                // Default tetap wrong_desc
+                $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+                break;
+        }
+    
+            return response()->json([
+                'message' => 'Sukses ambil data ranking soal',
+                'data' => $sorted,
+            ], 200);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
+    
+    
 }
