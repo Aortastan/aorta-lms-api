@@ -16,6 +16,9 @@ use App\Models\TryoutSegment;
 use App\Models\PackageTest;
 use App\Models\StudentTryout;
 use App\Models\Answer;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\RankingQuestionExport;
+
 
 class TryoutController extends Controller
 {
@@ -979,5 +982,9 @@ class TryoutController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+    public function exportRankingQuestion($tryout_uuid, Request $request) {
+        $sorting = request()->query('sort');    
+        return Excel::download(new RankingQuestionExport($tryout_uuid, $sorting), 'ranking-questions.xlsx');
     }
 }
