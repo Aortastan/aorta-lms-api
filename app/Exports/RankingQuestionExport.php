@@ -19,7 +19,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 
 
 
-class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings
+class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings, WithEvents
 {
     /**
      * @return \Illuminate\Support\Collection
@@ -28,6 +28,7 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
      protected $tryout_uuid;
      protected $sortBy;
      protected $images = [];
+     protected $rowPosition = [];
  
      public function __construct($tryout_uuid, $sortBy)
      {
@@ -56,10 +57,8 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
       });
 
       $summary = collect();
-      $number = 0;
       foreach ($studentTryouts as $tryout) {
-          foreach ($tryout->data_question ?? [] as $question) {
-            $number++;
+          foreach ($tryout->data_question ?? [] as $key => $question) {
               if (!isset($question['question_uuid'])) {
                   continue;
               }
@@ -83,9 +82,11 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
               
               $current['Jumlah Jawaban Benar'] += $isCorrectSelected;
               $current['Jumlah Jawaban Salah'] += $isIncorrectSelected;
-              $current['No.'] = $number;
+              $current['No.'] = $key + 1;
               $contains = str_contains($current['Soal'], 'img');
               if($contains) {
+                $current['No.'] +=  1;
+                $this->rowPosition[] = $current['No.'];
                 $currNumber = (string)$current['No.'];
                 $this->images["B" . $currNumber] = $current['Soal'];
               }
@@ -101,24 +102,25 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
       // Sorting logic
     $sorted = $summary->values();
 
-    switch ($sortBy) {
-      case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
-          $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-          break;
-      case 'correct_desc': // Soal benar terbanyak ke paling sedikit
-          $sorted = $sorted->sortByDesc('total_correct_selected')->values();
-          break;
-      case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
-          $sorted = $sorted->sortBy('total_incorrect_selected')->values();
-          break;
-      case 'correct_asc': // Soal benar paling sedikit ke paling banyak
-          $sorted = $sorted->sortBy('total_correct_selected')->values();
-          break;
-      default:
-          // Default tetap wrong_desc
-          $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-          break;
-    }
+    // switch ($sortBy) {
+    //   case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
+    //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+    //       break;
+    //   case 'correct_desc': // Soal benar terbanyak ke paling sedikit
+    //       $sorted = $sorted->sortByDesc('total_correct_selected')->values();
+    //       break;
+    //   case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
+    //       $sorted = $sorted->sortBy('total_incorrect_selected')->values();
+    //       break;
+    //   case 'correct_asc': // Soal benar paling sedikit ke paling banyak
+    //       $sorted = $sorted->sortBy('total_correct_selected')->values();
+    //       break;
+    //   default:
+    //       // Default tetap wrong_desc
+    //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+    //       break;
+    // }
+
         return $sorted;
     }
 
@@ -197,12 +199,11 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
         return [
             AfterSheet::class => function(AfterSheet $event) {
                 /** @var Worksheet $sheet */
-                $sheet = $event->sheet->getDelegate();
+                for($index = 0; $index < count($this->rowPosition); $index++) {
 
-                // Set tinggi baris
-                for ($i = 1; $i <= $sheet->getHighestRow(); $i++) {
-                  $sheet->getRowDimension($i)->setRowHeight(200); // Semua baris jadi tinggi 100
-              }
+                  $event->sheet->getDelegate()->getRowDimension($this->rowPosition[$index])->setRowHeight(70);  // Single row
+
+                  }
             },
         ];
     }
