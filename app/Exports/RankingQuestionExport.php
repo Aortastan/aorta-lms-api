@@ -57,6 +57,7 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
       });
 
       $summary = collect();
+      $number = 1;
       foreach ($studentTryouts as $tryout) {
           foreach ($tryout->data_question ?? [] as $key => $question) {
               if (!isset($question['question_uuid'])) {
@@ -71,7 +72,7 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
 
               if (!$summary->has($questionUuid)) {
                   $summary->put($questionUuid, [
-                      'No.' => 0,
+                      'No.' => $number++,
                       'Soal' => Question::where('uuid', $questionUuid)->first()->question,
                       'Jumlah Jawaban Benar' => 0,
                       'Jumlah Jawaban Salah' => 0,
@@ -82,12 +83,10 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
               
               $current['Jumlah Jawaban Benar'] += $isCorrectSelected;
               $current['Jumlah Jawaban Salah'] += $isIncorrectSelected;
-              $current['No.'] = $key + 1;
               $contains = str_contains($current['Soal'], 'img');
               if($contains) {
-                $current['No.'] +=  1;
-                $this->rowPosition[] = $current['No.'];
-                $currNumber = (string)$current['No.'];
+                $this->rowPosition[] = $current['No.'] + 1;
+                $currNumber = (string)$current['No.'] + 1;
                 $this->images["B" . $currNumber] = $current['Soal'];
               }
 
@@ -182,7 +181,7 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
                 $imgTag = strip_tags($imgTag);
                 $imgTag = html_entity_decode($imgTag);
                 $drawing->setName($imgTag);
-                $drawing->setDescription($imgTag);
+                $drawing->setDescription("Image for row $index");
                 $drawing->setPath($tempFilePath);
                 $drawing->setHeight(50);
                 $drawing->setCoordinates($index ?? 'A1');
@@ -200,9 +199,12 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
             AfterSheet::class => function(AfterSheet $event) {
                 /** @var Worksheet $sheet */
                 for($index = 0; $index < count($this->rowPosition); $index++) {
-
-                  $event->sheet->getDelegate()->getRowDimension($this->rowPosition[$index])->setRowHeight(70);  // Single row
-
+                    $text = $event->sheet->getCell('B' . $this->rowPosition[$index])->getValue();
+                    $length = strlen($text) > 0 ? strlen($text) + 50 : 100; // bersihkan HTML kalau ada
+                    $charsPerLine = 28;
+                    $lines = ceil($length / $charsPerLine);
+                    $height = $lines * 15;
+                     $event->sheet->getDelegate()->getRowDimension($this->rowPosition[$index])->setRowHeight($height);  // Single row
                   }
             },
         ];
