@@ -272,6 +272,7 @@ class PackageController extends Controller
         }
 
         $validated = [
+            'package_type' => $request->package_type,
             'category_uuid' => $request->category_uuid,
             'subcategory_uuid' => $request->subcategory_uuid,
             'name' => $request->name,
