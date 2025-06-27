@@ -199,7 +199,7 @@ class PackageController extends Controller
                 'message' => 'Type not valid'
             ], 422);
         }
-        $checkPackage = Package::where(['uuid' => $uuid, "package_type" => $type])->first();
+        $checkPackage = Package::where(['uuid' => $uuid])->first();
 
         if(!$checkPackage){
             return response()->json([
