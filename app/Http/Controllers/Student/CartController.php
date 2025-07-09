@@ -23,29 +23,35 @@ class CartController extends Controller
             where([
                 'user_uuid' => $this->user->uuid,
             ])->with(['package'])->get();
-
+    
             $carts = [];
-
+    
             foreach ($getCarts as $index => $cart) {
-                $carts[] = [
+                $cartData = [
                     'uuid' => $cart->uuid,
                     'package_uuid' => $cart->package->uuid,
                     'product_type' => $cart->product_type,
                     'qty' => $cart->qty,
                     'package' => $cart->package->name,
                     'package_image' => $cart->package->image,
-                    'price_lifetime' => $cart->package->price_lifetime,
                     'price_one_month' => $cart->package->price_one_month,
                     'price_three_months' => $cart->package->price_three_months,
                     'price_six_months' => $cart->package->price_six_months,
                     'price_one_year' => $cart->package->price_one_year,
                     'discount' => $cart->package->discount,
                 ];
+                
+                // Only add price_lifetime if it's not 0
+                if ($cart->package->price_lifetime != 0) {
+                    $cartData['price_lifetime'] = $cart->package->price_lifetime;
+                }
+    
+                $carts[] = $cartData;
             }
-
+    
             $phone_status = $this->user->mobile_number ? true : false;
             $message = $phone_status ? 'Sukses mengambil data' : 'Silahkan lengkapi nomor telepon anda';
-
+    
             return response()->json([
                 'message' => $message,
                 'carts' => $carts,
