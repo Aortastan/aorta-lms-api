@@ -88,6 +88,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
     Route::get('get-tryout/{tryout_uuid}/{user_uuid}', 'Admin\TryoutController@getTryout')->name('tryoutAdmin.getTryout');
     Route::get('ranking/{tryout_uuid}/question-export', 'Admin\TryoutController@exportRankingQuestion')->name('exportRankingQuestion');
+    Route::get('tryouts/{tryout_uuid}/student-tryout-export', 'Admin\TryoutController@exportStudentTryout')->name('exportStudentTryout');
     Route::get('ranking/{tryout_uuid}/question', 'Admin\TryoutController@rankingQuestion')->name('rankingQuestion');
     Route::get('admin-review/{student_quiz_uuid}/{user_uuid}', 'Admin\TryoutController@adminReview')->name('adminReview');
 

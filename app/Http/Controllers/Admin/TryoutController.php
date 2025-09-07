@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\MultiSheetExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,49 +19,51 @@ use App\Models\StudentTryout;
 use App\Models\Answer;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RankingQuestionExport;
+use App\Exports\StudentTryoutExport;
 
 
 class TryoutController extends Controller
 {
-    public function index(){
+    public function index()
+    {
         $search = "";
         $status = "";
         $orderBy = "";
         $order = "";
 
-        if(isset($_GET['search'])){
+        if (isset($_GET['search'])) {
             $search = $_GET['search'];
         }
 
-        if(isset($_GET['status'])){
+        if (isset($_GET['status'])) {
             $status = $_GET['status'];
         }
 
-        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+        if (isset($_GET['orderBy']) && isset($_GET['order'])) {
             $orderBy = $_GET['orderBy'];
             $order = $_GET['order'];
         }
 
         $tryouts = DB::table('tryouts')
-        ->select(
-            'tryouts.uuid',
-            'tryouts.title',
-            'tryouts.status',
-        );
+            ->select(
+                'tryouts.uuid',
+                'tryouts.title',
+                'tryouts.status',
+            );
 
-        if($search != null){
-            $tryouts->where('tryouts.title', 'LIKE', '%'.$search.'%');
+        if ($search != null) {
+            $tryouts->where('tryouts.title', 'LIKE', '%' . $search . '%');
         }
 
-        if($status != null){
+        if ($status != null) {
             $tryouts->where('tryouts.status', $status);
         }
 
-        if($orderBy != null && $order != null){
+        if ($orderBy != null && $order != null) {
             $orderByArray = ['title', 'status'];
             $orderArray = ['asc', 'desc'];
 
-            if(in_array($orderBy, $orderByArray) && in_array($order, $orderArray)){
+            if (in_array($orderBy, $orderByArray) && in_array($order, $orderArray)) {
                 $tryouts->orderBy('tryouts.' . $orderBy, $order);
             }
         }
@@ -72,9 +75,9 @@ class TryoutController extends Controller
                 'test_uuid' => $tryout->uuid,
             ])->first();
 
-            if($check_tryout){
+            if ($check_tryout) {
                 $tryout->deletable = false;
-            }else{
+            } else {
                 $tryout->deletable = true;
             }
         }
@@ -85,13 +88,14 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function show(Request $request, $uuid){
+    public function show(Request $request, $uuid)
+    {
         $tryout = Tryout::select('uuid', 'title', 'status')
-        ->where([
-            'uuid' => $uuid
-        ])->with(['tryoutSegments', 'tryoutSegments.tryoutSegmentTests', 'tryoutSegments.tryoutSegmentTests.test'])->first();
+            ->where([
+                'uuid' => $uuid
+            ])->with(['tryoutSegments', 'tryoutSegments.tryoutSegmentTests', 'tryoutSegments.tryoutSegmentTests.test'])->first();
 
-        if(!$tryout){
+        if (!$tryout) {
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
@@ -101,7 +105,7 @@ class TryoutController extends Controller
         foreach ($tryout->tryoutSegments as $key => $data) {
             $segmentTests = [];
             foreach ($data['tryoutSegmentTests'] as $key1 => $data1) {
-                if($data1['passing_score'] == NULL){
+                if ($data1['passing_score'] == NULL) {
                     $data1['passing_score'] = $data1['test']['passing_score'];
                 }
                 $segmentTests[] = [
@@ -138,7 +142,8 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function submit(Request $request): JsonResponse{
+    public function submit(Request $request): JsonResponse
+    {
         $validate = [
             'title' => 'required|string',
         ];
@@ -164,15 +169,16 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, $uuid): JsonResponse{
+    public function update(Request $request, $uuid): JsonResponse
+    {
         $tryout = Tryout::where(['uuid' => $uuid])->first();
-        if(!$tryout){
+        if (!$tryout) {
             return response()->json([
                 'message' => 'Tryout not found',
             ], 404);
         }
 
-        if($tryout->status == "Published"){
+        if ($tryout->status == "Published") {
             return response()->json([
                 'message' => 'tryout already published, you cannot edit this tryout.',
             ], 422);
@@ -202,15 +208,16 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function addTests(Request $request, $uuid){
+    public function addTests(Request $request, $uuid)
+    {
         $tryout = Tryout::where(['uuid' => $uuid])->with(['tryoutSegments'])->first();
-        if(!$tryout){
+        if (!$tryout) {
             return response()->json([
                 'message' => 'Tryout not found',
             ], 404);
         }
 
-        if($tryout->status == "Published"){
+        if ($tryout->status == "Published") {
             return response()->json([
                 'message' => 'tryout already published, you cannot edit this tryout.',
             ], 422);
@@ -268,12 +275,13 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function delete($uuid){
+    public function delete($uuid)
+    {
         $check_tryout = Tryout::where([
             'uuid' => $uuid,
         ])->first();
 
-        if($check_tryout == null){
+        if ($check_tryout == null) {
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
@@ -283,7 +291,7 @@ class TryoutController extends Controller
             'test_uuid' => $uuid,
         ])->first();
 
-        if($check_package_test){
+        if ($check_package_test) {
             return response()->json([
                 'message' => 'This tryout has published and used in package. You can\'t delete it',
             ], 404);
@@ -308,12 +316,13 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function getTryoutLeaderboard($tryout_uuid) {
+    public function getTryoutLeaderboard($tryout_uuid)
+    {
         $tryout = Tryout::where([
             'uuid' => $tryout_uuid
         ])->with(['tryoutSegments', 'tryoutSegments.tryoutSegmentTests', 'tryoutSegments.tryoutSegmentTests.test'])->first();
 
-        if($tryout == null) {
+        if ($tryout == null) {
             return response()->json([
                 'message' => "Data tidak ditemukan",
             ], 404);
@@ -321,22 +330,22 @@ class TryoutController extends Controller
 
         $tryout_segment_test_uuids = [];
         foreach ($tryout['tryoutSegments'] as $index => $tryout_segment) {
-            $list_score=[];
-            $formattedResult=[];
+            $list_score = [];
+            $formattedResult = [];
             $countSegment = 0;
             foreach ($tryout_segment['tryoutSegmentTests'] as $index1 => $tryout_segment_test) {
                 $tryout_segment_test_uuids[] = $tryout_segment_test['uuid'];
             }
         }
 
-        $tryout_result=[];
+        $tryout_result = [];
         $earliestAttempts = StudentTryout::select('user_uuid')
-        ->whereIn('package_test_uuid', $tryout_segment_test_uuids)
-        ->with(['user'])
-        ->groupBy('user_uuid');
+            ->whereIn('package_test_uuid', $tryout_segment_test_uuids)
+            ->with(['user'])
+            ->groupBy('user_uuid');
         $earliestAttempts = $earliestAttempts->groupBy('package_test_uuid')->get();
-        $user_uuids= [];
-        $users= [];
+        $user_uuids = [];
+        $users = [];
         foreach ($earliestAttempts as $key => $value) {
             if (!in_array($value->user_uuid, $user_uuids)) {
                 $user_uuids[] = $value->user_uuid;
@@ -345,15 +354,14 @@ class TryoutController extends Controller
                     "user_name" => $attempt->user->username ?? 'Unknown',
                 ];
             }
-
         }
 
         foreach ($users as $index => $user_attempt) {
             $list_score_per_segment = [];
-            $segment_results=[];
+            $segment_results = [];
             foreach ($tryout['tryoutSegments'] as $index => $tryout_segment) {
-                $list_score=[];
-                $formattedResult=[];
+                $list_score = [];
+                $formattedResult = [];
                 $countSegment = 0;
                 foreach ($tryout_segment['tryoutSegmentTests'] as $index1 => $tryout_segment_test) {
                     $countSegment += 1;
@@ -393,7 +401,7 @@ class TryoutController extends Controller
                 // Menghitung total nilai
                 $total = array_sum($list_score);
 
-                if($countSegment <= 0){
+                if ($countSegment <= 0) {
                     $countSegment = 1;
                 }
 
@@ -446,7 +454,8 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function getLeaderboardNew($tryout_uuid) {
+    public function getLeaderboardNew($tryout_uuid)
+    {
         try {
 
             // Eager load all necessary relationships
@@ -542,7 +551,6 @@ class TryoutController extends Controller
                 'status' => true,
                 'data' => $data
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Terjadi kesalahan server',
@@ -557,7 +565,7 @@ class TryoutController extends Controller
             'uuid' => $tryout_uuid
         ])->with(['tryoutSegments', 'tryoutSegments.tryoutSegmentTests', 'tryoutSegments.tryoutSegmentTests.test'])->first();
 
-        if($tryout == null) {
+        if ($tryout == null) {
             return response()->json([
                 'message' => "Data tidak ditemukan",
             ], 404);
@@ -569,10 +577,10 @@ class TryoutController extends Controller
         while ($do_repeat) {
             $do_repeat = false;
             $list_score_per_segment = [];
-            $segment_results=[];
+            $segment_results = [];
             foreach ($tryout['tryoutSegments'] as $index => $tryout_segment) {
-                $list_score=[];
-                $formattedResult=[];
+                $list_score = [];
+                $formattedResult = [];
                 $countSegment = 0;
                 foreach ($tryout_segment['tryoutSegmentTests'] as $index1 => $tryout_segment_test) {
                     $countSegment += 1;
@@ -590,7 +598,7 @@ class TryoutController extends Controller
                     $attemptResult = null;
                     $first_score = 0;
 
-                    if($attemptsData){
+                    if ($attemptsData) {
                         $do_repeat = true;
                         $first_score = $attemptsData->score;
                         $percentage = $attemptsData->score ? ($attemptsData->score / $maxPoint) * 100 : 0;
@@ -618,7 +626,7 @@ class TryoutController extends Controller
                 // Menghitung total nilai
                 $total = array_sum($list_score);
 
-                if($countSegment <= 0){
+                if ($countSegment <= 0) {
                     $countSegment = 1;
                 }
 
@@ -657,7 +665,7 @@ class TryoutController extends Controller
             $attempt += 1;
         }
 
-        if(count($student_attempts) > 1){
+        if (count($student_attempts) > 1) {
             array_pop($student_attempts);
         }
 
@@ -679,10 +687,10 @@ class TryoutController extends Controller
 
             $tryout = Tryout::with([
                 'tryoutSegments.tryoutSegmentTests.test',
-                'tryoutSegments.tryoutSegmentTests.studentTryouts' => function($q) use ($user_uuid) {
+                'tryoutSegments.tryoutSegmentTests.studentTryouts' => function ($q) use ($user_uuid) {
                     $q->where('user_uuid', $user_uuid)
-                    ->orderBy('attempt')
-                    ->orderBy('created_at');
+                        ->orderBy('attempt')
+                        ->orderBy('created_at');
                 }
             ])->where('uuid', $tryout_uuid)->first();
 
@@ -759,7 +767,6 @@ class TryoutController extends Controller
                 'status' => true,
                 'data' => $student_attempts,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Terjadi kesalahan server',
@@ -768,68 +775,65 @@ class TryoutController extends Controller
         }
     }
 
-    public function getTryout($tryout_uuid, $user_uuid){
-        try{
-            $getTest = TryoutSegmentTest::
-                select(
-                    'uuid',
-                    'test_uuid',
-                    'attempt',
-                    'duration'
-                )
+    public function getTryout($tryout_uuid, $user_uuid)
+    {
+        try {
+            $getTest = TryoutSegmentTest::select(
+                'uuid',
+                'test_uuid',
+                'attempt',
+                'duration'
+            )
                 ->where(['uuid' => $tryout_uuid])
                 ->first();
-            if(!$getTest){
+            if (!$getTest) {
                 return response()->json([
                     'message' => "Tes tidak ditemukan",
                 ], 404);
             }
-            $pretest_posttests = StudentTryout::
-            select('uuid', 'score')
-            ->where([
-                'user_uuid' => $user_uuid,
-                'package_test_uuid' => $getTest->uuid,
-            ])->get();
+            $pretest_posttests = StudentTryout::select('uuid', 'score')
+                ->where([
+                    'user_uuid' => $user_uuid,
+                    'package_test_uuid' => $getTest->uuid,
+                ])->get();
             $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
                 'message' => 'Sukses mengambil data',
                 'tryout' => $getTest,
             ], 200);
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e,
             ], 404);
         }
     }
 
-    public function adminReview($tryout_uuid, $user_uuid){
-        try{
-            $tryout = StudentTryout::
-            select('uuid', 'score', 'package_test_uuid', 'data_question')
-            ->where([
-                'user_uuid' => $user_uuid,
-                'uuid' => $tryout_uuid,
-            ])->first();
+    public function adminReview($tryout_uuid, $user_uuid)
+    {
+        try {
+            $tryout = StudentTryout::select('uuid', 'score', 'package_test_uuid', 'data_question')
+                ->where([
+                    'user_uuid' => $user_uuid,
+                    'uuid' => $tryout_uuid,
+                ])->first();
 
-            if($tryout == null){
+            if ($tryout == null) {
                 return response()->json([
                     'message' => "Tes tidak ditemukan",
                 ], 404);
             }
 
-            $getTest = TryoutSegmentTest::
-                select(
-                    'uuid',
-                    'test_uuid',
-                    'attempt',
-                    'duration'
-                )
+            $getTest = TryoutSegmentTest::select(
+                'uuid',
+                'test_uuid',
+                'attempt',
+                'duration'
+            )
                 ->where(['uuid' => $tryout->package_test_uuid])
                 ->first();
 
-            if(!$getTest){
+            if (!$getTest) {
                 return response()->json([
                     'message' => "Tes tidak ditemukan",
                 ], 404);
@@ -849,7 +853,7 @@ class TryoutController extends Controller
                         'uuid' => $answer->answer_uuid,
                     ])->first();
 
-                    if($answer->is_correct) {
+                    if ($answer->is_correct) {
                         $answers[] = [
                             'answer_uuid' => $answer->answer_uuid,
                             'is_correct' => $answer->is_correct,
@@ -888,15 +892,15 @@ class TryoutController extends Controller
                 'score' => $tryout->score,
                 'questions' => $questions
             ], 200);
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e,
             ], 404);
         }
     }
 
-    public function rankingQuestion($tryout_uuid, Request $request) {
+    public function rankingQuestion($tryout_uuid, Request $request)
+    {
         $sortBy = $request->query('sort');
         try {
             $tryout = Tryout::where('uuid', $tryout_uuid)
@@ -950,41 +954,55 @@ class TryoutController extends Controller
                 }
             }
 
-              // Sorting logic
-        $sorted = $summary->values();
+            // Sorting logic
+            $sorted = $summary->values();
 
-        switch ($sortBy) {
-            case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
-                $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-                break;
-            case 'correct_desc': // Soal benar terbanyak ke paling sedikit
-                $sorted = $sorted->sortByDesc('total_correct_selected')->values();
-                break;
-            case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
-                $sorted = $sorted->sortBy('total_incorrect_selected')->values();
-                break;
-            case 'correct_asc': // Soal benar paling sedikit ke paling banyak
-                $sorted = $sorted->sortBy('total_correct_selected')->values();
-                break;
-            default:
-                // Default tetap wrong_desc
-                $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-                break;
-        }
+            switch ($sortBy) {
+                case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
+                    $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+                    break;
+                case 'correct_desc': // Soal benar terbanyak ke paling sedikit
+                    $sorted = $sorted->sortByDesc('total_correct_selected')->values();
+                    break;
+                case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
+                    $sorted = $sorted->sortBy('total_incorrect_selected')->values();
+                    break;
+                case 'correct_asc': // Soal benar paling sedikit ke paling banyak
+                    $sorted = $sorted->sortBy('total_correct_selected')->values();
+                    break;
+                default:
+                    // Default tetap wrong_desc
+                    $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+                    break;
+            }
 
             return response()->json([
                 'message' => 'Sukses ambil data ranking soal',
                 'data' => $sorted,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ], 500);
         }
     }
-    public function exportRankingQuestion($tryout_uuid, Request $request) {
-        $sorting = request()->query('sort');    
+    public function exportRankingQuestion($tryout_uuid, Request $request)
+    {
+        $sorting = request()->query('sort');
         return Excel::download(new RankingQuestionExport($tryout_uuid, $sorting), 'ranking-questions.xlsx');
+    }
+
+    public function exportStudentTryout($tryout_uuid, Request $request)
+    {
+        $user_uuid = $request->query("user_uuid");
+        try {
+
+            return Excel::download(new MultiSheetExport($tryout_uuid, $user_uuid), 'student-tryout.xlsx');
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json([
+                'message' => $th->getMessage(),
+            ], 404);
+        }
     }
 }
