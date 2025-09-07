@@ -25,100 +25,100 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
      * @return \Illuminate\Support\Collection
      */
 
-     protected $tryout_uuid;
-     protected $sortBy;
-     protected $images = [];
-     protected $rowPosition = [];
- 
-     public function __construct($tryout_uuid, $sortBy)
-     {
-         $this->tryout_uuid = $tryout_uuid;
-         $this->sortBy = $sortBy;
-     }
+    protected $tryout_uuid;
+    protected $sortBy;
+    protected $images = [];
+    protected $rowPosition = [];
+
+    public function __construct($tryout_uuid, $sortBy)
+    {
+        $this->tryout_uuid = $tryout_uuid;
+        $this->sortBy = $sortBy;
+    }
     public function collection()
     {
-          $tryout_uuid = $this->tryout_uuid;
-          $sortBy = $this->sortBy;
-          $tryout = Tryout::where('uuid', $tryout_uuid)
-          ->with(['tryoutSegments.tryoutSegmentTests.studentTryouts'])
-          ->first();
+        $tryout_uuid = $this->tryout_uuid;
+        $sortBy = $this->sortBy;
+        $tryout = Tryout::where('uuid', $tryout_uuid)
+            ->with(['tryoutSegments.tryoutSegmentTests.studentTryouts'])
+            ->first();
 
-      if (!$tryout) {
-          return response()->json([
-              'message' => "Tes tidak ditemukan",
-          ], 404);
-      }
+        if (!$tryout) {
+            return response()->json([
+                'message' => "Tes tidak ditemukan",
+            ], 404);
+        }
 
-      $studentTryouts = $tryout->tryoutSegments->flatMap->tryoutSegmentTests->flatMap->studentTryouts;
+        $studentTryouts = $tryout->tryoutSegments->flatMap->tryoutSegmentTests->flatMap->studentTryouts;
 
-      $studentTryouts = $studentTryouts->map(function ($item) {
-          $item->data_question = json_decode($item->data_question, true);
-          return $item;
-      });
+        $studentTryouts = $studentTryouts->map(function ($item) {
+            $item->data_question = json_decode($item->data_question, true);
+            return $item;
+        });
 
-      $summary = collect();
-      $number = 1;
-      foreach ($studentTryouts as $tryout) {
-          foreach ($tryout->data_question ?? [] as $key => $question) {
-              if (!isset($question['question_uuid'])) {
-                  continue;
-              }
+        $summary = collect();
+        $number = 1;
+        foreach ($studentTryouts as $outerKey => $tryout) {
+            foreach ($tryout->data_question ?? [] as $key => $question) {
+                if (!isset($question['question_uuid'])) {
+                    continue;
+                }
 
-              $questionUuid = $question['question_uuid'];
-              $answers = collect($question['answers'] ?? []);
+                $questionUuid = $question['question_uuid'];
+                $answers = collect($question['answers'] ?? []);
 
-              $isCorrectSelected = $answers->where('is_correct', 1)->where('is_selected', 1)->count();
-              $isIncorrectSelected = $answers->where('is_correct', 0)->where('is_selected', 1)->count();
+                $isCorrectSelected = $answers->where('is_correct', 1)->where('is_selected', 1)->count();
+                $isIncorrectSelected = $answers->where('is_correct', 0)->where('is_selected', 1)->count();
 
-              if (!$summary->has($questionUuid)) {
-                  $summary->put($questionUuid, [
-                      'No.' => $number++,
-                      'Soal' => Question::where('uuid', $questionUuid)->first()->question,
-                      'Jumlah Jawaban Benar' => 0,
-                      'Jumlah Jawaban Salah' => 0,
-                  ]);
-              }
+                if (!$summary->has($questionUuid)) {
+                    $summary->put($questionUuid, [
+                        'No.' => $number++,
+                        'Soal' => Question::where('uuid', $questionUuid)->first()->question,
+                        'Jumlah Jawaban Benar' => 0,
+                        'Jumlah Jawaban Salah' => 0,
+                    ]);
+                }
 
-              $current = $summary->get($questionUuid);
-              
-              $current['Jumlah Jawaban Benar'] += $isCorrectSelected;
-              $current['Jumlah Jawaban Salah'] += $isIncorrectSelected;
-              $contains = str_contains($current['Soal'], 'img');
-              if($contains) {
-                $this->rowPosition[] = $current['No.'] + 1;
-                $currNumber = (string)$current['No.'] + 1;
-                $this->images["B" . $currNumber] = $current['Soal'];
-              }
+                $current = $summary->get($questionUuid);
 
-              $current['Soal'] = strip_tags($current['Soal']);
-              $current['Soal'] = html_entity_decode($current['Soal']);
-              $current['Jumlah Jawaban Benar'] = (string)$current['Jumlah Jawaban Benar'];
-              $current['Jumlah Jawaban Salah'] = (string)$current['Jumlah Jawaban Salah'];
-              $summary->put($questionUuid, $current);
-          }
-      }
+                $current['Jumlah Jawaban Benar'] += $isCorrectSelected;
+                $current['Jumlah Jawaban Salah'] += $isIncorrectSelected;
+                $contains = str_contains($current['Soal'], 'img');
+                if ($contains) {
+                    $this->rowPosition[] = $current['No.'] + 1;
+                    $currNumber = (string)$current['No.'] + 1;
+                    $this->images["B" . $currNumber] = $current['Soal'];
+                }
 
-      // Sorting logic
-    $sorted = $summary->values();
+                $current['Soal'] = strip_tags($current['Soal']);
+                $current['Soal'] = html_entity_decode($current['Soal']);
+                $current['Jumlah Jawaban Benar'] = (string)$current['Jumlah Jawaban Benar'];
+                $current['Jumlah Jawaban Salah'] = (string)$current['Jumlah Jawaban Salah'];
+                $summary->put($questionUuid, $current);
+            }
+        }
 
-    // switch ($sortBy) {
-    //   case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
-    //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-    //       break;
-    //   case 'correct_desc': // Soal benar terbanyak ke paling sedikit
-    //       $sorted = $sorted->sortByDesc('total_correct_selected')->values();
-    //       break;
-    //   case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
-    //       $sorted = $sorted->sortBy('total_incorrect_selected')->values();
-    //       break;
-    //   case 'correct_asc': // Soal benar paling sedikit ke paling banyak
-    //       $sorted = $sorted->sortBy('total_correct_selected')->values();
-    //       break;
-    //   default:
-    //       // Default tetap wrong_desc
-    //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-    //       break;
-    // }
+        // Sorting logic
+        $sorted = $summary->values();
+
+        // switch ($sortBy) {
+        //   case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
+        //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+        //       break;
+        //   case 'correct_desc': // Soal benar terbanyak ke paling sedikit
+        //       $sorted = $sorted->sortByDesc('total_correct_selected')->values();
+        //       break;
+        //   case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
+        //       $sorted = $sorted->sortBy('total_incorrect_selected')->values();
+        //       break;
+        //   case 'correct_asc': // Soal benar paling sedikit ke paling banyak
+        //       $sorted = $sorted->sortBy('total_correct_selected')->values();
+        //       break;
+        //   default:
+        //       // Default tetap wrong_desc
+        //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
+        //       break;
+        // }
 
         return $sorted;
     }
@@ -172,7 +172,7 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
             $base64 = $matches[1] ?? null;
 
             if ($base64 && str_contains($base64, 'base64,')) {
-                
+
                 $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64));
                 $tempFilePath = storage_path('app/temp_image_' . $index . '.png');
                 file_put_contents($tempFilePath, $imageData);
@@ -196,18 +196,18 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
                 /** @var Worksheet $sheet */
-                for($index = 0; $index < count($this->rowPosition); $index++) {
+                for ($index = 0; $index < count($this->rowPosition); $index++) {
                     $text = $event->sheet->getCell('B' . $this->rowPosition[$index])->getValue();
                     $length = strlen($text) > 0 ? strlen($text) + 50 : 100; // bersihkan HTML kalau ada
                     $charsPerLine = 28;
                     $lines = ceil($length / $charsPerLine);
                     $height = $lines * 15;
-                     $event->sheet->getDelegate()->getRowDimension($this->rowPosition[$index])->setRowHeight($height);  // Single row
-                  }
+                    // $drawing->setHeight($height);
+                    $event->sheet->getDelegate()->getRowDimension($this->rowPosition[$index])->setRowHeight($height);  // Single row
+                }
             },
         ];
     }
 }
-
