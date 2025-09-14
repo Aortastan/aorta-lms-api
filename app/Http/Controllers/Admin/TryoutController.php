@@ -999,11 +999,6 @@ class TryoutController extends Controller
         try {
             if (empty($user_uuid)) {
                 $tryouts = Tryout::where('uuid', $tryout_uuid)->with(['tryoutSegments', 'tryoutSegments.tryoutSegmentTests', 'tryoutSegments.tryoutSegmentTests.test', 'tryoutSegments.tryoutSegmentTests.studentTryouts', 'tryoutSegments.tryoutSegmentTests.studentTryouts.user'])->get();
-
-                return response()->json([
-                    'message' => 'Sukses ambil data student tryout',
-                    'data' => $tryouts
-                ]);
             } else {
                 $tryouts = Tryout::where('uuid', $tryout_uuid)
                     ->with([
