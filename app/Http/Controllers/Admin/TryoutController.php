@@ -20,6 +20,7 @@ use App\Models\Answer;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RankingQuestionExport;
 use App\Exports\StudentTryoutExport;
+use Log;
 
 
 class TryoutController extends Controller
@@ -996,12 +997,44 @@ class TryoutController extends Controller
     {
         $user_uuid = $request->query("user_uuid");
         try {
+            if (empty($user_uuid)) {
+                $tryouts = Tryout::where('uuid', $tryout_uuid)->with(['tryoutSegments', 'tryoutSegments.tryoutSegmentTests', 'tryoutSegments.tryoutSegmentTests.test', 'tryoutSegments.tryoutSegmentTests.studentTryouts', 'tryoutSegments.tryoutSegmentTests.studentTryouts.user'])->get();
 
-            return Excel::download(new MultiSheetExport($tryout_uuid, $user_uuid), 'student-tryout.xlsx');
+                return response()->json([
+                    'message' => 'Sukses ambil data student tryout',
+                    'data' => $tryouts
+                ]);
+            } else {
+                $tryouts = Tryout::where('uuid', $tryout_uuid)
+                    ->with([
+                        'tryoutSegments',
+                        'tryoutSegments.tryoutSegmentTests',
+                        'tryoutSegments.tryoutSegmentTests.test',
+                        'tryoutSegments.tryoutSegmentTests.studentTryouts' => function ($query) use ($user_uuid) {
+                            $query->where('user_uuid', $user_uuid);
+                        },
+                        'tryoutSegments.tryoutSegmentTests.studentTryouts.user',
+                    ])
+                    ->get();
+            }
+            $sheets = [];
+            foreach ($tryouts as $tryout) {
+                foreach ($tryout->tryoutSegments as $tryoutSegment) {
+                    foreach ($tryoutSegment->tryoutSegmentTests as $tryoutSegmentTest) {
+                        foreach ($tryoutSegmentTest->studentTryouts as $studentTryout) {
+                            $sheets[] = new StudentTryoutExport($studentTryout, $tryoutSegmentTest, $tryout_uuid);
+                        }
+                    }
+                }
+            }
+            Log::info("Processing total " . count($sheets) . " sheets.");
+            return Excel::download(new MultiSheetExport($sheets), 'student-tryout.xlsx');
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json([
                 'message' => $th->getMessage(),
+                'line' => $th->getLine(),
+                'file' => $th->getFile(),
             ], 404);
         }
     }
