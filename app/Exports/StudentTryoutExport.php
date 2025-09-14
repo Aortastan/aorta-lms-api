@@ -4,10 +4,6 @@ namespace App\Exports;
 
 use App\Models\Answer;
 use App\Models\Question;
-use App\Models\StudentTryout;
-use App\Models\Tryout;
-use App\Models\TryoutSegmentTest;
-use App\Models\User;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -15,289 +11,175 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithDrawings;
 use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use Maatwebsite\Excel\Events\AfterSheet;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
-
-class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings, WithEvents, WithTitle
+class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings, WithEvents, WithChunkReading, WithTitle
 {
-    /**
-     * @return \Illuminate\Support\Collection
-     */
-
-    protected $atempt_uuid;
-    protected $user_uuid;
-    protected $question_uuid;
-    protected $tryout_uuid;
+    protected $studentTryout;
+    protected $data_question;
+    protected $headings = [];
     protected $imagesQuestion = [];
     protected $imagesAnswer = [];
     protected $rowPosition = [];
     protected $rowPositionAnswer = [];
-    protected $title = " - Tryout";
     protected $name;
-    protected $score;
     protected $test;
     protected $attempt;
-    protected $headings = [];
+    protected $score;
+    protected $title;
 
-
-    public function __construct($atempt_uuid, $user_uuid, $question_uuid = null, $tryout_uuid)
+    public function __construct($studentTryout, $tryoutSegmentTest)
     {
-        $this->atempt_uuid = $atempt_uuid;
-        $this->user_uuid = $user_uuid;
-        $this->question_uuid = $question_uuid;
-        $this->tryout_uuid = $tryout_uuid;
-        $tryout = StudentTryout::select('uuid', 'score', 'package_test_uuid', 'data_question')
-            ->where([
-                'user_uuid' => $this->user_uuid,
-                'uuid' => $this->atempt_uuid,
-            ])->first();
+        $this->studentTryout = $studentTryout;
+        $this->data_question = json_decode($studentTryout->data_question);
+        $user = $studentTryout->user;
+        $this->name = $user ? $user->name : "";
+        $this->test = $tryoutSegmentTest->test ?? null;
+        $this->attempt = $tryoutSegmentTest->attempt ?? 1;
+        $this->score = $studentTryout->score ?? 0;
+        $this->title = $this->name . " - " . ($this->test ? $this->test->title : "");
 
-        if ($tryout == null) {
-            throw new \Exception("Tes tidak ditemukan");
-        }
-
-        $getTest = TryoutSegmentTest::select(
-            'uuid',
-            'test_uuid',
-            'attempt',
-            'duration'
-        )
-            ->where(['uuid' => $tryout->package_test_uuid])
-            ->with(['test'])
-            ->first();
-
-        if (!$getTest) {
-            return response()->json([
-                'message' => "Tes tidak ditemukan",
-            ], 404);
-        }
-        $this->test = $getTest->test;
-        $this->score = $tryout->score;
-        $this->attempt = $getTest->attempt;
-        $name = User::where('uuid', $this->user_uuid)->first()->name;
-        $this->name = $name;
-        $this->title = $name;
-        $this->title .= " - " . $getTest->test->title . " ";
-        $this->title .= "(Percobaan " . $getTest->attempt . ")";
         $this->headings = [
             ["Nama : " . $this->name],
-            ["Test : " . $this->test ? $this->test->title : ""],
-            ["Skor : " .  (string)$this->score],
+            ["Test : " . ($this->test ? $this->test->title : '')],
+            ["Skor : " . $this->score],
             ["Percobaan : " . $this->attempt],
-            [
-                'No.',
-                'Soal',
-                'Jawaban',
-            ]
+            ['No.', 'Soal', 'Jawaban', 'Poin']
         ];
+    }
+
+    // Chunk reading
+    public function chunkSize(): int
+    {
+        return 20; // small chunk to reduce memory usage
+    }
+
+    public function title(): string
+    {
+        return $this->title;
     }
 
     public function collection()
     {
-        $tryout = StudentTryout::select('uuid', 'score', 'package_test_uuid', 'data_question')
-            ->where([
-                'user_uuid' => $this->user_uuid,
-                'uuid' => $this->atempt_uuid,
-            ])->first();
-
-        if ($tryout == null) {
-            throw new \Exception("Tes tidak ditemukan");
-        }
-
-        $getTest = TryoutSegmentTest::select(
-            'uuid',
-            'test_uuid',
-            'attempt',
-            'duration'
-        )
-            ->where(['uuid' => $tryout->package_test_uuid])
-            ->with(['test'])
-            ->first();
-
-        if (!$getTest) {
-            return response()->json([
-                'message' => "Tes tidak ditemukan",
-            ], 404);
-        }
-
-
-        $data_question = json_decode($tryout->data_question);
-
-        $questions = [];
-        foreach ($data_question as $index => $data) {
-            $get_question = Question::where([
-                'uuid' => $data->question_uuid,
-            ])->first();
-
-            $answers = [];
-            foreach ($data->answers as $index => $answer) {
-                $get_answer = Answer::where([
-                    'uuid' => $answer->answer_uuid,
-                ])->first();
-
-                if ($answer->is_correct) {
-                    $answers[] = [
-                        'answer_uuid' => $answer->answer_uuid,
-                        'is_correct' => $answer->is_correct,
-                        'correct_answer_explanation' => $get_answer->correct_answer_explanation,
-                        'is_selected' => $answer->is_selected,
-                        'answer' => $get_answer->answer,
-                        'image' => $get_answer->image,
-                    ];
-                } else {
-                    $answers[] = [
-                        'answer_uuid' => $answer->answer_uuid,
-                        'is_correct' => $answer->is_correct,
-                        'is_selected' => $answer->is_selected,
-                        'answer' => $get_answer->answer,
-                        'image' => $get_answer->image,
-                    ];
-                }
-            }
-
-            $questions[] = [
-                'question_uuid' => $get_question->uuid,
-                'question_type' => $get_question->question_type,
-                'question' => $get_question->question,
-                'file_path' => $get_question->file_path,
-                'url_path' => $get_question->url_path,
-                'file_size' => $get_question->file_size,
-                'file_duration' => $get_question->file_duration,
-                'type' => $get_question->type,
-                'hint' => $get_question->hint,
-                'answers' => $answers,
-            ];
-        }
-
         $numberedData = new Collection();
         $cellStartAt = count($this->headings) + 1;
-        foreach ($questions as $key => $item) {
-            $contains = str_contains($item['question'], 'img');
-            if ($contains) {
-                $this->rowPosition[] = $key + $cellStartAt;
-                $currNumber = (string)$key + $cellStartAt;
-                $this->imagesQuestion["B" . $currNumber] = $item['question'];
+
+        foreach ($this->data_question as $key => $data) {
+            $get_question = Question::select('uuid', 'question')->where('uuid', $data->question_uuid)->first();
+            if (!$get_question) {
+                Log::warning("Missing question UUID: {$data->question_uuid}");
+                continue;
             }
 
-            $filter_selected_answer = count($item['answers']) > 0 ? array_filter($item['answers'], fn($answer) => $answer['is_selected']) : [];
-            $selected_answer = count($filter_selected_answer) > 0 ? array_values($filter_selected_answer)[0] : [];
+            $answers = [];
+            foreach ($data->answers as $answerData) {
+                $get_answer = Answer::select('uuid', 'answer', 'point', 'correct_answer_explanation', 'image')
+                    ->where('uuid', $answerData->answer_uuid)
+                    ->first();
+                if (!$get_answer) {
+                    Log::warning("Missing answer UUID: {$answerData->answer_uuid}");
+                    continue;
+                }
+
+                $answers[] = [
+                    'answer_uuid' => $answerData->answer_uuid,
+                    'is_correct' => $answerData->is_correct,
+                    'correct_answer_explanation' => $answerData->is_correct ? $get_answer->correct_answer_explanation : null,
+                    'is_selected' => $answerData->is_selected,
+                    'answer' => $get_answer->answer,
+                    'image' => $get_answer->image,
+                    'point' => $get_answer->point,
+                ];
+            }
+
+            $selected_answer = collect($answers)->firstWhere('is_selected', true);
             $sanitizedAnswer = $selected_answer ? html_entity_decode(strip_tags($selected_answer['answer'])) : "";
 
-            if ($selected_answer) {
-                if (str_contains($selected_answer['answer'], 'img')) {
-                    $this->rowPositionAnswer[] = $key + $cellStartAt;
-                    $currNumber = (string)$key + $cellStartAt;
-                    $this->imagesAnswer["C" . $currNumber] = $selected_answer['answer'];
-                }
+            // Track images for lazy processing
+            if (str_contains($get_question->question, 'img')) {
+                $this->rowPosition[] = $key + $cellStartAt;
+                $this->imagesQuestion["B" . ($key + $cellStartAt)] = $get_question->question;
             }
-            $sanitizedQuestion = html_entity_decode(strip_tags($item['question']));
+            if ($selected_answer && str_contains($selected_answer['answer'], 'img')) {
+                $this->rowPositionAnswer[] = $key + $cellStartAt;
+                $this->imagesAnswer["C" . ($key + $cellStartAt)] = $selected_answer['answer'];
+            }
+
             $numberedData->push([
                 'No.' => $key + 1,
-                'Soal' => $sanitizedQuestion,
-                'Jawaban' =>  $sanitizedAnswer,
+                'Soal' => html_entity_decode(strip_tags($get_question->question)),
+                'Jawaban' => $sanitizedAnswer,
+                'Poin' => $selected_answer['point'] ?? 0,
             ]);
         }
 
         return $numberedData;
     }
 
-    /**
-     * @return array
-     */
     public function headings(): array
     {
         return $this->headings;
     }
 
-    /**
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
-     *
-     * @return array
-     */
     public function styles(Worksheet $sheet): array
     {
-        return [
-            // Kolom A sampai Z akan memiliki word-wrap
-            'A:Z' => [
-                'alignment' => ['wrapText' => true],
-            ],
-        ];
-    }
-    public function title(): string
-    {
-        return $this->title;
+        return ['A:Z' => ['alignment' => ['wrapText' => true]]];
     }
 
     public function columnWidths(): array
     {
-        return [
-            'A' => 5, // Lebar kolom A
-            'B' => 200, // Lebar kolom B
-            'C' => 15, // Lebar kolom C
-        ];
+        return ['A' => 5, 'B' => 200, 'C' => 15];
     }
 
     public function drawings()
     {
         $drawings = [];
 
-        foreach ($this->imagesQuestion as $index => $imgTag) {
-
-            // Ambil src dari tag img
+        foreach ($this->imagesQuestion as $cell => $imgTag) {
+            $matches = [];
             preg_match('/src="([^"]+)"/', $imgTag, $matches);
             $base64 = $matches[1] ?? null;
 
             if ($base64 && str_contains($base64, 'base64,')) {
-
                 $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64));
-                $tempFilePath = storage_path('app/temp_image_' . $index . '.png');
+                $tempFilePath = storage_path('app/temp_images/' . uniqid() . "_Question.png");
                 file_put_contents($tempFilePath, $imageData);
+
                 $drawing = new Drawing();
-                $imgTag = strip_tags($imgTag);
-                // if ($index == "B63") {
-                //     $index = "B1";
-                // }
-                $imgTag = html_entity_decode($imgTag);
-                $drawing->setName($imgTag);
-                $drawing->setDescription("Image for row $index");
+                $drawing->setName("Question Image");
+                $drawing->setDescription("Question image for {$cell}");
                 $drawing->setPath($tempFilePath);
                 $drawing->setHeight(50);
-                $drawing->setCoordinates($index ?? 'B1');
-
+                $drawing->setCoordinates($cell);
                 $drawings[] = $drawing;
             }
         }
 
-        foreach ($this->imagesAnswer as $index => $imgTag) {
-
-            // Ambil src dari tag img
+        foreach ($this->imagesAnswer as $cell => $imgTag) {
+            $matches = [];
             preg_match('/src="([^"]+)"/', $imgTag, $matches);
             $base64 = $matches[1] ?? null;
 
             if ($base64 && str_contains($base64, 'base64,')) {
-
                 $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64));
-                $tempFilePath = storage_path('app/temp_image_' . $index . '.png');
+                $tempFilePath = storage_path('app/temp_images/' . uniqid() . "_Answer.png");
                 file_put_contents($tempFilePath, $imageData);
 
                 $drawing = new Drawing();
-                $imgTag = strip_tags($imgTag);
-                $imgTag = html_entity_decode($imgTag);
-                $drawing->setName($imgTag);
-                $drawing->setDescription("Image for row $index");
+                $drawing->setName("Answer Image");
+                $drawing->setDescription("Answer image for {$cell}");
                 $drawing->setPath($tempFilePath);
                 $drawing->setHeight(50);
-
-                $drawing->setCoordinates($index ?? 'C1');
-
+                $drawing->setCoordinates($cell);
                 $drawings[] = $drawing;
             }
         }
-        // $this->imagesQuestion = [];
-        // $this->imagesAnswer = [];
+
         return $drawings;
     }
 
@@ -305,24 +187,36 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $event->sheet->setCellValue('B1', "Nama : " . $this->name);
-                $event->sheet->mergeCells('A1:B1');
-                $event->sheet->setCellValue('B2', "Test : " . $this->test ? $this->test->name : "");
-                $event->sheet->mergeCells('A2:B2');
-                $event->sheet->setCellValue('B3', "Percobaan : " . $this->attempt);
-                $event->sheet->mergeCells('A3:B3');
-                $event->sheet->setCellValue('B4', "Skor : " . $this->score);
-                $event->sheet->mergeCells('A4:B4');
-                /** @var Worksheet $sheet */
-                for ($index = 0; $index < count($this->rowPosition); $index++) {
-                    $text = $event->sheet->getCell('B' . $this->rowPosition[$index])->getValue();
-                    $length = strlen($text) > 0 ? strlen($text) + 50 : 100; // bersihkan HTML kalau ada
-                    $charsPerLine = 28;
-                    $lines = ceil($length / $charsPerLine);
-                    $height = $lines * 15;
-                    // $drawing->setHeight($height);
-                    $event->sheet->getDelegate()->getRowDimension($this->rowPosition[$index])->setRowHeight($height);  // Single row
+                foreach ($this->rowPosition as $row) {
+                    $text = $event->sheet->getCell('B' . $row)->getValue();
+                    $lines = ceil((strlen($text) + 50) / 28);
+                    $event->sheet->getDelegate()->getRowDimension($row)->setRowHeight($lines * 15);
                 }
+                $event->sheet->mergeCells('A1:B1');
+                $event->sheet->mergeCells('A2:B2');
+                $event->sheet->mergeCells('A3:B3');
+                $event->sheet->mergeCells('A4:B4');
+
+                $totalQuestions = count($this->data_question);
+                $totalAnswers = collect($this->data_question)->sum(fn($q) => count($q->answers));
+                $totalImages = count($this->imagesQuestion) + count($this->imagesAnswer);
+
+                // Persistent log number
+                $logNumber = \Illuminate\Support\Facades\Cache::increment('student_tryout_export_log_number');
+                if (!$logNumber) {
+                    \Illuminate\Support\Facades\Cache::forever('student_tryout_export_log_number', 1);
+                    $logNumber = 1;
+                }
+
+                Log::info("StudentTryoutExport finished successfully (log #{$logNumber})", [
+                    'user' => $this->name,
+                    'test' => $this->test ? $this->test->title : null,
+                    'attempt' => $this->attempt,
+                    'score' => $this->score,
+                    'total_questions' => $totalQuestions,
+                    'total_answers' => $totalAnswers,
+                    'total_images' => $totalImages,
+                ]);
             },
         ];
     }
