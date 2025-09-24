@@ -27,9 +27,10 @@ use App\Traits\Package\PackageTrait;
 
 class XenditController extends Controller
 {
-    use XenditPaymentTrait,PackageTrait;
+    use XenditPaymentTrait, PackageTrait;
 
-    public function create(Request $request): JsonResponse{
+    public function create(Request $request): JsonResponse
+    {
         $validate = [
             // 'payment_method_uuid' => 'required|string',
             'packages' => 'required|array',
@@ -65,13 +66,14 @@ class XenditController extends Controller
         return $this->buyPackages($request, $user);
     }
 
-    public function expired(Request $request, $transaction_uuid){
+    public function expired(Request $request, $transaction_uuid)
+    {
         $get_transaction = Transaction::where([
             'uuid' => $transaction_uuid,
             "transaction_status" => 'pending',
         ])->first();
 
-        if($get_transaction == null){
+        if ($get_transaction == null) {
             return response()->json([
                 'message' => "Transaction not found"
             ], 404);
@@ -82,8 +84,8 @@ class XenditController extends Controller
         $params = [
             'external_id' => Uuid::uuid4()->toString(),
             'amount' => $get_transaction->transaction_amount,
-            'success_redirect_url' => 'https://aortastan.com/dashboard/student/transactions',
-            "customer"=> [
+            'success_redirect_url' => 'https://aorta-edu.com/dashboard/student/transactions',
+            "customer" => [
                 "given_names" => $user->name,
                 "email" => $user->email,
                 "mobile_number" => $user->mobile_number,
@@ -107,7 +109,6 @@ class XenditController extends Controller
         try {
 
             $invoice = \Xendit\Invoice::create($params);
-
         } catch (\Xendit\Exceptions\ApiException $e) {
             PaymentApiLog::create([
                 'endpoint_url' => $request->path(),
@@ -117,7 +118,6 @@ class XenditController extends Controller
             return response()->json([
                 'message' => $e->getMessage(),
             ], 500);
-
         } catch (\Exception $e) {
             PaymentApiLog::create([
                 'endpoint_url' => $request->path(),
@@ -143,14 +143,14 @@ class XenditController extends Controller
             'message' => 'Success extend invoice',
             'url' => $invoice['invoice_url'],
         ], 200);
-
     }
 
-    public function webhook(Request $request){
-        try{
+    public function webhook(Request $request)
+    {
+        try {
             $transaction = Transaction::where('external_id', $request->id)->first();
 
-            if($transaction == null){
+            if ($transaction == null) {
                 PaymentApiLog::create([
                     'endpoint_url' => $request->path(),
                     'method' => $request->method(),
@@ -161,7 +161,7 @@ class XenditController extends Controller
                 ], 404);
             }
 
-            if($transaction->transaction_status == 'settled'){
+            if ($transaction->transaction_status == 'settled') {
                 PaymentApiLog::create([
                     'endpoint_url' => $request->path(),
                     'method' => $request->method(),
@@ -180,11 +180,11 @@ class XenditController extends Controller
             $membershipPackages = [];
 
             foreach ($getPackages as $index => $package) {
-                if($package->type_of_purchase == 'lifetime'){
+                if ($package->type_of_purchase == 'lifetime') {
                     $lifetimePakcages[] = [
                         "package_uuid" => $package->package_uuid,
                     ];
-                }else{
+                } else {
                     $membershipPackages[] = [
                         "package_uuid" => $package->package_uuid,
                         "type_of_purchase" => $package->type_of_purchase,
@@ -192,11 +192,11 @@ class XenditController extends Controller
                 }
             }
 
-            if(count($lifetimePakcages) > 0){
+            if (count($lifetimePakcages) > 0) {
                 $this->purchasedPackages($transaction->uuid, $transaction->user_uuid, $lifetimePakcages);
             }
 
-            if(count($membershipPackages) > 0){
+            if (count($membershipPackages) > 0) {
                 $this->membershipPackages($transaction->uuid, $transaction->user_uuid, $membershipPackages);
             }
 
@@ -216,9 +216,7 @@ class XenditController extends Controller
             return response()->json([
                 'message' => 'Transaction success',
             ], 200);
-        }
-
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             PaymentApiLog::create([
                 'endpoint_url' => "tes",
                 'method' => "tes",
