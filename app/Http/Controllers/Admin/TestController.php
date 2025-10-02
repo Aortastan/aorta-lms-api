@@ -555,7 +555,7 @@ class TestController extends Controller
         }
 
         $validate = [
-            'test_type' => 'required|in:classical,IRT',
+            'test_type' => 'required',
             'title' => 'required',
             'student_title_display' => 'required',
             'passing_score' => 'required|numeric',
