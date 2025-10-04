@@ -554,6 +554,13 @@ class TestController extends Controller
             ], 404);
         }
 
+        if ($test->test_type !== $request->test_type && $test->status == 'Published') {
+            return response()->json([
+                'message' => 'Cannot update test type, test already published',
+                'errors' => "Cannot update test type, test already published",
+            ], 422);
+        }
+
         $validate = [
             'test_type' => 'required',
             'title' => 'required',
