@@ -42,6 +42,12 @@ class Transaction extends Model
     {
         return $this->belongsTo(PaymentGatewaySetting::class, 'payment_method_uuid', 'uuid');
     }
+
+    public function claimedCoupons()
+    {
+        return $this->hasMany(ClaimedCoupon::class, 'transaction_uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

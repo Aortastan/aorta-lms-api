@@ -24,6 +24,11 @@ class ClaimedCoupon extends Model
         'is_used',
     ];
 
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'transaction_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
