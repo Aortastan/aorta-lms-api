@@ -14,8 +14,14 @@ class CouponController extends Controller
     use CouponTrait;
 
     public function redeem(Request $request){
+        // $validate = [
+        //     'code' => 'required|string',
+        // ];
+
         $validate = [
-            'code' => 'required|string',
+            'packages' => 'required|array',
+            'packages.*.package_uuid' => 'required|string',
+            'packages.*.type_of_purchase' => 'required|string|in:lifetime,one month,three months,six months,one year',
         ];
 
         $validator = Validator::make($request->all(), $validate);
@@ -29,6 +35,7 @@ class CouponController extends Controller
 
         $user = JWTAuth::parseToken()->authenticate();
 
-        return response()->json($this->checkCoupon($request->code, $user));
+        return $this->countDiscount($request, $user);
+        // return response()->json($this->checkCoupon($request->code, $user));
     }
 }
