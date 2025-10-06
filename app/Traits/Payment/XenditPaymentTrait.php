@@ -46,6 +46,13 @@ trait XenditPaymentTrait
             ], 422);
         }
 
+        // cek kupon tidak boleh lebih dari 5
+        if(isset($request->coupon) && count($request->coupon) > 5){
+            return response()->json([
+                'message' => "Maximum allowed coupons is 5",
+            ], 400);
+        }
+
         $total_amount = 0;
         $list_coupon_not_restricted = [];
         $list_coupon_package = [];
