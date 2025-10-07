@@ -427,7 +427,12 @@ trait CouponTrait
             'sub_total' => $sub_total,
             'admin_fee' => $admin_fee,
             'total' => $final_amount,
-            "coupon" => $coupon
+            "coupon" => [
+                'coupon_uuid'=>$coupon['uuid'],
+                'type_coupon' => $coupon['type_coupon'],
+                'discount_percentage' => $coupon['discount'],
+                'amount' => $coupon['price'],
+            ], 
         ], 200);
 
     }
