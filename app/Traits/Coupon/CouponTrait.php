@@ -427,7 +427,7 @@ trait CouponTrait
             'sub_total' => $sub_total,
             'admin_fee' => $admin_fee,
             'total' => $final_amount,
-            "coupon" => $this->checkCoupon($request->code, $user)
+            "coupon" => $coupon
         ], 200);
 
     }
