@@ -426,7 +426,8 @@ trait CouponTrait
             'message' => 'Success count discount',
             'sub_total' => $sub_total,
             'admin_fee' => $admin_fee,
-            'total' => $final_amount
+            'total' => $final_amount,
+            "coupon" => $this->checkCoupon($request->code, $user)
         ], 200);
 
     }
