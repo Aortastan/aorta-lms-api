@@ -421,17 +421,19 @@ trait CouponTrait
         if($total_amount > 0) {
             $final_amount = $total_amount + $this->paymentGateway->admin_fee;
         }
-
+        $selectedCoupon = Coupon::where([
+                'code' => $request->selectedCoupon,
+            ])->first();
         return response()->json([
             'message' => 'Success count discount',
             'sub_total' => $sub_total,
             'admin_fee' => $admin_fee,
             'total' => $final_amount,
             "coupon" => [
-                'coupon_uuid'=>$coupon['uuid'],
-                'type_coupon' => $coupon['type_coupon'],
-                'discount_percentage' => $coupon['discount'],
-                'amount' => $coupon['price'],
+                'coupon_uuid'=>$selectedCoupon['uuid'],
+                'type_coupon' => $selectedCoupon['type_coupon'],
+                'discount_percentage' => $selectedCoupon['discount'],
+                'amount' => $selectedCoupon['price'],
             ], 
         ], 200);
 
