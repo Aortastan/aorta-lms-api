@@ -18,7 +18,7 @@ class ClaimedCoupon extends Model
      * @var array
      */
     protected $fillable = [
-        'transction_uuid',
+        'transaction_uuid',
         'coupon_uuid',
         'user_uuid',
         'is_used',
@@ -27,6 +27,11 @@ class ClaimedCoupon extends Model
     public function transaction()
     {
         return $this->belongsTo(Transaction::class, 'transaction_uuid', 'uuid');
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class, 'coupon_uuid', 'uuid');
     }
 
     protected static function boot()

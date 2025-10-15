@@ -15,7 +15,7 @@ class TransactionController extends Controller
     {
         try {
             // Mengambil data transaksi tanpa relasi terlebih dahulu
-            $get_transactions = Transaction::get();
+            $get_transactions = Transaction::with(['user', 'detailTransaction', 'claimedCoupons', 'claimedCoupons.coupon'])->get();
             \Log::info('Transactions: ', $get_transactions->toArray());
 
             if ($get_transactions->isEmpty()) {
@@ -46,6 +46,7 @@ class TransactionController extends Controller
                     "amount" => 'Rp ' . number_format($transaction->transaction_amount, 0, ',', '.'),
                     "status" => $transaction->transaction_status,
                     'packages' => $packages,
+                    'claimed_coupons' => $transaction->claimedCoupons ? $transaction->claimedCoupons->pluck('coupon.code')->implode(', ') : 'N/A',
                     "url" => $transaction->url,
                     "expired_date" => $transaction->expiry_date, // Format here
                     "created_at" => $transaction->created_at, // Format here
@@ -74,7 +75,4 @@ class TransactionController extends Controller
 
         return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage), 'transaction.xlsx');
     }
-
-
-
 }

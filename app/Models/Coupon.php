@@ -37,6 +37,11 @@ class Coupon extends Model
         return $this->hasMany(ClaimedCoupon::class, "coupon_uuid");
     }
 
+    function package()
+    {
+        return $this->belongsTo(Package::class, 'package_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();

@@ -400,7 +400,7 @@ trait XenditPaymentTrait
                 'code' => $coupon,
             ])->first();
             ClaimedCoupon::create([
-                'transaction_uuid' => $transaction,
+                'transaction_uuid' => $transaction->uuid,
                 'coupon_uuid' => $checkCoupon->uuid,
                 'user_uuid' => $user->uuid,
                 'is_used' => 1,

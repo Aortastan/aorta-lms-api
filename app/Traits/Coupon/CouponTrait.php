@@ -421,14 +421,24 @@ trait CouponTrait
         if($total_amount > 0) {
             $final_amount = $total_amount + $this->paymentGateway->admin_fee;
         }
-        $selectedCoupon = Coupon::where([
+        $selectedCoupon = Coupon::with('package')->where([
                 'code' => $request->selectedCoupon,
             ])->first();
+        if($selectedCoupon->is_restricted == 1){
+            $exists = collect($request->packages)->contains('package_uuid', $selectedCoupon->package_uuid);
+            if (!$exists) {
+                return response()->json([
+                    'coupon_code' => $selectedCoupon,
+                    'message' => 'Coupon ' . $selectedCoupon['code'] . ' is only available for ' . $selectedCoupon->package->name . ' package',
+                ], 400);
+            }
+        }
         return response()->json([
             'message' => 'Success count discount',
             'sub_total' => $sub_total,
             'admin_fee' => $admin_fee,
             'total' => $final_amount,
+            "coupon_restrict" => $list_coupon_package,
             "coupon" => [
                 'coupon_uuid'=>$selectedCoupon['uuid'],
                 'type_coupon' => $selectedCoupon['type_coupon'],
