@@ -279,7 +279,7 @@ class SubmitTestController extends Controller
             }
         }
 
-        // SessionTest::where(['uuid' => $session_uuid])->delete();
+        SessionTest::where(['uuid' => $session_uuid])->delete();
 
         return response()->json([
             'message' => 'Test berhasil dikirim',
