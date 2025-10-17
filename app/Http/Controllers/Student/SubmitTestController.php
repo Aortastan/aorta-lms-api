@@ -20,7 +20,8 @@ use Illuminate\Support\Facades\Validator;
 
 class SubmitTestController extends Controller
 {
-    public function submitTest(Request $request, $session_uuid){
+    public function submitTest(Request $request, $session_uuid)
+    {
         $total_submit_IRT = [10, 25, 50, 100];
         $validate = [
             'duration_left' => 'required',
@@ -37,9 +38,9 @@ class SubmitTestController extends Controller
         }
 
         $user_session = SessionTest::where(['uuid' => $session_uuid])->first();
-        if($user_session == null){
+        if ($user_session == null) {
             return response()->json([
-                'message'=>'Session not found'
+                'message' => 'Session not found'
             ], 404);
         }
 
@@ -106,26 +107,26 @@ class SubmitTestController extends Controller
             ];
         }
 
-        if($user_session->type_test == 'quiz'){
+        if ($user_session->type_test == 'quiz') {
             StudentQuiz::create([
                 'data_question' => json_encode($data_question),
                 'user_uuid' => $user_session->user_uuid,
                 'lesson_quiz_uuid' => $user_session->lesson_quiz_uuid,
                 'score' => $points,
             ]);
-        }elseif($user_session->type_test == 'pretest_posttest'){
+        } elseif ($user_session->type_test == 'pretest_posttest') {
             StudentPretestPosttest::create([
                 'user_uuid' => $user_session->user_uuid,
                 'data_question' => json_encode($data_question),
                 'pretest_posttest_uuid' => $user_session->pretest_posttest_uuid,
                 'score' => $points,
             ]);
-        }elseif($user_session->type_test == 'tryout'){
+        } elseif ($user_session->type_test == 'tryout') {
             $check_tryout_segment_test = TryoutSegmentTest::where([
                 'uuid' => $user_session->package_test_uuid
             ])->first();
 
-            if($check_tryout_segment_test == null){
+            if ($check_tryout_segment_test == null) {
                 return response()->json([
                     'message' => 'Sub tryout tidak ditemukan',
                 ]);
@@ -151,13 +152,13 @@ class SubmitTestController extends Controller
             $get_package = Package::where([
                 'uuid' => $get_package_test->package_uuid
             ])->first();
-            if($get_package->test_type == 'IRT'){
+            if ($get_package->test_type == 'IRT') {
                 // cek apakah sudah ada di IRTpoint
                 $check_irt_point = IrtPoint::where([
                     'package_test_uuid' => $user_session->package_test_uuid
                 ])->first();
 
-                if($check_irt_point){
+                if ($check_irt_point) {
                     $count = StudentTryout::where([
                         'user_uuid' => $user_session->user_uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
@@ -168,7 +169,7 @@ class SubmitTestController extends Controller
                         'user_uuid' => $user_session->user_uuid,
                         'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
-                        'attempt' => $count+1,
+                        'attempt' => $count + 1,
                         'score' => $points,
                     ]);
 
@@ -181,7 +182,7 @@ class SubmitTestController extends Controller
                             ->where('package_test_uuid', $package_test_uuid)
                             ->groupBy('user_uuid');
                     })
-                    ->get();
+                        ->get();
 
 
 
@@ -191,17 +192,14 @@ class SubmitTestController extends Controller
 
                     foreach ($total_submit_IRT as $total_submiter) {
 
-                        if($total_submiter > $check_irt_point->total_submit){
-                            if(count($latestAttempts) >= $total_submiter){
+                        if ($total_submiter > $check_irt_point->total_submit) {
+                            if (count($latestAttempts) >= $total_submiter) {
                                 $this->calculateIRT($package_test_uuid, $user_session);
                                 $this->RecalculatePoint($check_irt_point, $allStudentAttempts);
                             }
                         }
                     }
-
-
-
-                }else{
+                } else {
                     $package_test_uuid = $user_session->package_test_uuid;
                     $latestAttempts = StudentTryout::whereIn('id', function ($query) use ($package_test_uuid) {
                         $query->select(\DB::raw('MAX(id)'))
@@ -209,9 +207,9 @@ class SubmitTestController extends Controller
                             ->where('package_test_uuid', $package_test_uuid)
                             ->groupBy('user_uuid');
                     })
-                    ->get();
+                        ->get();
 
-                    if(count($latestAttempts) > $total_submit_IRT[0]){
+                    if (count($latestAttempts) > $total_submit_IRT[0]) {
                         $this->calculateIRT($package_test_uuid, $user_session);
                         $allStudentAttempts = StudentTryout::where([
                             'package_test_uuid' => $package_test_uuid,
@@ -233,13 +231,11 @@ class SubmitTestController extends Controller
                         'user_uuid' => $user_session->user_uuid,
                         'package_uuid' => $get_package->uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
-                        'attempt' => $count+1,
+                        'attempt' => $count + 1,
                         'score' => $points,
                     ]);
                 }
-            }
-            else if ($get_package->test_type == 'Tes Potensi')
-            {
+            } else if ($get_package->test_type == 'Tes Potensi') {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
@@ -249,12 +245,10 @@ class SubmitTestController extends Controller
                     'user_uuid' => $user_session->user_uuid,
                     'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
-                    'attempt' => $count+1,
+                    'attempt' => $count + 1,
                     'score' => round(($points * 600.0 / $total_questions) + 200.0),
                 ]);
-            }
-            else if ($get_package->test_type == 'TSKKWK')
-            {
+            } else if ($get_package->test_type == 'TSKKWK') {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
@@ -264,12 +258,10 @@ class SubmitTestController extends Controller
                     'user_uuid' => $user_session->user_uuid,
                     'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
-                    'attempt' => $count+1,
-                    'score' => round($points * 2.0 / 3.0),
+                    'attempt' => $count + 1,
+                    'score' => round($points * 1.667),
                 ]);
-            }
-            else
-            {
+            } else {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
@@ -279,30 +271,29 @@ class SubmitTestController extends Controller
                     'user_uuid' => $user_session->user_uuid,
                     'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
-                    'attempt' => $count+1,
+                    'attempt' => $count + 1,
                     'score' => $points,
                 ]);
-
             }
-
         }
 
         SessionTest::where(['uuid' => $session_uuid])->delete();
 
         return response()->json([
-            'message'=>'Test berhasil dikirim',
+            'message' => 'Test berhasil dikirim',
             'score' => $points,
         ], 200);
     }
 
-    public function RecalculatePoint($check_irt_point, $student_tryout){
+    public function RecalculatePoint($check_irt_point, $student_tryout)
+    {
         $check_irt_point = json_decode($check_irt_point->data_question);
         foreach ($student_tryout as $index => $tryout) {
             $points = 0;
             $data_question = json_decode($tryout->data_question);
             foreach ($data_question as $key => $question) {
                 foreach ($question->answers as $key1 => $answer) {
-                    if($answer->is_selected == 1 && $answer->is_correct == 1){
+                    if ($answer->is_selected == 1 && $answer->is_correct == 1) {
                         $points += $check_irt_point[$key];
                     }
                 }
@@ -316,7 +307,8 @@ class SubmitTestController extends Controller
         }
     }
 
-    public function calculateIRT($package_test_uuid, $user_session){
+    public function calculateIRT($package_test_uuid, $user_session)
+    {
         $get_package_test = TryoutSegmentTest::where('uuid', $package_test_uuid)->first();
         $get_package = Package::where('uuid', $get_package_test->package_uuid)->first();
         $latestAttempts = StudentTryout::whereIn('id', function ($query) use ($package_test_uuid) {
@@ -325,7 +317,7 @@ class SubmitTestController extends Controller
                 ->where('package_test_uuid', $package_test_uuid)
                 ->groupBy('user_uuid');
         })
-        ->get();
+            ->get();
 
         $wrong_answers = [];
         $zero_student = false;
@@ -334,24 +326,24 @@ class SubmitTestController extends Controller
             $data_question = json_decode($test->data_question);
             $i = 0;
             foreach ($data_question as $index2 => $data) {
-                 $i++;
-                if(!isset($wrong_answers[$index2])){
+                $i++;
+                if (!isset($wrong_answers[$index2])) {
                     $wrong_answers[$index2] = 0;
                 }
                 $no_anwer = true;
 
                 foreach ($data->answers as $index1 => $answer) {
-                    if($answer->is_selected == 1 && $answer->is_correct == 0){
+                    if ($answer->is_selected == 1 && $answer->is_correct == 0) {
                         $no_anwer = false;
                         $wrong_answers[$index2] += 1;
                     }
                 }
 
-                if($no_anwer){
+                if ($no_anwer) {
                     $wrong_answers[$index2] += 1;
                 }
 
-                if($wrong_answers[$index2] <= 0){
+                if ($wrong_answers[$index2] <= 0) {
                     $zero_student = true;
                 }
             }
@@ -367,8 +359,8 @@ class SubmitTestController extends Controller
         $point_per_soal = [];
 
         foreach ($wrong_answers as $soal => $jumlah_salah) {
-            $jumlah= $jumlah_salah;
-            if($zero_student){
+            $jumlah = $jumlah_salah;
+            if ($zero_student) {
                 $jumlah = $jumlah_salah + 1;
             }
             // Hitung point per soal berdasarkan jumlah yang salah
@@ -398,13 +390,13 @@ class SubmitTestController extends Controller
             'package_test_uuid' => $user_session->package_test_uuid
         ])->first();
 
-        if($check_irt_point == null){
+        if ($check_irt_point == null) {
             IrtPoint::create([
                 'total_submit' => count($latestAttempts),
                 'data_question' => json_encode($point_per_soal),
                 'package_test_uuid' => $user_session->package_test_uuid
             ]);
-        }else{
+        } else {
             IrtPoint::where([
                 'package_test_uuid' => $user_session->package_test_uuid
             ])->update([
