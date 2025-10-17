@@ -284,6 +284,7 @@ class SubmitTestController extends Controller
         return response()->json([
             'message' => 'Test berhasil dikirim',
             'score' => $get_package->test_type == 'TSKKWK' ? $tskkwk_points : $points,
+            'test_type' => $get_package->test_type
         ], 200);
     }
 
