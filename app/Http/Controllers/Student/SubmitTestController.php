@@ -48,6 +48,7 @@ class SubmitTestController extends Controller
         $points = 0;
         $total_questions = count($request->data_question) * 1.0;
 
+        $tskkwk_points = 0;
         foreach ($request->data_question as $index => $data) {
             $get_question = Question::where([
                 'uuid' => $data['question_uuid'],
@@ -98,6 +99,7 @@ class SubmitTestController extends Controller
             if ($get_question->different_point == 0) {
                 if ($is_true == 1) {
                     $points += $get_question->point;
+                    $tskkwk_points += 1 * 1.667;
                 }
             }
 
@@ -259,7 +261,7 @@ class SubmitTestController extends Controller
                     'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
                     'attempt' => $count + 1,
-                    'score' => round($points * 1.667),
+                    'score' => $tskkwk_points,
                 ]);
             } else {
                 $count = StudentTryout::where([
@@ -277,11 +279,11 @@ class SubmitTestController extends Controller
             }
         }
 
-        SessionTest::where(['uuid' => $session_uuid])->delete();
+        // SessionTest::where(['uuid' => $session_uuid])->delete();
 
         return response()->json([
             'message' => 'Test berhasil dikirim',
-            'score' => $points,
+            'score' => $get_package->test_type == 'TSKKWK' ? $tskkwk_points : $points,
         ], 200);
     }
 
