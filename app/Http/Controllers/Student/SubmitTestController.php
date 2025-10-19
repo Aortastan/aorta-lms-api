@@ -23,6 +23,7 @@ class SubmitTestController extends Controller
 {
     public function submitTest(Request $request, $session_uuid)
     {
+        $test = Test::where(['uuid' => $request->test_uuid])->first();
         $total_submit_IRT = [10, 25, 50, 100];
         $validate = [
             'duration_left' => 'required',
@@ -151,12 +152,27 @@ class SubmitTestController extends Controller
             $get_package_test = PackageTest::where([
                 'test_uuid' => $check_tryout->uuid,
             ])->first();
-            $test = Test::where(['uuid' => $request->test_uuid])->first();
 
 
             $get_package = Package::where([
                 'uuid' => $get_package_test->package_uuid
             ])->first();
+
+            if (isset($test->test_type) == 'TSKKWK') {
+                $count = StudentTryout::where([
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                ])->count();
+                StudentTryout::create([
+                    'data_question' => json_encode($data_question),
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_uuid' => $get_package->uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                    'attempt' => $count + 1,
+                    'score' => $tskkwk_points,
+                ]);
+            }
+
             if ($get_package->test_type == 'IRT') {
                 // cek apakah sudah ada di IRTpoint
                 $check_irt_point = IrtPoint::where([
@@ -252,19 +268,6 @@ class SubmitTestController extends Controller
                     'package_test_uuid' => $user_session->package_test_uuid,
                     'attempt' => $count + 1,
                     'score' => round(($points * 600.0 / $total_questions) + 200.0),
-                ]);
-            } else if (isset($test->test_type) == 'TSKKWK') {
-                $count = StudentTryout::where([
-                    'user_uuid' => $user_session->user_uuid,
-                    'package_test_uuid' => $user_session->package_test_uuid,
-                ])->count();
-                StudentTryout::create([
-                    'data_question' => json_encode($data_question),
-                    'user_uuid' => $user_session->user_uuid,
-                    'package_uuid' => $get_package->uuid,
-                    'package_test_uuid' => $user_session->package_test_uuid,
-                    'attempt' => $count + 1,
-                    'score' => $tskkwk_points,
                 ]);
             } else {
                 $count = StudentTryout::where([
