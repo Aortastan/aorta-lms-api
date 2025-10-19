@@ -151,6 +151,8 @@ class SubmitTestController extends Controller
             $get_package_test = PackageTest::where([
                 'test_uuid' => $check_tryout->uuid,
             ])->first();
+            $test = Test::where(['uuid' => $request->test_uuid])->first();
+
 
             $get_package = Package::where([
                 'uuid' => $get_package_test->package_uuid
@@ -251,7 +253,7 @@ class SubmitTestController extends Controller
                     'attempt' => $count + 1,
                     'score' => round(($points * 600.0 / $total_questions) + 200.0),
                 ]);
-            } else if ($get_package->test_type == 'TSKKWK') {
+            } else if (isset($test->test_type) == 'TSKKWK') {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
@@ -281,7 +283,6 @@ class SubmitTestController extends Controller
         }
 
         SessionTest::where(['uuid' => $session_uuid])->delete();
-        $test = Test::where(['uuid' => $request->test_uuid])->first();
 
         return response()->json([
             'message' => 'Test berhasil dikirim',
