@@ -16,6 +16,7 @@ use App\Models\TryoutSegmentTest;
 use App\Models\TryoutSegment;
 use App\Models\Tryout;
 use App\Models\IrtPoint;
+use App\Models\Test;
 use Illuminate\Support\Facades\Validator;
 
 class SubmitTestController extends Controller
@@ -280,11 +281,11 @@ class SubmitTestController extends Controller
         }
 
         SessionTest::where(['uuid' => $session_uuid])->delete();
+        $test = Test::where(['uuid' => $request->test_uuid])->first();
 
         return response()->json([
             'message' => 'Test berhasil dikirim',
-            'score' => $get_package->test_type == 'TSKKWK' ? $tskkwk_points : $points,
-            'test_type' => $get_package->test_type
+            'score' => $test->test_type == 'TSKKWK' ? $tskkwk_points : $points
         ], 200);
     }
 
