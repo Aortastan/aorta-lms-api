@@ -285,7 +285,7 @@ class SubmitTestController extends Controller
 
         return response()->json([
             'message' => 'Test berhasil dikirim',
-            'score' => $test->test_type == 'TSKKWK' ? $tskkwk_points : $points
+            'score' => isset($test->test_type) == 'TSKKWK' ? $tskkwk_points : $points
         ], 200);
     }
 
