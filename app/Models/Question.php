@@ -32,6 +32,7 @@ class Question extends Model
         'point',
         'hint',
         'status',
+        'timer',
     ];
 
     public function subject()

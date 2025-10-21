@@ -469,6 +469,7 @@ trait CreateUpdateQuestionTrait
             'point' => $point,
             'hint' => $request->hint,
             'file_path' => $path,
+            'timer' => $request->timer
         ];
 
         if($this->question == null || $this->duplicate_question){

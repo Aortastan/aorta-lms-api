@@ -26,7 +26,8 @@ class QuestionController extends Controller
 {
     use SubjectValidationTrait, QuestionValidationRuleTrait, CreateUpdateQuestionTrait, QuestionTrait;
 
-    public function index(Request $request){
+    public function index(Request $request)
+    {
         $search = "";
         $question_type = "";
         $type = "";
@@ -35,27 +36,27 @@ class QuestionController extends Controller
         $order = "";
         $subject_uuid = "";
 
-        if(isset($_GET['search'])){
+        if (isset($_GET['search'])) {
             $search = $_GET['search'];
         }
 
-        if(isset($_GET['question_type'])){
+        if (isset($_GET['question_type'])) {
             $question_type = $_GET['question_type'];
         }
 
-        if(isset($_GET['type'])){
+        if (isset($_GET['type'])) {
             $type = $_GET['type'];
         }
 
-        if(isset($_GET['status'])){
+        if (isset($_GET['status'])) {
             $status = $_GET['status'];
         }
 
-        if(isset($_GET['subject_uuid'])){
+        if (isset($_GET['subject_uuid'])) {
             $subject_uuid = $_GET['subject_uuid'];
         }
 
-        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+        if (isset($_GET['orderBy']) && isset($_GET['order'])) {
             $orderBy = $_GET['orderBy'];
             $order = $_GET['order'];
         }
@@ -63,7 +64,8 @@ class QuestionController extends Controller
         return $this->getQuestions($search, $question_type, $type, $status, $orderBy, $order, $subject_uuid);
     }
 
-    public function published(Request $request){
+    public function published(Request $request)
+    {
         $search = "";
         $question_type = "";
         $type = "";
@@ -72,26 +74,26 @@ class QuestionController extends Controller
         $order = "";
         $subject_uuid = "";
 
-        if(isset($_GET['search'])){
+        if (isset($_GET['search'])) {
             $search = $_GET['search'];
         }
 
-        if(isset($_GET['question_type'])){
+        if (isset($_GET['question_type'])) {
             $question_type = $_GET['question_type'];
         }
 
-        if(isset($_GET['type'])){
+        if (isset($_GET['type'])) {
             $type = $_GET['type'];
         }
 
-        if(isset($_GET['subject_uuid'])){
+        if (isset($_GET['subject_uuid'])) {
             $subject_uuid = $_GET['subject_uuid'];
         }
 
-        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+        if (isset($_GET['orderBy']) && isset($_GET['order'])) {
             $orderBy = $_GET['orderBy'];
             $order = $_GET['order'];
-        }else{
+        } else {
             $orderBy = 'title';
             $order = 'asc';
         }
@@ -99,7 +101,8 @@ class QuestionController extends Controller
         return $this->getQuestions($search, $question_type, $type, $status, $orderBy, $order, $subject_uuid);
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         // validasi ada di traits
         $validator = $this->validateRule($request, 'create');
         if ($validator->fails()) {
@@ -122,22 +125,23 @@ class QuestionController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, $uuid){
+    public function update(Request $request, $uuid)
+    {
         $question = Question::where('uuid', $uuid)->with(['answers'])->first();
-        if(!$question){
+        if (!$question) {
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
         }
 
-        if($question->status == 'Published'){
+        if ($question->status == 'Published') {
             $checkQuestion = QuestionTest::where([
                 'question_uuid' => $question->uuid,
             ])->first();
 
-            if($checkQuestion){
+            if ($checkQuestion) {
                 return response()->json([
-                'message' => 'Cannot change status, because this question is already used in test',
+                    'message' => 'Cannot change status, because this question is already used in test',
                 ]);
             }
         }
@@ -165,9 +169,10 @@ class QuestionController extends Controller
         ], 200);
     }
 
-    public function duplicate(Request $request){
+    public function duplicate(Request $request)
+    {
         $question = Question::where('uuid', $request->question_uuid)->with(['answers'])->first();
-        if(!$question){
+        if (!$question) {
             return response()->json([
                 'message' => 'Data duplicate not found',
             ], 404);
@@ -195,11 +200,12 @@ class QuestionController extends Controller
         ], 200);
     }
 
-    public function show(Request $request, $detail){
-        try{
+    public function show(Request $request, $detail)
+    {
+        try {
             $getQuestion = Question::where(['uuid' => $detail])->with(['answers'])->first();
 
-            if($getQuestion == null){
+            if ($getQuestion == null) {
                 return response()->json([
                     'message' => 'Data not found',
                 ], 404);
@@ -216,7 +222,7 @@ class QuestionController extends Controller
 
             foreach ($getQuestion->answers as $index => $answer) {
                 $have_image = 0;
-                if($answer['image']){
+                if ($answer['image']) {
                     $have_image = 1;
                 }
                 $answers[] = [
@@ -246,23 +252,24 @@ class QuestionController extends Controller
                 'point' => $getQuestion->point,
                 'hint' => $getQuestion->hint,
                 'answers' => $getQuestion->answers,
+                'timer' => $getQuestion->timer
             ];
 
             return response()->json([
                 'message' => 'Success get data',
                 'questions' => $question,
             ], 200);
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e,
             ], 404);
         }
     }
 
-    public function delete(Request $request, $uuid){
+    public function delete(Request $request, $uuid)
+    {
         $question = Question::where('uuid', $uuid)->first();
-        if($question == null){
+        if ($question == null) {
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
@@ -272,7 +279,7 @@ class QuestionController extends Controller
             'question_uuid' => $question->uuid,
         ])->first();
 
-        if($checkQuestionTest){
+        if ($checkQuestionTest) {
             return response()->json([
                 'message' => 'This question has published and used in tests. You can\'t delete it',
             ], 200);
@@ -284,7 +291,8 @@ class QuestionController extends Controller
         ], 200);
     }
 
-    public function uploadCSV(Request $request){
+    public function uploadCSV(Request $request)
+    {
         $validate = [
             'file' => 'required|file|mimes:csv,txt',
         ];
@@ -309,49 +317,49 @@ class QuestionController extends Controller
         while (($line = fgetcsv($file)) !== false) {
 
             // validasi
-            if (!is_string($line[0])){
+            if (!is_string($line[0])) {
                 return response()->json([
                     'message' => 'Title is required',
                 ], 422);
             }
             // if($line[1] != 'multi choice' && $line[1] != 'most point' && $line[1] != 'single choice' && $line[1] != 'fill in blank' && $line[1] != 'true false'){
-                if($line[1] != 'single choice' && $line[1] != 'true false'){
+            if ($line[1] != 'single choice' && $line[1] != 'true false') {
                 return response()->json([
                     'message' => 'Question type not valid',
                 ], 422);
             }
-            if ($line[3] == null){
+            if ($line[3] == null) {
                 return response()->json([
                     'message' => 'Question required',
                 ], 422);
             }
-            if (!is_string($line[3])){
+            if (!is_string($line[3])) {
                 return response()->json([
                     'message' => 'Question must string type',
                 ], 422);
             }
-            if($line[5] != 'text' && $line[5] != 'youtube'){
+            if ($line[5] != 'text' && $line[5] != 'youtube') {
                 return response()->json([
                     'message' => 'Only text / youtube allowed',
                 ], 422);
             }
 
-            if($line[5] == 'youtube'){
-                if ($line[4] == null){
+            if ($line[5] == 'youtube') {
+                if ($line[4] == null) {
                     return response()->json([
                         'message' => 'If type is youtube, url_path is required',
                     ], 422);
                 }
             }
 
-            if($line[6] != 1 && $line[6] != 0){
+            if ($line[6] != 1 && $line[6] != 0) {
                 return response()->json([
                     'message' => 'Only 1/0 allowed',
                 ], 422);
             }
 
-            if($line[6] == 0){
-                if ($line[7] == null){
+            if ($line[6] == 0) {
+                if ($line[7] == null) {
                     return response()->json([
                         'message' => 'If different point is 0, point is required',
                     ], 422);
@@ -362,7 +370,7 @@ class QuestionController extends Controller
                 'name' => $line[2],
             ])->first();
 
-            if(!$check_subject){
+            if (!$check_subject) {
                 return response()->json([
                     'message' => 'Subject not found',
                 ], 422);
@@ -380,7 +388,7 @@ class QuestionController extends Controller
                 'question' => $line[3],
                 'url_path' => $line[4],
                 'type' => $line[5],
-                "different_point"=> $line[6],
+                "different_point" => $line[6],
                 "point" => $line[7],
                 'status' => 'Draft',
             ];
@@ -391,44 +399,44 @@ class QuestionController extends Controller
             for ($i = 0; $i < (count($line) - 9) / 4; $i++) {
                 $answerIndex = 9 + ($i * 4);
 
-                if ($line[$answerIndex] == null && $line[$answerIndex + 1] == null && $line[$answerIndex + 2] == null){
+                if ($line[$answerIndex] == null && $line[$answerIndex + 1] == null && $line[$answerIndex + 2] == null) {
                     continue;
                 }
 
-                if ($line[$answerIndex] == null){
+                if ($line[$answerIndex] == null) {
                     return response()->json([
                         'message' => 'Answer is required',
                     ], 422);
                 }
-                if (!is_string($line[$answerIndex])){
+                if (!is_string($line[$answerIndex])) {
                     return response()->json([
                         'message' => 'Answer must string type',
                     ], 422);
                 }
-                if ($line[$answerIndex + 1] == null){
+                if ($line[$answerIndex + 1] == null) {
                     return response()->json([
                         'message' => 'is_correct is required',
                     ], 422);
                 }
-                if ($line[$answerIndex + 1] != "0" && $line[$answerIndex + 1] != "1"){
+                if ($line[$answerIndex + 1] != "0" && $line[$answerIndex + 1] != "1") {
                     return response()->json([
                         'message' => 'is_correct must boolean type',
                     ], 422);
                 }
-                if($line[6] == 1){
-                    if ($line[$answerIndex + 2] == null){
+                if ($line[6] == 1) {
+                    if ($line[$answerIndex + 2] == null) {
                         return response()->json([
                             'message' => 'Point is required',
                         ], 422);
                     }
-                    if (!is_numeric($line[$answerIndex + 2])){
+                    if (!is_numeric($line[$answerIndex + 2])) {
                         return response()->json([
                             'message' => 'Point must number type',
                         ], 422);
                     }
                 }
                 $explanation = "";
-                if ($line[$answerIndex + 3] != null){
+                if ($line[$answerIndex + 3] != null) {
                     $explanation = $line[$answerIndex + 3];
                 }
 
@@ -455,7 +463,8 @@ class QuestionController extends Controller
         ], 200);
     }
 
-    public function downloadCSV() {
+    public function downloadCSV()
+    {
         return response()->download(public_path('template.csv'));
     }
 }
