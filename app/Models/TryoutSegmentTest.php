@@ -25,6 +25,8 @@ class TryoutSegmentTest extends Model
         'duration',
         'max_point',
         'passing_score',
+        'duration_per_question',
+        'duration_type',
     ];
 
     public function test()
