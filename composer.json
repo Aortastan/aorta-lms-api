@@ -18,7 +18,9 @@
         "laravelcollective/html": "^6.2",
         "lcobucci/jwt": "3.3.3",
         "maatwebsite/excel": "^3.1",
+        "setasign/fpdi-tcpdf": "^2.3",
         "symfony/mailer": "^5.4",
+        "tecnickcom/tcpdf": "^6.10",
         "tymon/jwt-auth": "1.0.0",
         "uxweb/sweet-alert": "^2.0",
         "xendit/xendit-php": "^2.19"

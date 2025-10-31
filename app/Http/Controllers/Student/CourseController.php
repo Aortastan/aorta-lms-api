@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Helpers\TransparentPDF;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -17,12 +18,65 @@ use App\Models\StudentProgress;
 use App\Models\StudentAssignment;
 
 use App\Traits\Package\PackageTrait;
+use PhpOffice\PhpSpreadsheet\Writer\Pdf\Tcpdf;
+use setasign\Fpdi\Fpdi;
+use setasign\Fpdi\TcpdfFpdi;
+use TCPDF as GlobalTCPDF;
 
 class CourseController extends Controller
 {
     use PackageTrait;
 
-    public function show($package_uuid, $uuid){
+    public function downloadCourse(Request $request)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $username = $user->username;
+        $file = $request->input('filepath');
+        $source = storage_path('app/public/' . $file, 'rb');
+        $filename = 'temp_watermarked_' . uniqid() . '.pdf';
+        $output = storage_path("app/tmp/{$filename}");
+
+        // Ensure temp directory exists
+        if (!is_dir(storage_path('app/tmp'))) {
+            mkdir(storage_path('app/tmp'), 0775, true);
+        }
+        $pdf = new TcpdfFpdi();
+        $pdf->SetPrintHeader(false);
+        $pdf->SetPrintFooter(false);
+
+        // Import existing PDF
+        $pageCount = $pdf->setSourceFile($source);
+
+        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+            $templateId = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($templateId);
+            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($templateId);
+
+            // Apply transparency (0 = fully transparent, 1 = opaque)
+            $pdf->SetAlpha(0.2);
+
+            // Set font
+            $pdf->SetFont('helvetica', 'B', 50);
+            $pdf->SetTextColor(150, 150, 150);
+
+            // Rotate and print watermark text
+            $pdf->StartTransform();
+            $pdf->Rotate(45, $size['width'] / 2, $size['height'] / 2);
+            $pdf->Text($size['width'] / 2 - 20, $size['height'] / 2, $username);
+            $pdf->StopTransform();
+
+            // Reset transparency
+            $pdf->SetAlpha(0);
+        }
+
+        $pdf->Output($output, 'F');
+
+        return response()->download($output);
+    }
+
+    public function show($package_uuid, $uuid)
+    {
         // try{
         //     // $user = JWTAuth::parseToken()->authenticate();
         //     $getPackage = Package::
@@ -35,33 +89,33 @@ class CourseController extends Controller
         //         ], 404);
         //     }
 
-            // $check_purchased_package = DB::table('purchased_packages')
-            //     ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
-            //     ->first();
+        // $check_purchased_package = DB::table('purchased_packages')
+        //     ->where(['purchased_packages.user_uuid' => $user->uuid, 'purchased_packages.package_uuid' => $getPackage->uuid])
+        //     ->first();
 
-            // if(!$check_purchased_package){
-            //     $check_membership_history = DB::table('membership_histories')
-            //         ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
-            //         ->whereDate('membership_histories.expired_date', '>', now())
-            //         ->first();
+        // if(!$check_purchased_package){
+        //     $check_membership_history = DB::table('membership_histories')
+        //         ->where(['membership_histories.user_uuid' => $user->uuid, 'membership_histories.package_uuid' => $getPackage->uuid])
+        //         ->whereDate('membership_histories.expired_date', '>', now())
+        //         ->first();
 
-            //     if(!$check_membership_history){
-            //         return response()->json([
-            //             'message' => "You haven't purchased this package yet",
-            //         ], 404);
-            //     }
-            // }
+        //     if(!$check_membership_history){
+        //         return response()->json([
+        //             'message' => "You haven't purchased this package yet",
+        //         ], 404);
+        //     }
+        // }
 
-            // $getCourse = Course::
-            //     where(['uuid' => $uuid])
-            //     ->with(['lessons', 'pretestPosttests', 'instructor'])
-            //     ->first();
+        // $getCourse = Course::
+        //     where(['uuid' => $uuid])
+        //     ->with(['lessons', 'pretestPosttests', 'instructor'])
+        //     ->first();
 
-            // if(!$getCourse){
-            //     return response()->json([
-            //         'message' => "Course not found",
-            //     ], 404);
-            // }
+        // if(!$getCourse){
+        //     return response()->json([
+        //         'message' => "Course not found",
+        //     ], 404);
+        // }
 
         //     $course = [];
 
@@ -103,24 +157,23 @@ class CourseController extends Controller
         //     ], 404);
         // }
 
-        try{
+        try {
             $course = DB::table('courses')
-                    ->select('courses.uuid', 'courses.title', 'courses.description', 'courses.image', 'courses.video', 'courses.number_of_meeting', 'courses.is_have_pretest_posttest', 'courses.status', 'users.name as instructor_name')
-                    ->join('users', 'courses.instructor_uuid', '=', 'users.uuid')
-                    ->where(['courses.uuid' => $uuid])
-                    ->first();
+                ->select('courses.uuid', 'courses.title', 'courses.description', 'courses.image', 'courses.video', 'courses.number_of_meeting', 'courses.is_have_pretest_posttest', 'courses.status', 'users.name as instructor_name')
+                ->join('users', 'courses.instructor_uuid', '=', 'users.uuid')
+                ->where(['courses.uuid' => $uuid])
+                ->first();
 
-            if($course == null){
+            if ($course == null) {
                 return response()->json([
                     'message' => "Kursus tidak ditemukan",
                 ], 404);
             }
 
-            $getCourseLessons = CourseLesson::
-                    select('uuid', 'title')
-                    ->where('course_uuid', $uuid)
-                    ->with(['lectures'])
-                    ->get();
+            $getCourseLessons = CourseLesson::select('uuid', 'title')
+                ->where('course_uuid', $uuid)
+                ->with(['lectures'])
+                ->get();
 
             $courseLessons = [];
             foreach ($getCourseLessons as $index => $lesson) {
@@ -154,19 +207,18 @@ class CourseController extends Controller
             $course->course_tags = $courseTags;
 
             $coursePretestPosttest =  DB::table('pretest_posttests')
-                                    ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.test_type as test_type', 'tests.title as test_title', 'tests.test_category as test_category', 'tests.uuid as test_uuid')
-                                    ->join('tests', 'pretest_posttests.test_uuid', '=', 'tests.uuid')
-                                    ->where('course_uuid', $uuid)
-                                    ->get();
+                ->select('pretest_posttests.uuid', 'pretest_posttests.max_attempt', 'tests.test_type as test_type', 'tests.title as test_title', 'tests.test_category as test_category', 'tests.uuid as test_uuid')
+                ->join('tests', 'pretest_posttests.test_uuid', '=', 'tests.uuid')
+                ->where('course_uuid', $uuid)
+                ->get();
 
-                                    $course->course_pretest_posttests = $coursePretestPosttest;
+            $course->course_pretest_posttests = $coursePretestPosttest;
 
             return response()->json([
                 'message' => 'Sukses mengambil data',
                 'course' => $course,
             ], 200);
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e,
             ], 404);
@@ -174,7 +226,8 @@ class CourseController extends Controller
     }
 
     // ambil semua course yang sudah pernah dibeli dari package package
-    public function getStudentCourses(){
+    public function getStudentCourses()
+    {
         $user = JWTAuth::parseToken()->authenticate();
         $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
         $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor', 'course.lessons'])->get();
@@ -192,7 +245,7 @@ class CourseController extends Controller
                     'image' => $student_course->course->image,
                     'video' => $student_course->course->video,
                     'number_of_meeting' => $student_course->course->number_of_meeting,
-                    'number_of_lessons'=> count($student_course->course->lessons),
+                    'number_of_lessons' => count($student_course->course->lessons),
                     'instructor_uuid' => $student_course->course->instructor->name,
                 ];
             }
@@ -212,31 +265,33 @@ class CourseController extends Controller
                     'image' => $student_course->course->image,
                     'video' => $student_course->course->video,
                     'number_of_meeting' => $student_course->course->number_of_meeting,
-                    'number_of_lessons'=> count($student_course->course->lessons),
+                    'number_of_lessons' => count($student_course->course->lessons),
                     'instructor_uuid' => $student_course->course->instructor->name,
                 ];
             }
         }
 
         return response()->json([
-            'message'=> "Sukses mengambil data",
+            'message' => "Sukses mengambil data",
             "courses" => $my_courses,
         ], 200);
     }
 
-    public function detailPurchasedCourse($course_uuid){
+    public function detailPurchasedCourse($course_uuid)
+    {
         $user = JWTAuth::parseToken()->authenticate();
 
         return $this->checkThisCourseIsPaid($course_uuid, $user);
     }
 
-    public function checkThisCourseIsPaid($course_uuid, $user){
+    public function checkThisCourseIsPaid($course_uuid, $user)
+    {
         // cek apakah course uuid tersebut ada
         $course = Course::where([
             'uuid' => $course_uuid,
         ])->first();
 
-        if($course == null){
+        if ($course == null) {
             return response()->json([
                 'message' => "Kursus tidak ditemukan",
             ]);
@@ -252,7 +307,7 @@ class CourseController extends Controller
             $package_uuids[] = $package->package_uuid;
         }
 
-        if(count($package_uuids) <= 0){
+        if (count($package_uuids) <= 0) {
             return response()->json([
                 'message' => "Kursus tidak ditemukan",
             ]);
@@ -264,14 +319,14 @@ class CourseController extends Controller
         ])->whereIn("package_uuid", $package_uuids)->first();
 
         // jika ternyata tidak ada, maka sekarang cek di membership
-        if($check_purchased_package == null){
+        if ($check_purchased_package == null) {
             $check_membership_package = MembershipHistory::where([
                 "user_uuid" => $user->uuid,
             ])
-            ->whereDate('expired_date', '>', now())
-            ->whereIn("package_uuid", $package_uuids)->first();
+                ->whereDate('expired_date', '>', now())
+                ->whereIn("package_uuid", $package_uuids)->first();
 
-            if($check_membership_package == null){
+            if ($check_membership_package == null) {
                 return response()->json([
                     'message' => 'Kamu tidak dapat mengakses kursus',
                 ]);
@@ -324,7 +379,7 @@ class CourseController extends Controller
                     'assignment_uuid' => $assignment->uuid,
                 ])->first();
                 $status = null;
-                if($student_assignment != null){
+                if ($student_assignment != null) {
                     $status = $student_assignment->status;
                 }
                 $assignments[] = [
@@ -353,7 +408,7 @@ class CourseController extends Controller
             "image" => $getCourse->image,
             "video" => $getCourse->video,
             'number_of_meeting' => $getCourse->number_of_meeting,
-            "lessons" =>$lessons,
+            "lessons" => $lessons,
             "pretest_posttests" => $pretest_posttests,
         ];
 
