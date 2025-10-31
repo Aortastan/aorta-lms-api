@@ -19,6 +19,11 @@ Route::get('', function () {
     return response()->json(['message' => 'Welcome to Production API']);
 });
 
+Route::get('test', function () {
+    $user = App\Models\User::all();
+    return response()->json(['message' => 'test', 'user' => $user]);
+});
+
 Route::get('email/verify/{id}', 'Auth\VerificationController@verify')->name('verification.verify');
 Route::get('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
 Route::get('email/verify/manual/{email}', 'Auth\VerificationController@manualVerification')->name('verification.email');
@@ -304,6 +309,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
 
     Route::group(['middleware' => ['auth', 'student', 'verified'], 'prefix' => 'student', 'as' => 'student.',], function () {
+
+        Route::get('/download/course', 'Student\CourseController@downloadCourse')->name('downloadCourse');
         // Dashboard
         Route::get('', 'Student\DashboardController@index')->name('get');
         // end dashboard
