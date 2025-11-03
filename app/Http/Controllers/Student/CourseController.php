@@ -66,7 +66,7 @@ class CourseController extends Controller
             // Rotate and print watermark text
             $pdf->StartTransform();
             $pdf->Rotate(45, $size['width'] / 2, $size['height'] / 2);
-            $pdf->MultiCell($size['width'] / 2 - 20, $size['height'] / 2, $fullText);
+            $pdf->MultiCell(0, 6, $fullText);
             $pdf->StopTransform();
 
             // Reset transparency
