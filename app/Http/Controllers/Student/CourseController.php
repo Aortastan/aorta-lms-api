@@ -36,7 +36,7 @@ class CourseController extends Controller
         $filename = 'temp_watermarked_' . uniqid() . '.pdf';
         $output = storage_path("app/tmp/{$filename}");
         $course = Course::where('uuid', $coursUuid)->first();
-        $safeEmail = str_replace('@', '＠', $user->email); // fullwidth @ symbol
+        $safeEmail = str_replace('@', "\u{200B}@", $user->email); // add zero-width space
 
 
         $lines = [
