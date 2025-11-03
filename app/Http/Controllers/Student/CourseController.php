@@ -60,13 +60,13 @@ class CourseController extends Controller
             $pdf->SetAlpha(0.2);
 
             // Set font
-            $pdf->SetFont('helvetica', 'B', 50);
+            $pdf->SetFont('helvetica', 'B', 30);
             $pdf->SetTextColor(150, 150, 150);
 
             // Rotate and print watermark text
             $pdf->StartTransform();
             $pdf->Rotate(45, $size['width'] / 2, $size['height'] / 2);
-            $pdf->MultiCell(2, 1, $text);
+            $pdf->MultiCell(0, 4, $text);
             $pdf->StopTransform();
 
             // Reset transparency
