@@ -36,13 +36,11 @@ class CourseController extends Controller
         $filename = 'temp_watermarked_' . uniqid() . '.pdf';
         $output = storage_path("app/tmp/{$filename}");
         $course = Course::where('uuid', $coursUuid)->first();
-        $safeEmail = str_replace('@', '＠', $user->email); // fullwidth @ symbol
-
 
         $lines = [
             $user->name,
             $user->username,
-            $safeEmail,
+            $user->email,
             $user->mobile_number,
             $course->title
         ];
@@ -53,7 +51,6 @@ class CourseController extends Controller
         }
 
         $pdf = new \setasign\Fpdi\TcpdfFpdi();
-        $pdf->SetFont('dejavusans', 'B', 18);
         $pdf->SetPrintHeader(false);
         $pdf->SetPrintFooter(false);
 
@@ -67,6 +64,7 @@ class CourseController extends Controller
 
             // Transparent watermark
             $pdf->SetAlpha(0.2);
+            $pdf->SetFont('helvetica', 'B', 18);
             $pdf->SetTextColor(150, 150, 150);
 
             // Calculate vertical center
