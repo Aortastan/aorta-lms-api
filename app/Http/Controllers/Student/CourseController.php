@@ -37,56 +37,61 @@ class CourseController extends Controller
         $output = storage_path("app/tmp/{$filename}");
         $course = Course::where('uuid', $coursUuid)->first();
 
-        $fullText = $user->name . "\n" . $user->username . "\n" . $user->email . "\n" . $user->mobile_number . "\n" . $course->title;
+        $lines = [
+            $user->name,
+            $user->username,
+            $user->email,
+            $user->mobile_number,
+            $course->title
+        ];
 
-        // Ensure temp directory exists
+        // Ensure tmp folder
         if (!is_dir(storage_path('app/tmp'))) {
             mkdir(storage_path('app/tmp'), 0775, true);
         }
 
-        $pdf = new TcpdfFpdi();
+        $pdf = new \setasign\Fpdi\TcpdfFpdi();
         $pdf->SetPrintHeader(false);
         $pdf->SetPrintFooter(false);
 
-        // Import existing PDF
         $pageCount = $pdf->setSourceFile($source);
 
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-            $templateId = $pdf->importPage($pageNo);
-            $size = $pdf->getTemplateSize($templateId);
+            $tpl = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($tpl);
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-            $pdf->useTemplate($templateId);
+            $pdf->useTemplate($tpl);
 
-            // Transparency
+            // Transparent watermark
             $pdf->SetAlpha(0.2);
-
-            // Font style
-            $pdf->SetFont('helvetica', 'B', 20);
+            $pdf->SetFont('helvetica', 'B', 18);
             $pdf->SetTextColor(150, 150, 150);
 
-            // Estimate text width/height
-            $textWidth = $pdf->GetStringWidth($fullText, 'helvetica', 'B', 20);
-            $lineHeight = 8;
-            $lines = substr_count($fullText, "\n") + 1;
-            $textHeight = $lines * $lineHeight;
+            // Calculate vertical center
+            $lineHeight = 10;
+            $totalHeight = count($lines) * $lineHeight;
+            $startY = ($size['height'] - $totalHeight) / 2;
 
-            // Calculate center position
-            $x = ($size['width'] - $textWidth) / 2;
-            $y = ($size['height'] - $textHeight) / 2;
-
-            // Rotate and print centered MultiCell
             $pdf->StartTransform();
             $pdf->Rotate(45, $size['width'] / 2, $size['height'] / 2);
-            $pdf->SetXY($x, $y);
-            $pdf->MultiCell(0, $lineHeight, $fullText, 0, 'C', false);
-            $pdf->StopTransform();
 
+            // Draw each line centered by its width
+            foreach ($lines as $i => $text) {
+                $textWidth = $pdf->GetStringWidth($text);
+                $x = ($size['width'] - $textWidth) / 2;
+                $y = $startY + ($i * $lineHeight);
+                $pdf->SetXY($x, $y);
+                $pdf->Cell($textWidth, $lineHeight, $text, 0, 1, 'C');
+            }
+
+            $pdf->StopTransform();
             $pdf->SetAlpha(1);
         }
 
         $pdf->Output($output, 'F');
         return response()->download($output);
     }
+
 
 
     public function show($package_uuid, $uuid)
