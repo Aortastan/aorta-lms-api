@@ -31,10 +31,13 @@ class CourseController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
         $username = $user->username;
+        $coursUuid = $request->input('course_uuid');
         $file = $request->input('filepath');
         $source = storage_path('app/public/' . $file, 'rb');
         $filename = 'temp_watermarked_' . uniqid() . '.pdf';
         $output = storage_path("app/tmp/{$filename}");
+        $course = Course::where('uuid', $coursUuid)->first();
+        $fullText = $user->name . "\n" . $user->username . "\n" . $user->email . "\n" . $user->mobile_number . "\n" . $course->title;
 
         // Ensure temp directory exists
         if (!is_dir(storage_path('app/tmp'))) {
@@ -63,7 +66,7 @@ class CourseController extends Controller
             // Rotate and print watermark text
             $pdf->StartTransform();
             $pdf->Rotate(45, $size['width'] / 2, $size['height'] / 2);
-            $pdf->Text($size['width'] / 2 - 20, $size['height'] / 2, $username);
+            $pdf->Text($size['width'] / 2 - 20, $size['height'] / 2, $fullText);
             $pdf->StopTransform();
 
             // Reset transparency
