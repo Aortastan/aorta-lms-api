@@ -30,24 +30,24 @@ class CourseController extends Controller
     public function downloadCourse(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
-        $courseUuid = $request->input('course_uuid');
-        $course = Course::where(['uuid' => $courseUuid])->first();
+        $username = $user->username;
+        $coursUuid = $request->input('course_uuid');
         $file = $request->input('filepath');
-
-        $source = storage_path('app/public/' . $file);
+        $source = storage_path('app/public/' . $file, 'rb');
         $filename = 'temp_watermarked_' . uniqid() . '.pdf';
         $output = storage_path("app/tmp/{$filename}");
+        $course = Course::where('uuid', $coursUuid)->first();
+        $fullText = $user->name . "\n" . $user->username . "\n" . $user->email . "\n" . $user->mobile_number . "\n" . $course->title;
 
-        // Ensure tmp directory exists
+        // Ensure temp directory exists
         if (!is_dir(storage_path('app/tmp'))) {
             mkdir(storage_path('app/tmp'), 0775, true);
         }
-
         $pdf = new TcpdfFpdi();
         $pdf->SetPrintHeader(false);
         $pdf->SetPrintFooter(false);
 
-        // Import the existing PDF
+        // Import existing PDF
         $pageCount = $pdf->setSourceFile($source);
 
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
@@ -56,28 +56,21 @@ class CourseController extends Controller
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($templateId);
 
-            // Add student info on top
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->SetTextColor(0, 0, 0);
+            // Apply transparency (0 = fully transparent, 1 = opaque)
+            $pdf->SetAlpha(0.2);
 
-            $pdf->SetXY(15, 15);
-            $pdf->Cell(0, 8,  $user->name, 0, 1, 'L');
-            $pdf->SetXY(15, 22);
-            $pdf->Cell(0, 8,  $user->email, 0, 1, 'L');
-            $pdf->SetXY(15, 29);
-            $pdf->Cell(0, 8,  $user->mobile_number, 0, 1, 'L');
-            $pdf->SetXY(15, 36);
-            $pdf->Cell(0, 8,  $course->title, 0, 1, 'L');
-
-            // Optional diagonal watermark
-            $pdf->SetAlpha(0.1);
-            $pdf->SetFont('helvetica', 'B', 40);
+            // Set font
+            $pdf->SetFont('helvetica', 'B', 50);
             $pdf->SetTextColor(150, 150, 150);
+
+            // Rotate and print watermark text
             $pdf->StartTransform();
             $pdf->Rotate(45, $size['width'] / 2, $size['height'] / 2);
-            $pdf->Text($size['width'] / 2 - 20, $size['height'] / 2, $user->username);
+            $pdf->MultiCell($size['width'] / 2 - 20, $size['height'] / 2, $fullText);
             $pdf->StopTransform();
-            $pdf->SetAlpha(1);
+
+            // Reset transparency
+            $pdf->SetAlpha(0);
         }
 
         $pdf->Output($output, 'F');
