@@ -30,19 +30,20 @@ class CourseController extends Controller
     public function downloadCourse(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
-        $username = $user->username;
         $coursUuid = $request->input('course_uuid');
         $file = $request->input('filepath');
-        $source = storage_path('app/public/' . $file, 'rb');
+        $source = storage_path('app/public/' . $file);
         $filename = 'temp_watermarked_' . uniqid() . '.pdf';
         $output = storage_path("app/tmp/{$filename}");
         $course = Course::where('uuid', $coursUuid)->first();
+
         $fullText = $user->name . "\n" . $user->username . "\n" . $user->email . "\n" . $user->mobile_number . "\n" . $course->title;
 
         // Ensure temp directory exists
         if (!is_dir(storage_path('app/tmp'))) {
             mkdir(storage_path('app/tmp'), 0775, true);
         }
+
         $pdf = new TcpdfFpdi();
         $pdf->SetPrintHeader(false);
         $pdf->SetPrintFooter(false);
@@ -56,27 +57,37 @@ class CourseController extends Controller
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($templateId);
 
-            // Apply transparency (0 = fully transparent, 1 = opaque)
+            // Transparency
             $pdf->SetAlpha(0.2);
 
-            // Set font
-            $pdf->SetFont('helvetica', 'B', 30);
+            // Font style
+            $pdf->SetFont('helvetica', 'B', 20);
             $pdf->SetTextColor(150, 150, 150);
 
-            // Rotate and print watermark text
+            // Estimate text width/height
+            $textWidth = $pdf->GetStringWidth($fullText, 'helvetica', 'B', 20);
+            $lineHeight = 8;
+            $lines = substr_count($fullText, "\n") + 1;
+            $textHeight = $lines * $lineHeight;
+
+            // Calculate center position
+            $x = ($size['width'] - $textWidth) / 2;
+            $y = ($size['height'] - $textHeight) / 2;
+
+            // Rotate and print centered MultiCell
             $pdf->StartTransform();
             $pdf->Rotate(45, $size['width'] / 2, $size['height'] / 2);
-            $pdf->MultiCell($size['width'] / 2 - 20, $size['height'] / 2, $fullText);
+            $pdf->SetXY($x, $y);
+            $pdf->MultiCell(0, $lineHeight, $fullText, 0, 'C', false);
             $pdf->StopTransform();
 
-            // Reset transparency
-            $pdf->SetAlpha(0);
+            $pdf->SetAlpha(1);
         }
 
         $pdf->Output($output, 'F');
-
         return response()->download($output);
     }
+
 
     public function show($package_uuid, $uuid)
     {
