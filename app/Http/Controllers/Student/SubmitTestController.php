@@ -171,9 +171,20 @@ class SubmitTestController extends Controller
                     'attempt' => $count + 1,
                     'score' => $tskkwk_points,
                 ]);
-            }
-
-            if ($get_package->test_type == 'IRT') {
+            } elseif (isset($test->test_type) == 'Tes Potensi') {
+                $count = StudentTryout::where([
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                ])->count();
+                StudentTryout::create([
+                    'data_question' => json_encode($data_question),
+                    'user_uuid' => $user_session->user_uuid,
+                    'package_uuid' => $get_package->uuid,
+                    'package_test_uuid' => $user_session->package_test_uuid,
+                    'attempt' => $count + 1,
+                    'score' => round(($points * 600.0 / $total_questions) + 200.0),
+                ]);
+            } else if (isset($test->test_type) == 'IRT') {
                 // cek apakah sudah ada di IRTpoint
                 $check_irt_point = IrtPoint::where([
                     'package_test_uuid' => $user_session->package_test_uuid
@@ -256,19 +267,6 @@ class SubmitTestController extends Controller
                         'score' => $points,
                     ]);
                 }
-            } else if ($get_package->test_type == 'Tes Potensi') {
-                $count = StudentTryout::where([
-                    'user_uuid' => $user_session->user_uuid,
-                    'package_test_uuid' => $user_session->package_test_uuid,
-                ])->count();
-                StudentTryout::create([
-                    'data_question' => json_encode($data_question),
-                    'user_uuid' => $user_session->user_uuid,
-                    'package_uuid' => $get_package->uuid,
-                    'package_test_uuid' => $user_session->package_test_uuid,
-                    'attempt' => $count + 1,
-                    'score' => round(($points * 600.0 / $total_questions) + 200.0),
-                ]);
             } else {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
