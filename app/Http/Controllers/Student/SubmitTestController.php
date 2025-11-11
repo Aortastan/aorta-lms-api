@@ -158,6 +158,7 @@ class SubmitTestController extends Controller
                 'uuid' => $get_package_test->package_uuid
             ])->first();
 
+            $score = 0;
             if (isset($test->test_type) == 'TSKKWK') {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
@@ -171,6 +172,7 @@ class SubmitTestController extends Controller
                     'attempt' => $count + 1,
                     'score' => $tskkwk_points,
                 ]);
+                $score = $tskkwk_points;
             } elseif (isset($test->test_type) == 'Tes Potensi') {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
@@ -184,6 +186,7 @@ class SubmitTestController extends Controller
                     'attempt' => $count + 1,
                     'score' => round(($points * 600.0 / $total_questions) + 200.0),
                 ]);
+                $score = round(($points * 600.0 / $total_questions) + 200.0);
             } else if (isset($test->test_type) == 'IRT') {
                 // cek apakah sudah ada di IRTpoint
                 $check_irt_point = IrtPoint::where([
@@ -266,6 +269,7 @@ class SubmitTestController extends Controller
                         'attempt' => $count + 1,
                         'score' => $points,
                     ]);
+                    $score = $points;
                 }
             } else {
                 $count = StudentTryout::where([
@@ -280,6 +284,7 @@ class SubmitTestController extends Controller
                     'attempt' => $count + 1,
                     'score' => $points,
                 ]);
+                $score = $points;
             }
         }
 
@@ -287,7 +292,7 @@ class SubmitTestController extends Controller
 
         return response()->json([
             'message' => 'Test berhasil dikirim',
-            'score' => isset($test->test_type) == 'TSKKWK' ? $tskkwk_points : $points
+            'score' => $score
         ], 200);
     }
 
