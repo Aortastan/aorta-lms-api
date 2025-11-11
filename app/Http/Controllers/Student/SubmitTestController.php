@@ -159,7 +159,7 @@ class SubmitTestController extends Controller
             ])->first();
 
             $score = 0;
-            if (isset($test->test_type) == 'TSKKWK') {
+            if ($test->test_type == 'TSKKWK') {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
@@ -173,7 +173,7 @@ class SubmitTestController extends Controller
                     'score' => $tskkwk_points,
                 ]);
                 $score = $tskkwk_points;
-            } elseif (isset($test->test_type) == 'Tes Potensi') {
+            } elseif ($test->test_type == 'Tes Potensi') {
                 $count = StudentTryout::where([
                     'user_uuid' => $user_session->user_uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
@@ -187,7 +187,7 @@ class SubmitTestController extends Controller
                     'score' => round(($points * 600.0 / $total_questions) + 200.0),
                 ]);
                 $score = round(($points * 600.0 / $total_questions) + 200.0);
-            } else if (isset($test->test_type) == 'IRT') {
+            } else if ($test->test_type == 'IRT') {
                 // cek apakah sudah ada di IRTpoint
                 $check_irt_point = IrtPoint::where([
                     'package_test_uuid' => $user_session->package_test_uuid
