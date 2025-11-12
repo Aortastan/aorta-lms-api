@@ -49,7 +49,7 @@ class SubmitTestController extends Controller
         $data_question = [];
         $points = 0;
         $total_questions = count($request->data_question) * 1.0;
-
+        $potensiPoints = 0;
         $tskkwk_points = 0;
         foreach ($request->data_question as $index => $data) {
             $get_question = Question::where([
@@ -102,6 +102,7 @@ class SubmitTestController extends Controller
                 if ($is_true == 1) {
                     $points += $get_question->point;
                     $tskkwk_points += 1 * 1.667;
+                    $potensiPoints += 1;
                 }
             }
 
@@ -184,9 +185,9 @@ class SubmitTestController extends Controller
                     'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
                     'attempt' => $count + 1,
-                    'score' => round(($points / $total_questions) * 600.0 + 200.0),
+                    'score' => round(($potensiPoints / $total_questions) * 600.0 + 200.0),
                 ]);
-                $score = round(($points / $total_questions) * 600.0 + 200.0);
+                $score = round(($potensiPoints / $total_questions) * 600.0 + 200.0);
             } else if ($test->test_type == 'IRT') {
                 // cek apakah sudah ada di IRTpoint
                 $check_irt_point = IrtPoint::where([
