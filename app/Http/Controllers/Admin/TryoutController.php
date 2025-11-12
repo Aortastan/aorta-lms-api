@@ -114,6 +114,8 @@ class TryoutController extends Controller
                     'test_uuid' => $data1['test_uuid'],
                     'attempt' => $data1['attempt'],
                     'duration' => $data1['duration'],
+                    'duration_per_question' => $data1['duration_per_question'],
+                    'duration_type' => $data1['duration_type'],
                     'max_point' => $data1['max_point'],
                     'test_type' => $data1['test']['test_type'],
                     'test_title' => $data1['test']['test_title'],
@@ -265,7 +267,10 @@ class TryoutController extends Controller
                     'attempt' => $test['attempt'],
                     'duration' => $test['duration'],
                     'max_point' => $test['max_point'],
-                    'passing_score' => $test['test_passing_score']
+                    'passing_score' => $test['test_passing_score'],
+                    'duration_per_question' => $test['duration_per_question'],
+                    'duration_type' => $test['duration_type'],
+                    'duration_type' => $test['duration_type'],
                 ]);
             }
         }
