@@ -184,9 +184,9 @@ class SubmitTestController extends Controller
                     'package_uuid' => $get_package->uuid,
                     'package_test_uuid' => $user_session->package_test_uuid,
                     'attempt' => $count + 1,
-                    'score' => round(($points * 600.0 / $total_questions) + 200.0),
+                    'score' => round(($points / $total_questions) * 600.0 + 200.0),
                 ]);
-                $score = round(($points * 600.0 / $total_questions) + 200.0);
+                $score = round(($points / $total_questions) * 600.0 + 200.0);
             } else if ($test->test_type == 'IRT') {
                 // cek apakah sudah ada di IRTpoint
                 $check_irt_point = IrtPoint::where([
