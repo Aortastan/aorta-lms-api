@@ -65,6 +65,10 @@ class SubmitTestController extends Controller
                 'question_uuid' => $data['question_uuid']
             ])->get();
 
+            if (count($get_answers) == 0) {
+                $is_true = 0;
+            }
+
             foreach ($get_answers as $index1 => $answer) {
                 $is_selected = in_array($answer['uuid'], $data['answer_uuid']) ? 1 : 0;
 
