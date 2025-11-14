@@ -21,6 +21,8 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RankingQuestionExport;
 use App\Exports\StudentTryoutExport;
 use Log;
+use ZipArchive;
+
 
 
 class TryoutController extends Controller
@@ -520,19 +522,24 @@ class TryoutController extends Controller
 
                     // Calculate segment average if there are tests
                     if ($test_count > 0) {
-                        $total_score += ($segment_score / max(1, $test_count));
+                        if ($tryout)
+                            $total_score += ($segment_score / max(1, $test_count));
                         $segment_count++;
                     }
                 }
 
                 // Calculate overall average if there are segments
                 if ($segment_count > 0) {
+                    $testPotensi = collect($tryout_segment->tryoutSegmentTests)->every(function ($test) {
+                        return $test->test_type === "Tes Potensi" ? true : false;
+                    });
+
                     $tryout_result[] = [
                         "user_uuid" => $user_attempt['user_uuid'],
                         "name" => $user_attempt['user_name'],
                         "tryout_uuid" => $tryout_uuid,
                         'tryout_name' => $tryout->title,
-                        'score' => intval($total_score),
+                        'score' => $testPotensi ? intval($total_score) + 200 : intval($total_score),
                     ];
                 }
             }
