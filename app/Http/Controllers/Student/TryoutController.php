@@ -492,11 +492,15 @@ class TryoutController extends Controller
         $student_attempts = [];
         $do_repeat = true;
         $attempt = 1;
+        $testPotensi = false;
         while ($do_repeat) {
             $do_repeat = false;
             $list_score_per_segment = [];
             $segment_results = [];
             foreach ($tryout['tryoutSegments'] as $index => $tryout_segment) {
+                $testPotensi = collect($tryout_segment['tryoutSegmentTests'])->every(function ($segment) {
+                    return $segment->test->test_type === "Tes Potensi" ? true : false;
+                });
                 $list_score = [];
                 $formattedResult = [];
                 $countSegment = 0;
@@ -552,10 +556,12 @@ class TryoutController extends Controller
                 $average = $total / $countSegment;
 
                 $list_score_per_segment[] = $average;
+                $totalScore = $total;
+                $totalScore += $testPotensi ? 200 : 0;
                 $segment_results[] = [
                     "tryout_segment_uuid" => $tryout_segment['uuid'],
                     'segment_name' => $tryout_segment['title'],
-                    'segment_score' => intval($total),
+                    'segment_score' => intval($totalScore),
                     'segment_result' => $formattedResult,
                 ];
             }
@@ -568,6 +574,11 @@ class TryoutController extends Controller
 
             // Menghitung rata-rata
             $average = $total / $count;
+            $testPotensi = collect($tryout_segment['tryoutSegmentTests'])->every(function ($segment) {
+                return $segment->test->test_type === "Tes Potensi" ? true : false;
+            });
+            $totalScore = $total;
+            $totalScore += $testPotensi ? 200 : 0;
             $tryout_result = [
                 "tryout_uuid" => $tryout_uuid,
                 'tryout_name' => $tryout['title'],
