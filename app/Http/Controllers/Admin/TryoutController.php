@@ -183,11 +183,11 @@ class TryoutController extends Controller
             ], 404);
         }
 
-        if ($tryout->status == "Published") {
-            return response()->json([
-                'message' => 'tryout already published, you cannot edit this tryout.',
-            ], 422);
-        }
+        // if ($tryout->status == "Published") {
+        //     return response()->json([
+        //         'message' => 'tryout already published, you cannot edit this tryout.',
+        //     ], 422);
+        // }
 
         $validate = [
             'title' => 'required',
