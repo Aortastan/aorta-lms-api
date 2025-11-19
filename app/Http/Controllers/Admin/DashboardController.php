@@ -15,8 +15,8 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $startDate = $request->input('startDate', Carbon::now()->startOfMonth());
-        $endDate = $request->input('endDate', Carbon::now()->endOfMonth());
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth());
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth());
 
         $data["student_total"] = User::where('role', 'student')->whereBetween('created_at', [$startDate, $endDate])->count();
         $data['package_sold_total'] = PurchasedPackage::whereBetween('created_at', [$startDate, $endDate])->count();
