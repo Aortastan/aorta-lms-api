@@ -19,6 +19,8 @@ Route::get('', function () {
     return response()->json(['message' => 'Welcome to Production API']);
 });
 
+Route::get('test-dashboard', 'Admin\DashboardController@index')->name('get');
+
 Route::get('test', function () {
     $user = App\Models\User::all();
     return response()->json(['message' => 'test', 'user' => $user]);

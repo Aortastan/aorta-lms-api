@@ -15,39 +15,14 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $data["student_total"] = User::where('role', 'student')->count();
-        $data['package_sold_total'] = PurchasedPackage::count();
-        $data['transaction_total'] = Transaction::where('transaction_status', 'settled')->count();
-        $data['revenue_total'] = Transaction::where('transaction_status', 'settled')->sum('transaction_amount');
+        $startDate = $request->input('startDate', Carbon::now()->startOfMonth());
+        $endDate = $request->input('endDate', Carbon::now()->endOfMonth());
 
-        // dd($request->input("date"));
-        $year = $request->input('year', now()->year);
-        $month = $request->input('month', now()->month);
-        $day = $request->input("day", now()->day);
+        $data["student_total"] = User::where('role', 'student')->whereBetween('created_at', [$startDate, $endDate])->count();
+        $data['package_sold_total'] = PurchasedPackage::whereBetween('created_at', [$startDate, $endDate])->count();
+        $data['transaction_total'] = Transaction::where('transaction_status', 'settled')->whereBetween('created_at', [$startDate, $endDate])->count();
+        $data['revenue_total'] = Transaction::where('transaction_status', 'settled')->whereBetween('created_at', [$startDate, $endDate])->sum('transaction_amount');
 
-        // If neither month nor year is provided, use the current month and year
-        if (!$request->has('month') && !$request->has('year') && !$request->has('date')) {
-            $year = now()->year;
-            $month = now()->month;
-            $day = now()->day;
-        }
-
-        $startDate = Carbon::createFromDate($year, $month, $day)->startOfDay();
-        $timezone = 'Asia/Jakarta';
-
-        $year = (int) $request->input('year', now($timezone)->year);
-        $month = (int) $request->input('month', now($timezone)->month);
-        $day = $request->input('date'); // might be null
-
-        if ($day !== 'null') {
-            // 🔹 Specific day
-            $startDate = Carbon::createFromDate($year, $month, (int) $day, $timezone)->startOfDay();
-            $endDate   = Carbon::createFromDate($year, $month, (int) $day, $timezone)->endOfDay();
-        } else {
-            // 🔹 Whole month
-            $startDate = Carbon::createFromDate($year, $month, 1, $timezone)->startOfMonth();
-            $endDate   = Carbon::createFromDate($year, $month, 1, $timezone)->endOfMonth();
-        }
 
         // Fetch settled transactions within the specified month
         $settledTransactions = Transaction::where('transaction_status', 'settled')
