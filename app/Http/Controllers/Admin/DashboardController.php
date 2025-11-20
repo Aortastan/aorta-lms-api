@@ -10,47 +10,52 @@ use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\Package;
+use Carbon\CarbonPeriod;
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth());
+        $startDate = Carbon::parse($request->input('start_date', Carbon::now()->startOfMonth()));
+        $endDate   = Carbon::parse($request->input('end_date', Carbon::now()->endOfMonth()));
 
-        $data["student_total"] = User::where('role', 'student')->whereBetween('created_at', [$startDate, $endDate])->count();
+        // Summary numbers
+        $data["student_total"]      = User::where('role', 'student')->whereBetween('created_at', [$startDate, $endDate])->count();
         $data['package_sold_total'] = PurchasedPackage::whereBetween('created_at', [$startDate, $endDate])->count();
-        $data['transaction_total'] = Transaction::where('transaction_status', 'settled')->whereBetween('created_at', [$startDate, $endDate])->count();
-        $data['revenue_total'] = Transaction::where('transaction_status', 'settled')->whereBetween('created_at', [$startDate, $endDate])->sum('transaction_amount');
+        $data['transaction_total']  = Transaction::where('transaction_status', 'settled')->whereBetween('created_at', [$startDate, $endDate])->count();
+        $data['revenue_total']      = Transaction::where('transaction_status', 'settled')->whereBetween('created_at', [$startDate, $endDate])->sum('transaction_amount');
 
-
-        // Fetch settled transactions within the specified month
-        $settledTransactions = Transaction::where('transaction_status', 'settled')
+        // Chart: GROUP BY DATE(created_at)
+        $grouped = Transaction::select(
+            DB::raw("DATE(created_at) as date"),
+            DB::raw("COUNT(*) as count"),
+            DB::raw("SUM(transaction_amount) as sum_amount")
+        )
+            ->where('transaction_status', 'settled')
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->get();
+            ->groupBy(DB::raw("DATE(created_at)"))
+            ->orderBy('date')
+            ->get()
+            ->keyBy('date');
 
-        // Create a range of dates for the entire month
-        $allDates = collect($startDate->toPeriod($endDate, '1 day'))
-            ->map(function ($date) {
-                return $date->format('Y-m-d');
-            });
+        // Build full date range
+        $period = CarbonPeriod::create($startDate, $endDate);
 
-        // Group the transactions by date and count the number of transactions and sum the transaction amounts
-        $chartData = $allDates->map(function ($date) use ($settledTransactions) {
-            $transactionsForDate = $settledTransactions->filter(function ($transaction) use ($date) {
-                return $transaction->created_at->format('Y-m-d') === $date;
-            });
+        $chartData = collect($period)->map(function ($date) use ($grouped) {
+            $formatted = $date->format('Y-m-d');
 
             return [
-                'date' => $date,
-                'count' => $transactionsForDate->count(),
-                'sum_amount' => $transactionsForDate->sum('transaction_amount'),
+                'date'       => $formatted,
+                'count'      => $grouped[$formatted]->count      ?? 0,
+                'sum_amount' => $grouped[$formatted]->sum_amount ?? 0,
             ];
         });
+
         $data['chart_data'] = $chartData;
+
         return response()->json([
             'message' => 'Success get data',
-            'data' => $data,
-        ], 200);
+            'data'    => $data,
+        ]);
     }
 }
