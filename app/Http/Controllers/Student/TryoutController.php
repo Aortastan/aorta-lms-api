@@ -582,7 +582,8 @@ class TryoutController extends Controller
             $tryout_result = [
                 "tryout_uuid" => $tryout_uuid,
                 'tryout_name' => $tryout['title'],
-                'score' => intval($totalScore),
+                'score' => intval($total),
+                'totalScore' => intval($totalScore),
                 'tryout_result' => $segment_results,
             ];
 
