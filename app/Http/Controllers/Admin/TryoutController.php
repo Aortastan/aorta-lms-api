@@ -253,7 +253,7 @@ class TryoutController extends Controller
 
         foreach ($request->segments as $key => $segmentData) {
             $segment = null;
-            if ($segmentData["segment_uuid"]) {
+            if (isset($segmentData["segment_uuid"]) && !empty($segmentData["segment_uuid"])) {
                 $segment = TryoutSegment::where('uuid', $segmentData['segment_uuid'])->update([
                     'title' => $segmentData['title']
                 ]);
