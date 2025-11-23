@@ -225,6 +225,7 @@ class TryoutController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
+
             $getTest = TryoutSegmentTest::select(
                 'uuid',
                 'test_uuid',
@@ -233,90 +234,86 @@ class TryoutController extends Controller
                 'max_point',
                 'duration_per_question',
                 'duration_type'
-            )
-                ->where(['uuid' => $tryout_uuid])
-                ->first();
+            )->find($tryout_uuid);
 
             if (!$getTest) {
-                return response()->json([
-                    'message' => "Tes tidak ditemukan",
-                ], 404);
+                return response()->json(['message' => "Tes tidak ditemukan"], 404);
             }
 
-            // cek apakah course tersebut sudah pernah dibeli atau belum
-            $checkTestIsPurchasedOrMembership = $this->checkTestIsPurchasedOrMembership($user, $getTest->uuid);
-            if ($checkTestIsPurchasedOrMembership != null) {
-                return $checkTestIsPurchasedOrMembership;
+            // check purchase
+            if ($res = $this->checkTestIsPurchasedOrMembership($user, $getTest->uuid)) {
+                return $res;
             }
 
-            // cek apakah test sudah melewati max attempt
-            $checkTestMaxAttempt = $this->checkTestMaxAttempt($user, $getTest);
-            if ($checkTestMaxAttempt != null) {
-                return $checkTestMaxAttempt;
+            // check max attempt
+            if ($res = $this->checkTestMaxAttempt($user, $getTest)) {
+                return $res;
             }
 
-            // cek session
+            // get session
             $sessionTest = $this->checkTestSession($user, $getTest);
+
+            $data_questions = json_decode($sessionTest->data_question, true);
+
+            // 1 query only
+            $questionUuids = array_column($data_questions, 'question_uuid');
+
+            $questionsMap = Question::whereIn('uuid', $questionUuids)
+                ->with('answers')
+                ->get()
+                ->keyBy('uuid');
 
             $questions = [];
 
-            $data_questions = json_decode($sessionTest->data_question);
+            foreach ($data_questions as $data) {
+                $q = $questionsMap[$data['question_uuid']] ?? null;
+                if (!$q) continue;
 
-
-            foreach ($data_questions as $index => $data) {
-                $get_question = Question::where([
-                    'uuid' => $data->question_uuid,
-                ])->with(['answers'])->first();
+                // optimize answer selection check
+                $selected = array_flip($data['answer_uuid'] ?? []);
 
                 $answers = [];
-
-                foreach ($get_question->answers as $index1 => $answer) {
-                    $is_selected = 0;
-                    if (in_array($answer['uuid'], $data->answer_uuid)) {
-                        $is_selected = 1;
-                    }
-
+                foreach ($q->answers as $answer) {
                     $answers[] = [
-                        'answer_uuid' => $answer['uuid'],
-                        'answer' => $answer['answer'],
-                        'image' => $answer['image'],
-                        'is_selected' => $is_selected,
+                        'answer_uuid'  => $answer->uuid,
+                        'answer'       => $answer->answer,
+                        'image'        => $answer->image,
+                        'is_selected'  => isset($selected[$answer->uuid]) ? 1 : 0,
                     ];
                 }
 
                 $questions[] = [
-                    'question_uuid' => $data->question_uuid,
-                    'status' => $data->status,
-                    'title' => $get_question->title,
-                    'question_type' => $get_question->question_type,
-                    'question' => $get_question->question,
-                    'file_path' => $get_question->file_path,
-                    'url_path' => $get_question->url_path,
-                    'type' => $get_question->type,
-                    'hint' => $get_question->hint,
-                    'answers' => $answers,
-                    'timer' => $get_question->timer,
+                    'question_uuid'       => $data['question_uuid'],
+                    'status'              => $data['status'],
+                    'title'               => $q->title,
+                    'question_type'       => $q->question_type,
+                    'question'            => $q->question,
+                    'file_path'           => $q->file_path,
+                    'url_path'            => $q->url_path,
+                    'type'                => $q->type,
+                    'hint'                => $q->hint,
+                    'answers'             => $answers,
+                    'timer'               => $q->timer,
                 ];
             }
 
             $test = [
-                'session_uuid' => $sessionTest->uuid,
-                'duration_left' => $sessionTest->duration_left,
+                'session_uuid'         => $sessionTest->uuid,
+                'duration_left'        => $sessionTest->duration_left,
                 'duration_per_question' => $getTest->duration_per_question,
-                'duration_type' => $getTest->duration_type,
-                'questions' => $questions,
+                'duration_type'        => $getTest->duration_type,
+                'questions'            => $questions,
             ];
 
             return response()->json([
                 'message' => "Sukses mengambil data",
                 'question' => $test,
-            ], 200);
+            ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e,
-            ], 404);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
+
 
     public function checkTestMaxAttempt($user, $test)
     {
