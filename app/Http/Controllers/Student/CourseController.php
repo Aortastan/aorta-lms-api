@@ -89,7 +89,8 @@ class CourseController extends Controller
         }
 
         $pdf->Output($output, 'F');
-        return response()->download($output);
+
+        return response()->download($output)->deleteFileAfterSend(true);
     }
 
 
