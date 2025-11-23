@@ -278,7 +278,7 @@ class TryoutController extends Controller
                     ]);
                 } else {
                     TryoutSegmentTest::create([
-                        'tryout_segment_uuid' => $segmentData["segment_uuid"] ? $segmentData["segment_uuid"] : $segment->uuid,
+                        'tryout_segment_uuid' => isset($segmentData["segment_uuid"]) ? $segmentData["segment_uuid"] : $segment->uuid,
                         'test_uuid' => $test['test_uuid'],
                         'attempt' => $test['attempt'],
                         'duration' => $test['duration'],
