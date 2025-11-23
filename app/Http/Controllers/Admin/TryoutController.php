@@ -222,11 +222,11 @@ class TryoutController extends Controller
             ], 404);
         }
 
-        if ($tryout->status == "Published") {
-            return response()->json([
-                'message' => 'tryout already published, you cannot edit this tryout.',
-            ], 422);
-        }
+        // if ($tryout->status == "Published") {
+        //     return response()->json([
+        //         'message' => 'tryout already published, you cannot edit this tryout.',
+        //     ], 422);
+        // }
 
         $validate = [
             'segments' => 'required|array',
@@ -247,33 +247,46 @@ class TryoutController extends Controller
             ], 422);
         }
 
-        TryoutSegment::where([
-            'tryout_uuid' => $uuid
-        ])->delete();
-        foreach ($tryout['tryoutSegments'] as $key => $data) {
-            TryoutSegmentTest::where([
-                'tryout_segment_uuid' => $data['uuid'],
-            ])->delete();
-        }
+        // TryoutSegment::where([
+        //     'tryout_uuid' => $uuid
+        // ])->delete();
 
         foreach ($request->segments as $key => $segmentData) {
-            $segment = TryoutSegment::create([
-                'tryout_uuid' => $uuid,
-                'title' => $segmentData['title']
-            ]);
+            if ($segmentData["segment_uuid"]) {
+                $segment = TryoutSegment::where('uuid', $segmentData['segment_uuid'])->update([
+                    'title' => $segmentData['title']
+                ]);
+            } else {
+                $segment = TryoutSegment::create([
+                    'tryout_uuid' => $uuid,
+                    'title' => $segmentData['title']
+                ]);
+            }
 
             foreach ($segmentData['tests'] as $key1 => $test) {
-                TryoutSegmentTest::create([
-                    'tryout_segment_uuid' => $segment->uuid,
-                    'test_uuid' => $test['test_uuid'],
-                    'attempt' => $test['attempt'],
-                    'duration' => $test['duration'],
-                    'max_point' => $test['max_point'],
-                    'passing_score' => $test['test_passing_score'],
-                    'duration_per_question' => $test['duration_per_question'],
-                    'duration_type' => $test['duration_type'],
-                    'duration_type' => $test['duration_type'],
-                ]);
+                if ($test["segment_test_uuid"]) {
+                    TryoutSegmentTest::where("uuid", $test["segment_test_uuid"])->update([
+                        'tryout_segment_uuid' => $segmentData["segment_uuid"],
+                        'test_uuid' => $test['test_uuid'],
+                        'attempt' => $test['attempt'],
+                        'duration' => $test['duration'],
+                        'max_point' => $test['max_point'],
+                        'passing_score' => $test['test_passing_score'],
+                        'duration_per_question' => $test['duration_per_question'],
+                        'duration_type' => $test['duration_type'],
+                    ]);
+                } else {
+                    TryoutSegmentTest::create([
+                        'tryout_segment_uuid' => $segment->uuid,
+                        'test_uuid' => $test['test_uuid'],
+                        'attempt' => $test['attempt'],
+                        'duration' => $test['duration'],
+                        'max_point' => $test['max_point'],
+                        'passing_score' => $test['test_passing_score'],
+                        'duration_per_question' => $test['duration_per_question'],
+                        'duration_type' => $test['duration_type'],
+                    ]);
+                }
             }
         }
 
