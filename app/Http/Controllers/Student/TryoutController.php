@@ -300,6 +300,7 @@ class TryoutController extends Controller
             $test = [
                 'session_uuid'         => $sessionTest->uuid,
                 'duration_left'        => $sessionTest->duration_left,
+                'test_uuid'            => $getTest->test_uuid,
                 'duration_per_question' => $getTest->duration_per_question,
                 'duration_type'        => $getTest->duration_type,
                 'questions'            => $questions,
