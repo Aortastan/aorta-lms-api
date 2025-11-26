@@ -38,10 +38,6 @@ class SubmitTestController extends Controller
             'data_question' => 'required',
         ];
 
-        $request->data_question = count($request->data_question) === 0 ? $user_session->data_question : $request->data_question;
-        $request->test_uuid = $request->test_uuid == null ? $user_session->test_uuid : $request->test_uuid;
-        $request->duration_left = $request->duration_left == null ? $user_session->duration_left : $request->duration_left;
-
         $validator = Validator::make($request->all(), $validate);
 
         if ($validator->fails()) {
