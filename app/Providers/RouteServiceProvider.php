@@ -73,7 +73,7 @@ class RouteServiceProvider extends ServiceProvider
     protected function mapApiRoutes()
     {
         Route::prefix('api')
-            ->middleware('api')
+            ->middleware(['api', 'throttle:500,1']) // dari 60 => 200 per menit
             ->namespace($this->namespace)
             ->group(base_path('routes/api.php'));
     }
