@@ -57,7 +57,10 @@ trait QuestionTrait
                 }
             }
 
-            $questions = $questions->limit(100)->get();
+            $questions = $questions
+->limit(1000)
+->orderBy('questions.created_at', 'desc')
+->get();
 
             foreach ($questions as $index => $question) {
                 $check_question_test = QuestionTest::where([
