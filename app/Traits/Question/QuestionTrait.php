@@ -57,7 +57,7 @@ trait QuestionTrait
                 }
             }
 
-            $questions = $questions->paginate(100);
+            $questions = $questions->limit(100)->get();
 
             foreach ($questions as $index => $question) {
                 $check_question_test = QuestionTest::where([
