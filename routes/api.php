@@ -215,7 +215,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{uuid}', 'Admin\TestController@show')->name('show');
             Route::post('', 'Admin\TestController@store')->name('store');
             Route::post('duplicate/{uuid}', 'Admin\TestController@duplicate')->name('duplicate');
-            Route::put('{uuid}', 'Admin\TestController@update')->name('update');
+            Route::post('{uuid}', 'Admin\TestController@update')->name('update');
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
             Route::post('update-tags/{uuid}', 'Admin\TestController@updateTag')->name('update.tag');
             Route::get('preview/{uuid}', 'Admin\TestController@preview')->name('preview');

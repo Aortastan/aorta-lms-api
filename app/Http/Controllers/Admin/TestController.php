@@ -102,7 +102,7 @@ class TestController extends Controller
     }
 
     public function show(Request $request, $uuid){
-        $test = Test::select('uuid', 'test_type', 'title', 'student_title_display', 'passing_score', 'status', 'test_category')
+        $test = Test::select('uuid', 'test_type', 'title', 'student_title_display', 'passing_score', 'status', 'test_category', 'opening_audio')
         ->where([
             'uuid' => $uuid
         ])->with(['questions.question.subject'])->first();
@@ -137,6 +137,7 @@ class TestController extends Controller
             'passing_score' => $test['passing_score'],
             'status' => $test['status'],
             'test_category' => $test['test_category'],
+            'opening_audio' => $test['opening_audio'],
             'questions' => $getQuestion,
         ];
 
@@ -553,6 +554,7 @@ class TestController extends Controller
                 'message' => 'Test not found',
             ], 404);
         }
+        // dd($request);
 
         $validate = [
             'test_type' => 'required',
@@ -572,6 +574,13 @@ class TestController extends Controller
             ], 422);
         }
 
+        $path = null;
+        if ($request->hasFile('opening_audio')) {
+            $file = $request->file('opening_audio');
+
+            $path = $file->store('opening_audio', 'public');
+        }
+
         Test::where(['uuid' => $uuid])->update([
             'test_type' => $request->test_type,
             'title' => $request->title,
@@ -579,6 +588,7 @@ class TestController extends Controller
             'passing_score' => $request->passing_score,
             'test_category' => $request->test_category,
             'status' => $request->status,
+            'opening_audio' => $path
         ]);
 
         return response()->json([
