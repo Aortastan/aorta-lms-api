@@ -554,7 +554,6 @@ class TestController extends Controller
                 'message' => 'Test not found',
             ], 404);
         }
-        // dd($request);
 
         $validate = [
             'test_type' => 'required',
@@ -581,6 +580,12 @@ class TestController extends Controller
             $path = $file->store('opening_audio', 'public');
         }
 
+        if ($request->hasFile('audio_test')) {
+            $file = $request->file('audio_test');
+
+            $pathAudioTest = $file->store('audio_test', 'public');
+        }
+
         Test::where(['uuid' => $uuid])->update([
             'test_type' => $request->test_type,
             'title' => $request->title,
@@ -588,7 +593,8 @@ class TestController extends Controller
             'passing_score' => $request->passing_score,
             'test_category' => $request->test_category,
             'status' => $request->status,
-            'opening_audio' => $path
+            'opening_audio' => $path,
+            'audio_test' => $pathAudioTest
         ]);
 
         return response()->json([
