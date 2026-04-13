@@ -14,7 +14,7 @@ class AddAudioTestToTests extends Migration
     public function up()
     {
         Schema::table('tests', function (Blueprint $table) {
-            $table->string('opening_audio')->nullable();
+            $table->string('audio_test')->nullable();
         });
     }
 
