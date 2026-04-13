@@ -226,7 +226,7 @@ class TryoutController extends Controller
         try {
             $user = JWTAuth::parseToken()->authenticate();
 
-            $getTest = TryoutSegmentTest::select(
+            $getTest = TryoutSegmentTest::with('test')->select(
                 'uuid',
                 'test_uuid',
                 'attempt',
@@ -303,6 +303,8 @@ class TryoutController extends Controller
                 'test_uuid'            => $getTest->test_uuid,
                 'duration_per_question' => $getTest->duration_per_question,
                 'duration_type'        => $getTest->duration_type,
+                'opening_audio' => $getTest->test->opening_audio,
+                'audio_test' => $getTest->test->audio_test,
                 'questions'            => $questions,
             ];
 
