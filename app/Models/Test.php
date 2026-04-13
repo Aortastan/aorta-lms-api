@@ -25,6 +25,7 @@ class Test extends Model
         'student_title_display',
         'passing_score',
         'opening_audio',
+        'audio_test',
     ];
 
     public function questions()
