@@ -12,7 +12,7 @@ trait QuestionTrait
                 'questions.uuid',
                 'questions.title',
                 'questions.question_type',
-                'questions.question',
+                // 'questions.question',
                 'questions.file_path',
                 'questions.url_path',
                 'questions.file_size',
@@ -25,8 +25,9 @@ trait QuestionTrait
                 'subjects.name as subject_name',
                 'users.name as author_name',
                 'users.avatar as author_image')
-            ->join('users', 'questions.author_uuid', '=', 'users.uuid')
-            ->join('subjects', 'questions.subject_uuid', '=', 'subjects.uuid');
+            ->leftJoin('users', 'questions.author_uuid', '=', 'users.uuid')
+            ->leftJoin('subjects', 'questions.subject_uuid', '=', 'subjects.uuid')
+            ->leftJoin("question_tests", "questions.uuid", "=", "question_tests.question_uuid");
 
             if($search != null){
                 $questions->where('questions.title', 'LIKE', '%'.$search.'%');
@@ -48,31 +49,22 @@ trait QuestionTrait
                 $questions->where('questions.subject_uuid', $subject_uuid);
             }
 
-            if($orderBy != null && $order != null){
-                $orderByArray = ['question_type', 'question', 'type', 'title', 'status'];
-                $orderArray = ['asc', 'desc'];
-
-                if(in_array($orderBy, $orderByArray) && in_array($order, $orderArray)){
-                    $questions->orderBy('questions.' . $orderBy, $order);
-                }
-            }
-
             $questions = $questions
-->limit(1000)
-->orderBy('questions.created_at', 'desc')
-->get();
+            ->limit(1000)
+            ->orderBy('questions.created_at', 'desc')
+            ->get();
 
-            foreach ($questions as $index => $question) {
-                $check_question_test = QuestionTest::where([
-                    'question_uuid' => $question->uuid,
-                ])->first();
+            // foreach ($questions as $index => $question) {
+            //     // $check_question_test = QuestionTest::where([
+            //     //     'question_uuid' => $question->uuid,
+            //     // ])->first();
 
-                if($check_question_test){
-                    $question->deletable = false;
-                }else{
-                    $question->deletable = true;
-                }
-            }
+            //     // if($check_question_test){
+            //     //     $question->deletable = false;
+            //     // }else{
+            //     //     $question->deletable = true;
+            //     // }
+            // }
 
             return response()->json([
                 'message' => 'Success get data',
@@ -81,7 +73,8 @@ trait QuestionTrait
         }
         catch(\Exception $e){
             return response()->json([
-                'message' => $e,
+                'message' => $e->getMessage(),
+                'test' => $e
             ], 404);
         }
     }

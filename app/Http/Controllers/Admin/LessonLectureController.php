@@ -16,25 +16,26 @@ use File;
 
 class LessonLectureController extends Controller
 {
-    public function show($uuid){
-        try{
+    public function show($uuid)
+    {
+        try {
             $lecture = LessonLecture::select('uuid', 'lesson_uuid', 'title', 'body', 'file_path', 'url_path', 'file_size', 'file_duration', 'type')->where(['uuid' => $uuid])->first();
 
             return response()->json([
                 'message' => 'Success get data',
                 'lecture' => $lecture,
             ], 200);
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e,
             ], 404);
         }
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $checkLesson = CourseLesson::where(['uuid' => $request->lesson_uuid])->first();
-        if(!$checkLesson){
+        if (!$checkLesson) {
             return response()->json([
                 'message' => 'Lesson not found',
             ], 404);
@@ -67,12 +68,13 @@ class LessonLectureController extends Controller
                 'title' => $lecture->title,
             ],
         ], 200);
-
     }
 
-    public function update(Request $request, $uuid){
+    public function update(Request $request, $uuid)
+    {
+
         $checkLecture = LessonLecture::where(['uuid' => $uuid])->first();
-        if(!$checkLecture){
+        if (!$checkLecture) {
             return response()->json([
                 'message' => 'Lecture not found',
             ], 404);
@@ -84,11 +86,11 @@ class LessonLectureController extends Controller
             'type' => 'required|in:video,youtube,text,image,pdf,slide document,audio',
         ];
 
-        if($request->type == "youtube"){
+        if ($request->type == "youtube") {
             $validate['url_path'] = "required";
         }
 
-        if($request->type == "youtube" || $request->type == "video" || $request->type == "audio"){
+        if ($request->type == "youtube" || $request->type == "video" || $request->type == "audio") {
             $validate['file_duration'] = "required";
         }
 
@@ -106,31 +108,61 @@ class LessonLectureController extends Controller
         $file_size = null;
         $file_duration = null;
 
-        if($request->type == "text" || $request->type == "youtube"){
-            if (File::exists(public_path('storage/'.$checkLecture->file_path))) {
-                File::delete(public_path('storage/'.$checkLecture->file_path));
+        if ($request->type == "text" || $request->type == "youtube") {
+            if (File::exists(public_path('storage/' . $checkLecture->file_path))) {
+                File::delete(public_path('storage/' . $checkLecture->file_path));
             }
         }
 
-        if($request->type != "youtube" && $request->type != "text"){
-            if(!is_string($request->file)){
-                $file_size = $request->file->getSize();
-                $file_path = $request->file->store('lectures', 'public');
-                $file_size = round($file_size / (1024 * 1024), 2);
-                if (File::exists(public_path('storage/'.$checkLecture->file_path))) {
-                    File::delete(public_path('storage/'.$checkLecture->file_path));
+        if ($request->type != "youtube" && $request->type != "text") {
+            if (!is_string($request->file)) {
+
+                $uploadedFile = $request->file;
+
+                // 🔥 PDF → convert dulu
+                if ($request->type === "pdf") {
+
+                    // simpan sementara
+                    $tempPath = $uploadedFile->store('lectures/temp', 'public');
+                    $fullTempPath = storage_path('app/public/' . $tempPath);
+
+                    $convertedPath = $this->convertPdf($fullTempPath);
+
+                    if (file_exists($convertedPath)) {
+
+                        $filename = 'lectures/converted_' . uniqid() . '.pdf';
+
+                        \Storage::disk('public')->put(
+                            $filename,
+                            file_get_contents($convertedPath)
+                        );
+
+                        $file_path = $filename;
+                        $file_size = round(filesize($convertedPath) / (1024 * 1024), 2);
+
+                        // cleanup
+                        @unlink($fullTempPath);
+                        if ($convertedPath !== $fullTempPath) {
+                            @unlink($convertedPath);
+                        }
+                    } else {
+                        // fallback kalau convert gagal
+                        $file_size = round($uploadedFile->getSize() / (1024 * 1024), 2);
+                        $file_path = $uploadedFile->store('lectures', 'public');
+                    }
+                } else {
+                    $file_path = $checkLecture->file_path;
+                    $file_size = $checkLecture->file_size;
                 }
-            }else{
-                $file_path = $checkLecture->file_path;
-                $file_size = $checkLecture->file_size;
             }
         }
 
-        if($request->type == "youtube"){
+
+        if ($request->type == "youtube") {
             $url_path = $request->url_path;
         }
 
-        if($request->type == "youtube" || $request->type == "video" || $request->type == "audio"){
+        if ($request->type == "youtube" || $request->type == "video" || $request->type == "audio") {
             $file_duration = $request->file_duration;
         }
 
@@ -149,15 +181,29 @@ class LessonLectureController extends Controller
         return response()->json([
             'message' => 'Success update lecture'
         ], 200);
-
     }
 
-    public function delete(Request $request, $uuid){
+    private function convertPdf($inputPath)
+    {
+        $outputPath = storage_path('app/public/lectures/converted_' . uniqid() . '.pdf');
+
+        $command = "gs -o {$outputPath} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dBATCH -dQUIET {$inputPath} 2>&1";
+        exec($command, $outputLog, $returnVar);
+
+        if ($returnVar === 0 && file_exists($outputPath)) {
+            return $outputPath;
+        }
+
+        return $inputPath;
+    }
+
+    public function delete(Request $request, $uuid)
+    {
         $get_lecture = LessonLecture::where([
             'uuid' => $uuid,
         ])->first();
 
-        if($get_lecture == null){
+        if ($get_lecture == null) {
             return response()->json([
                 'message' => 'Data not found',
             ]);
@@ -177,9 +223,9 @@ class LessonLectureController extends Controller
         //     ]);
         // }
 
-        if($get_lecture->file_path){
-            if (File::exists(public_path('storage/'.$get_lecture->file_path))) {
-                File::delete(public_path('storage/'.$get_lecture->file_path));
+        if ($get_lecture->file_path) {
+            if (File::exists(public_path('storage/' . $get_lecture->file_path))) {
+                File::delete(public_path('storage/' . $get_lecture->file_path));
             }
         }
 

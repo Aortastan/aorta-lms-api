@@ -35,15 +35,8 @@ class TransactionExport implements FromCollection, WithHeadings, WithStyles
     {
 
 
-        $query = Transaction::with(['detailTransaction', 'detailTransaction.package', 'user', 'payment']);
+        $query = Transaction::whereBetween("created_at", [$this->startDate, $this->endDate])->with(['detailTransaction', 'detailTransaction.package', 'user', 'payment']);
 
-        // Apply date filtering if provided
-        if ($this->startDate) {
-            $query->whereDate('created_at', '>=', $this->startDate);
-        }
-        if ($this->endDate) {
-            $query->whereDate('created_at', '<=', $this->endDate);
-        }
 
 
         if ($this->cleanedPackage) {

@@ -5,9 +5,13 @@ namespace App\Models;
 use Ramsey\Uuid\Uuid;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 class Coupon extends Model
 {
+    use SoftDeletes;
+
     public $incrementing = false; // Non-incrementing primary key
     protected $keyType = 'string'; // Primary key type is string
     protected $primaryKey = 'uuid'; // Name of the UUID column
@@ -31,6 +35,13 @@ class Coupon extends Model
         'package_uuid',
         'category_uuid',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope('not_deleted', function (Builder $builder) {
+            $builder->whereNull('deleted_at');
+        });
+    }
 
     public function claimed()
     {

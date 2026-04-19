@@ -11,16 +11,22 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
+
+            $startDate = Carbon::parse($request->input('startDate', Carbon::now()->startOfMonth()));
+            $endDate   = Carbon::parse($request->input('endDate', Carbon::now()->endOfMonth()));
             // Mengambil data transaksi tanpa relasi terlebih dahulu
-            $get_transactions = Transaction::with(['user', 'detailTransaction', 'claimedCoupons', 'claimedCoupons.coupon'])->get();
-            \Log::info('Transactions: ', $get_transactions->toArray());
+            $get_transactions = Transaction::whereBetween('created_at', [$startDate, $endDate])->with(['user', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon'])->get();
 
             if ($get_transactions->isEmpty()) {
                 return response()->json([
                     'message' => 'No transactions found.',
+                    'date_range' => [
+                        'start_date' => $startDate->toDateString(),
+                        'end_date' => $endDate->toDateString()
+                    ],
                 ]);
             }
 
@@ -48,9 +54,9 @@ class TransactionController extends Controller
                     'packages' => $packages,
                     'claimed_coupons' => $transaction->claimedCoupons ? $transaction->claimedCoupons->pluck('coupon.code')->implode(', ') : 'N/A',
                     "url" => $transaction->url,
-                    "expired_date" => $transaction->expiry_date, // Format here
-                    "created_at" => $transaction->created_at, // Format here
-                    "updated_at" => $transaction->updated_at, // Format here if needed
+                    "expired_date" => Carbon::parse($transaction->expiry_date)->format('d/m/Y H:i:s'),
+                    "created_at" => Carbon::parse($transaction->created_at)->format('d/m/Y H:i:s'),
+                    "updated_at" => Carbon::parse($transaction->updated_at)->format('d/m/Y H:i:s'),
                 ];
             }
 
@@ -68,11 +74,18 @@ class TransactionController extends Controller
 
     public function exportTransaction(Request $request)
     {
-        $startDate = $request->startDate;
-        $endDate = $request->endDate;
-        $selectedPackage = $request->selectedPackage;
+        // $startDate = $request->input('startDate');
+        // $endDate = $request->input('endDate');
+        $startDate = Carbon::parse($request->input('startDate', Carbon::now()->startOfMonth()));
+        $endDate   = Carbon::parse($request->input('endDate', Carbon::now()->endOfMonth()));
+        if (!$startDate || !$endDate) {
+            return response()->json([
+                'message' => 'startDate and endDate parameters are required.'
+            ], 400);
+        }
+        $selectedPackage = $request->input('selectedPackage');
         $cleanedPackage = str_replace('+', ' ', $selectedPackage);
 
-        return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage), 'transaction.xlsx');
+        return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage), $startDate->toDateString() . '-' . $endDate->toDateString() . '-transaction.xlsx');
     }
 }

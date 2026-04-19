@@ -89,6 +89,11 @@ class CourseController extends Controller
         }
 
         $pdf->Output($output, 'F');
+        register_shutdown_function(function () use ($output) {
+            if (file_exists($output)) {
+                @unlink($output);
+            }
+        });
 
         return response()->download($output)->deleteFileAfterSend(true);
     }
