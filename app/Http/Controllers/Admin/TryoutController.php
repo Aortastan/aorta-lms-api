@@ -929,6 +929,7 @@ class TryoutController extends Controller
     public function rankingQuestion($tryout_uuid, Request $request)
     {
         $sortBy = $request->query('sort');
+
         try {
             $tryout = Tryout::where('uuid', $tryout_uuid)
                 ->with(['tryoutSegments.tryoutSegmentTests.studentTryouts'])
@@ -940,7 +941,9 @@ class TryoutController extends Controller
                 ], 404);
             }
 
-            $studentTryouts = $tryout->tryoutSegments->flatMap->tryoutSegmentTests->flatMap->studentTryouts;
+            $studentTryouts = $tryout->tryoutSegments
+                ->flatMap->tryoutSegmentTests
+                ->flatMap->studentTryouts;
 
             $studentTryouts = $studentTryouts->map(function ($item) {
                 $item->data_question = json_decode($item->data_question, true);
@@ -949,8 +952,23 @@ class TryoutController extends Controller
 
             $summary = collect();
 
-            foreach ($studentTryouts as $tryout) {
-                foreach ($tryout->data_question ?? [] as $question) {
+            // 🔥 tampung semua uuid dulu
+            $allQuestionUuids = [];
+
+            foreach ($studentTryouts as $studentTryout) {
+                foreach ($studentTryout->data_question ?? [] as $question) {
+                    if (!isset($question['question_uuid'])) continue;
+
+                    $allQuestionUuids[] = $question['question_uuid'];
+                }
+            }
+
+            // 🔥 ambil semua question dalam 1 query
+            $questionMap = Question::whereIn('uuid', array_unique($allQuestionUuids))
+                ->pluck('question', 'uuid');
+
+            foreach ($studentTryouts as $studentTryout) {
+                foreach ($studentTryout->data_question ?? [] as $question) {
                     if (!isset($question['question_uuid'])) {
                         continue;
                     }
@@ -964,7 +982,8 @@ class TryoutController extends Controller
                     if (!$summary->has($questionUuid)) {
                         $summary->put($questionUuid, [
                             'question_uuid' => $questionUuid,
-                            'question' => Question::where('uuid', $questionUuid)->first()->question,
+                            // 🔥 pakai hasil whereIn, bukan query per loop
+                            'question' => $questionMap[$questionUuid] ?? null,
                             'total_correct_selected' => 0,
                             'total_incorrect_selected' => 0,
                             'total_participant' => 0,
@@ -981,24 +1000,23 @@ class TryoutController extends Controller
                 }
             }
 
-            // Sorting logic
+            // Sorting (tetap pakai switch biar PHP 7.4 aman)
             $sorted = $summary->values();
 
             switch ($sortBy) {
-                case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
+                case 'wrong_desc':
                     $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
                     break;
-                case 'correct_desc': // Soal benar terbanyak ke paling sedikit
+                case 'correct_desc':
                     $sorted = $sorted->sortByDesc('total_correct_selected')->values();
                     break;
-                case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
+                case 'wrong_asc':
                     $sorted = $sorted->sortBy('total_incorrect_selected')->values();
                     break;
-                case 'correct_asc': // Soal benar paling sedikit ke paling banyak
+                case 'correct_asc':
                     $sorted = $sorted->sortBy('total_correct_selected')->values();
                     break;
                 default:
-                    // Default tetap wrong_desc
                     $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
                     break;
             }
@@ -1007,6 +1025,7 @@ class TryoutController extends Controller
                 'message' => 'Sukses ambil data ranking soal',
                 'data' => $sorted,
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
