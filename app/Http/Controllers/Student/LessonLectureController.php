@@ -17,22 +17,21 @@ use App\Models\MembershipHistory;
 
 class LessonLectureController extends Controller
 {
-    public function show($lecture_uuid){
-        try{
+    public function show($lecture_uuid)
+    {
+        try {
             $user = JWTAuth::parseToken()->authenticate();
 
-            $getLecture = LessonLecture::
-                where(['uuid' => $lecture_uuid])
+            $getLecture = LessonLecture::where(['uuid' => $lecture_uuid])
                 ->first();
 
-            if(!$getLecture){
+            if (!$getLecture) {
                 return response()->json([
                     'message' => "Materi tidak ditemukan",
                 ], 404);
             }
 
-            $getLesson = CourseLesson::
-                where(['uuid' => $getLecture->lesson_uuid])
+            $getLesson = CourseLesson::where(['uuid' => $getLecture->lesson_uuid])
                 ->first();
 
             // cek apakah course uuid tersebut ada
@@ -50,7 +49,7 @@ class LessonLectureController extends Controller
                 $package_uuids[] = $package->package_uuid;
             }
 
-            if(count($package_uuids) <= 0){
+            if (count($package_uuids) <= 0) {
                 return response()->json([
                     'message' => "Paket kursus tidak ditemukan",
                 ]);
@@ -62,14 +61,14 @@ class LessonLectureController extends Controller
             ])->whereIn("package_uuid", $package_uuids)->first();
 
             // jika ternyata tidak ada, maka sekarang cek di membership
-            if($check_purchased_package == null){
+            if ($check_purchased_package == null) {
                 $check_membership_package = MembershipHistory::where([
                     "user_uuid" => $user->uuid,
                 ])
-                ->whereDate('expired_date', '>', now())
-                ->whereIn("package_uuid", $package_uuids)->first();
+                    ->whereDate('expired_date', '>', now())
+                    ->whereIn("package_uuid", $package_uuids)->first();
 
-                if($check_membership_package == null){
+                if ($check_membership_package == null) {
                     return response()->json([
                         'message' => 'Kamu tidak dapat mengakses kursus ini',
                     ]);
@@ -78,11 +77,12 @@ class LessonLectureController extends Controller
 
             $lecture = [];
 
-            if($getLecture){
-                $lecture= [
+            if ($getLecture) {
+                $lecture = [
                     "lecture_uuid" => $lecture_uuid,
                     "title" => $getLecture->title,
                     "body" => $getLecture->body,
+                    "is_download_enabled" => $getLecture->is_download_enabled,
                     "file_path" => $getLecture->file_path,
                     "url_path" => $getLecture->url_path,
                     "file_duration" => $getLecture->file_duration,
@@ -98,7 +98,7 @@ class LessonLectureController extends Controller
                 'lecture_uuid' => $lecture_uuid,
             ])->first();
 
-            if(!$check_student_progress){
+            if (!$check_student_progress) {
                 StudentProgress::create([
                     'user_uuid' => $user->uuid,
                     'course_uuid' => $course->uuid,
@@ -112,8 +112,7 @@ class LessonLectureController extends Controller
                 'message' => 'Sukses mengambil data',
                 'lecture' => $lecture,
             ], 200);
-        }
-        catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e,
             ], 404);

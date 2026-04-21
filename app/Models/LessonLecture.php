@@ -26,6 +26,7 @@ class LessonLecture extends Model
         'file_size',
         'file_duration',
         'type',
+        'is_download_enabled',
     ];
 
     protected static function boot()
