@@ -249,6 +249,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // course management
         Route::group(['prefix' => 'courses', 'as' => 'courses.',], function () {
             Route::get('', 'Admin\CourseController@index')->name('get');
+            Route::post('update-download-pdf', 'Admin\CourseController@updateDownloadPdf')->name('update.download.pdf');
             Route::get('published', 'Admin\CourseController@published')->name('published');
             Route::get('{uuid}', 'Admin\CourseController@show')->name('show');
             Route::post('', 'Admin\CourseController@store')->name('store');

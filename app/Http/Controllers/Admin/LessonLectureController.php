@@ -18,7 +18,7 @@ class LessonLectureController extends Controller
 {
     public function show($uuid){
         try{
-            $lecture = LessonLecture::select('uuid', 'lesson_uuid', 'title', 'body', 'file_path', 'url_path', 'file_size', 'file_duration', 'type')->where(['uuid' => $uuid])->first();
+            $lecture = LessonLecture::select('uuid', 'lesson_uuid', 'title', 'body', 'file_path', 'url_path', 'file_size', 'file_duration', 'type', 'is_download_enabled')->where(['uuid' => $uuid])->first();
 
             return response()->json([
                 'message' => 'Success get data',
