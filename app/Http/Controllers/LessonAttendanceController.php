@@ -207,6 +207,18 @@ class LessonAttendanceController extends Controller
         ], 200);
     }
 
+    public function detail($id)
+    {
+        $resp = LessonAttendances::where('lesson_lecture_uuid', $id)
+            ->where('user_uuid', Auth::id())
+            ->first();
+
+        return response()->json([
+            "message" => "Success",
+            "data" => $resp
+        ], 200);
+    }
+
     /**
      * Update the specified resource in storage.
      *

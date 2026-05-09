@@ -322,6 +322,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::group(['prefix' => 'attendances', 'as' => 'attendances.',], function () {
             Route::get('', 'LessonAttendanceController@index');
             Route::post('', 'LessonAttendanceController@store');
+            Route::get('{lesson_lecture_uuid}', 'LessonAttendanceController@detail');
             Route::post('submit-note', 'LessonAttendanceController@submitNote')->name('submitNote');
         });
 
