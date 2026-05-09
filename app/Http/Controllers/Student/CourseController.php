@@ -192,7 +192,7 @@ class CourseController extends Controller
 
             $getCourseLessons = CourseLesson::select('uuid', 'title')
                 ->where('course_uuid', $uuid)
-                ->with(['lectures'])
+                ->with(['lectures', 'attendances'])
                 ->get();
 
             $courseLessons = [];
@@ -202,6 +202,7 @@ class CourseController extends Controller
                     $lectures[] = [
                         'lecture_uuid' => $lecture->uuid,
                         'title' => $lecture->title,
+                        'attendances' => $lesson->attendances
                     ];
                 }
                 $courseLessons[] = [
@@ -355,7 +356,7 @@ class CourseController extends Controller
 
         $getCourse = Course::where([
             'uuid' => $course_uuid
-        ])->with(['instructor', 'lessons', 'pretestPosttests', 'pretestPosttests.test', 'lessons.lectures', 'lessons.quizzes', 'lessons.assignments'])->first();
+        ])->with(['instructor', 'lessons', 'pretestPosttests', 'pretestPosttests.test', 'lessons.lectures', 'lessons.quizzes', 'lessons.assignments', 'lessons.lectures.attendance'])->first();
 
         $pretest_posttests = [];
         foreach ($getCourse->pretestPosttests as $index => $test) {
@@ -375,6 +376,8 @@ class CourseController extends Controller
                 $isDone = StudentProgress::isLectureDone($lecture_data->uuid, $user->uuid);
                 $lesson_lectures[] = [
                     "lecture_uuid" => $lecture_data->uuid,
+                    "attendance" => $lecture_data->attendance,
+                    "is_attendance_enabled" => $lecture_data->is_attendance_enabled,
                     "title" => $lecture_data->title,
                     "is_done" => $isDone ? 1 : 0,
                 ];

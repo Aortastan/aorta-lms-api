@@ -83,6 +83,7 @@ class LessonLectureController extends Controller
                     "title" => $getLecture->title,
                     "body" => $getLecture->body,
                     "is_download_enabled" => $getLecture->is_download_enabled,
+                    "is_attendance_enabled" => $getLecture->is_attendance_enabled,
                     "file_path" => $getLecture->file_path,
                     "url_path" => $getLecture->url_path,
                     "file_duration" => $getLecture->file_duration,

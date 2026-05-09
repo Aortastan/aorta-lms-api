@@ -27,6 +27,9 @@ class LessonLecture extends Model
         'file_duration',
         'type',
         'is_download_enabled',
+        'is_attendance_enabled',
+        'attendance_started_at',
+        'attendance_ended_at',
     ];
 
     protected static function boot()
@@ -36,5 +39,10 @@ class LessonLecture extends Model
         static::creating(function ($model) {
             $model->uuid = Uuid::uuid4()->toString();
         });
+    }
+
+    public function attendance()
+    {
+        return $this->hasOne(LessonAttendances::class, "lesson_lecture_uuid");
     }
 }
