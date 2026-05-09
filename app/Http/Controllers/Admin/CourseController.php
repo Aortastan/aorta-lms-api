@@ -26,6 +26,7 @@ use File;
 
 use App\Traits\Course\CourseTrait;
 use App\Traits\Course\DuplicateTrait;
+use Carbon\Carbon;
 
 class CourseController extends Controller
 {
@@ -220,6 +221,9 @@ class CourseController extends Controller
                         'lecture_uuid' => $lecture->uuid,
                         'title' => $lecture->title,
                         'is_download_enabled' => $lecture->is_download_enabled,
+                        'is_attendance_enabled' => $lecture->is_attendance_enabled,
+                        'attendance_started_at' => $lecture->attendance_started_at,
+                        'attendance_ended_at' => $lecture->attendance_ended_at,
                     ];
                 }
                 $courseLessons[] = [
@@ -585,14 +589,55 @@ class CourseController extends Controller
                 'message' => 'Lesson Lectures not found'
             ], 404);
         }
+        if($request->has('attendance_ended_at') && !$lessonLectures->attendance_started_at) {
+            return response()->json([
+                'message' => 'Mulai presensi terlebih dahulu'
+            ], 404);    
+        }
 
-        $lessonLectures->update([
-            'is_download_enabled' => $request->is_download_enabled
-        ]);
+        if($request->has('attendance_started_at')) {
+            if($lessonLectures->attendance_started_at) {
+                return response()->json([
+                    'message' => 'Absensi awal sudah dimulai'
+                ], 400);    
+            }
+
+            if($lessonLectures->is_attendance_enabled != 1) {
+                return response()->json([
+                    'message' => 'Aktifkan absensi terlebih dahulu'
+                ], 400);
+            }
+
+            $lessonLectures->update([
+                'attendance_started_at' => Carbon::now()
+            ]);
+        }
+
+        if($request->has('attendance_ended_at')) {
+            if($lessonLectures->attendance_ended_at) {
+                return response()->json([
+                    'message' => 'Absen akhir sudah dimulai'
+                ], 400);    
+            }
+            $lessonLectures->update([
+                'attendance_ended_at' => Carbon::now()
+            ]);
+        }
+
+        if($request->has('is_download_enabled')) {
+            $lessonLectures->update([
+                'is_download_enabled' => $request->is_download_enabled
+            ]);
+        } elseif($request->has('is_attendance_enabled')) {
+            $lessonLectures->update([
+                'is_attendance_enabled' => $request->is_attendance_enabled
+            ]);
+        }
 
 
         return response()->json([
-            'message' => 'Success update lesson lectures',
+            'message' => 'Berhasil',
+            'success' => true
         ], 200);
     }
 

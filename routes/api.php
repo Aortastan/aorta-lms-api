@@ -110,6 +110,12 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
 
     Route::group(['middleware' => ['auth', 'admin', 'verified'], 'prefix' => 'admin', 'as' => 'admin.',], function () {
+
+        Route::get('attendances/{lesson_lecture_uuid}', 'LessonAttendanceController@show');
+        Route::get('attendances/{uuid}/approve', 'LessonAttendanceController@approve');
+        Route::get('attendances/{uuid}/reject', 'LessonAttendanceController@reject');
+
+
         // Dashboard
         Route::get('', 'Admin\DashboardController@index')->name('get');
         Route::get('popular/{package_type}', 'Admin\DashboardController@popularPackages')->name('popular');
@@ -312,6 +318,12 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
 
     Route::group(['middleware' => ['auth', 'student', 'verified'], 'prefix' => 'student', 'as' => 'student.',], function () {
+        // Attendances
+        Route::group(['prefix' => 'attendances', 'as' => 'attendances.',], function () {
+            Route::get('', 'LessonAttendanceController@index');
+            Route::post('', 'LessonAttendanceController@store');
+            Route::post('submit-note', 'LessonAttendanceController@submitNote')->name('submitNote');
+        });
 
         Route::get('/download/course', 'Student\CourseController@downloadCourse')->name('downloadCourse');
         // Dashboard
