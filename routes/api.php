@@ -112,6 +112,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::group(['middleware' => ['auth', 'admin', 'verified'], 'prefix' => 'admin', 'as' => 'admin.',], function () {
 
         Route::get('attendances/{lesson_lecture_uuid}', 'LessonAttendanceController@show');
+        Route::get('attendances/{lesson_lecture_uuid}/export', 'LessonAttendanceController@export');
         Route::get('attendances/{uuid}/approve', 'LessonAttendanceController@approve');
         Route::get('attendances/{uuid}/reject', 'LessonAttendanceController@reject');
 
