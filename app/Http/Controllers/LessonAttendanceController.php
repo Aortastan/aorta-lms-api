@@ -8,8 +8,17 @@ use App\Models\LessonLecture;
 use Auth;
 use Carbon\Carbon;
 
+use App\Exports\AttendanceExport;
+use Maatwebsite\Excel\Facades\Excel;
 class LessonAttendanceController extends Controller
 {
+    public function export($lesson_lecture_uuid)
+    {
+        return Excel::download(
+            new AttendanceExport($lesson_lecture_uuid),
+            'Presensi Materi.xlsx'
+        );
+    }
     public function approve($id)
     {
         try {
@@ -57,12 +66,19 @@ class LessonAttendanceController extends Controller
     public function submitNote(Request $request)
     {
         try {
+            $path = "";
+            if($request->hasFile("note")) {
+                $file = $request->file('note');
+                $path = $file->store('note', 'public');
+            }
+
             LessonAttendances::updateOrCreate([
                 "lesson_lecture_uuid" => $request->lesson_lecture_uuid,
                 "user_uuid" => Auth::id(),
             ], [
                 "lesson_lecture_uuid" => $request->lesson_lecture_uuid,
-                "note" => $request->note,
+                "note" => $path,
+                "note_status" => $request->note_status,
                 "user_uuid" => Auth::id(),
             ]);
 
@@ -195,7 +211,6 @@ class LessonAttendanceController extends Controller
                     ? Carbon::parse($item->end_attendance)
                     ->format('d/m/Y H:i:s')
                     : null;
-                $item->approval_status = $item->note_status;
                 $item->approved_by = $item->note_approved_by;
 
                 return $item;
