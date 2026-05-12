@@ -318,7 +318,12 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     });
 
     Route::group(['middleware' => ['auth', 'student', 'verified'], 'prefix' => 'student', 'as' => 'student.',], function () {
-        // Attendances
+        Route::group(['prefix' => 'annotations', 'as' => 'annotations.',], function () {
+            Route::post('', 'PdfAnnotationsController@store');
+            Route::get('{lesson_lecture_uuid}', 'PdfAnnotationsController@show');
+        });
+        
+            // Attendances
         Route::group(['prefix' => 'attendances', 'as' => 'attendances.',], function () {
             Route::get('', 'LessonAttendanceController@index');
             Route::post('', 'LessonAttendanceController@store');
