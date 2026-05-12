@@ -371,9 +371,19 @@ class CourseController extends Controller
 
         $lessons = [];
         foreach ($getCourse->lessons as $index => $lesson) {
+            $progressPoint = 0;
             $lesson_lectures = [];
             foreach ($lesson->lectures as $index1 => $lecture_data) {
                 $isDone = StudentProgress::isLectureDone($lecture_data->uuid, $user->uuid);
+                if ($lecture_data->attendance) {
+                    if ($lecture_data->attendance->start_attendance) {
+                        $progressPoint += 1;
+                    } elseif ($lecture_data->attendance->end_attendance) {
+                        $progressPoint += 1;
+                    } elseif ($lecture_data->attendance->note_status === "approved") {
+                        $progressPoint += 1;
+                    }
+                }
                 $lesson_lectures[] = [
                     "lecture_uuid" => $lecture_data->uuid,
                     "attendance" => $lecture_data->attendance,
@@ -413,7 +423,7 @@ class CourseController extends Controller
                 ];
             }
 
-
+            $progress = $progressPoint / (count($lesson_lectures) * 3) * 100;
             $lessons[] = [
                 "lesson_uuid" => $lesson->uuid,
                 "title" => $lesson->title,
@@ -421,6 +431,7 @@ class CourseController extends Controller
                 "lectures" => $lesson_lectures,
                 "quizzes" => $quizzes,
                 "assignments" => $assignments,
+                "progress" => round($progress, 2),
             ];
         }
         $course = [

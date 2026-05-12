@@ -22,7 +22,7 @@ class LessonLectureController extends Controller
         try {
             $user = JWTAuth::parseToken()->authenticate();
 
-            $getLecture = LessonLecture::where(['uuid' => $lecture_uuid])
+            $getLecture = LessonLecture::with('attendance')->where(['uuid' => $lecture_uuid])
                 ->first();
 
             if (!$getLecture) {
@@ -85,6 +85,7 @@ class LessonLectureController extends Controller
                     "is_download_enabled" => $getLecture->is_download_enabled,
                     "is_attendance_enabled" => $getLecture->is_attendance_enabled,
                     "file_path" => $getLecture->file_path,
+                    "attendance" => $getLecture->attendance,
                     "url_path" => $getLecture->url_path,
                     "file_duration" => $getLecture->file_duration,
                     "file_duration_seconds" => $getLecture->file_duration_seconds,
