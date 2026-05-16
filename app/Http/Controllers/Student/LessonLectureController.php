@@ -78,6 +78,38 @@ class LessonLectureController extends Controller
             $lecture = [];
 
             if ($getLecture) {
+                // Resolve parent UUID: kalau ini variant, parent-nya tersedia.
+                // Kalau ini parent, "parent" adalah diri sendiri.
+                $parentUuid = $getLecture->parent_lecture_uuid ?: $getLecture->uuid;
+                $parentLecture = $parentUuid === $getLecture->uuid
+                    ? $getLecture
+                    : LessonLecture::where('uuid', $parentUuid)->first();
+
+                // Ambil semua variant (children) dari parent
+                $childVariants = LessonLecture::where('parent_lecture_uuid', $parentUuid)
+                    ->orderBy('order')
+                    ->orderBy('created_at')
+                    ->get();
+
+                // Bangun list "versi" lengkap: parent + semua variants
+                $versions = [];
+                if ($parentLecture) {
+                    $versions[] = [
+                        "lecture_uuid" => $parentLecture->uuid,
+                        "title" => $parentLecture->title,
+                        "type" => $parentLecture->type,
+                        "is_parent" => true,
+                    ];
+                }
+                foreach ($childVariants as $v) {
+                    $versions[] = [
+                        "lecture_uuid" => $v->uuid,
+                        "title" => $v->title,
+                        "type" => $v->type,
+                        "is_parent" => false,
+                    ];
+                }
+
                 $lecture = [
                     "lecture_uuid" => $lecture_uuid,
                     "title" => $getLecture->title,
@@ -90,6 +122,8 @@ class LessonLectureController extends Controller
                     "file_duration" => $getLecture->file_duration,
                     "file_duration_seconds" => $getLecture->file_duration_seconds,
                     "type" => $getLecture->type,
+                    "parent_lecture_uuid" => $getLecture->parent_lecture_uuid,
+                    "versions" => $versions,
                 ];
             }
 

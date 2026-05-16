@@ -18,7 +18,24 @@ class LessonLectureController extends Controller
 {
     public function show($uuid){
         try{
-            $lecture = LessonLecture::select('uuid', 'lesson_uuid', 'title', 'body', 'file_path', 'url_path', 'file_size', 'file_duration', 'type', 'is_download_enabled')->where(['uuid' => $uuid])->first();
+            $lecture = LessonLecture::select(
+                'uuid', 'lesson_uuid', 'parent_lecture_uuid', 'order',
+                'title', 'body', 'file_path', 'url_path', 'file_size',
+                'file_duration', 'type', 'is_download_enabled'
+            )->where(['uuid' => $uuid])->first();
+
+            if($lecture){
+                // load variants (child lectures dengan tipe berbeda)
+                $variants = LessonLecture::select(
+                    'uuid', 'parent_lecture_uuid', 'order', 'title', 'body',
+                    'file_path', 'url_path', 'file_size', 'file_duration', 'type'
+                )
+                    ->where('parent_lecture_uuid', $uuid)
+                    ->orderBy('order')
+                    ->orderBy('created_at')
+                    ->get();
+                $lecture->setAttribute('variants', $variants);
+            }
 
             return response()->json([
                 'message' => 'Success get data',
@@ -42,7 +59,19 @@ class LessonLectureController extends Controller
         $validate = [
             'lesson_uuid' => 'required|string',
             'title' => 'required|string',
+            'parent_lecture_uuid' => 'nullable|string',
+            'type' => 'nullable|in:video,youtube,text,image,pdf,slide document,audio',
         ];
+
+        // Kalau type dikirim (form full create, mis. variant flow), validasi tambahan
+        if ($request->filled('type')) {
+            if ($request->type == "youtube") {
+                $validate['url_path'] = "required";
+            }
+            if ($request->type == "youtube" || $request->type == "video" || $request->type == "audio") {
+                $validate['file_duration'] = "required";
+            }
+        }
 
         $validator = Validator::make($request->all(), $validate);
 
@@ -53,9 +82,46 @@ class LessonLectureController extends Controller
             ], 422);
         }
 
+        // Kalau parent_lecture_uuid diisi, pastikan parent ada
+        if ($request->parent_lecture_uuid) {
+            $checkParent = LessonLecture::where('uuid', $request->parent_lecture_uuid)->first();
+            if (!$checkParent) {
+                return response()->json([
+                    'message' => 'Parent lecture not found',
+                ], 404);
+            }
+        }
+
+        // Handle file upload kalau type require file
+        $file_path = null;
+        $url_path = null;
+        $file_size = null;
+        $file_duration = null;
+
+        if ($request->filled('type')) {
+            if ($request->type != "youtube" && $request->type != "text" && $request->hasFile('file')) {
+                $file_size = round($request->file->getSize() / (1024 * 1024), 2);
+                $file_path = $request->file->store('lectures', 'public');
+            }
+            if ($request->type == "youtube") {
+                $url_path = $request->url_path;
+            }
+            if ($request->type == "youtube" || $request->type == "video" || $request->type == "audio") {
+                $file_duration = $request->file_duration;
+            }
+        }
+
         $validated = [
             'lesson_uuid' => $request->lesson_uuid,
+            'parent_lecture_uuid' => $request->parent_lecture_uuid,
             'title' => $request->title,
+            'body' => $request->body,
+            'type' => $request->type,
+            'file_path' => $file_path,
+            'url_path' => $url_path,
+            'file_size' => $file_size,
+            'file_duration' => $file_duration,
+            'order' => $request->order ?? 0,
         ];
 
         $lecture = LessonLecture::create($validated);
@@ -65,6 +131,8 @@ class LessonLectureController extends Controller
             'lecture' => [
                 'lecture_uuid' => $lecture->uuid,
                 'title' => $lecture->title,
+                'parent_lecture_uuid' => $lecture->parent_lecture_uuid,
+                'type' => $lecture->type,
             ],
         ], 200);
 
