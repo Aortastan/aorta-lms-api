@@ -119,7 +119,9 @@ class CourseController extends Controller
             $getCourseLessons = CourseLesson::
                     select('uuid', 'title')
                     ->where('course_uuid', $uuid)
-                    ->with(['lectures'])
+                    ->with(['lectures' => function ($q) {
+                        $q->whereNull('parent_lecture_uuid')->orderBy('order')->orderBy('created_at');
+                    }])
                     ->get();
 
             $courseLessons = [];
@@ -280,7 +282,18 @@ class CourseController extends Controller
 
         $getCourse = Course::where([
             'uuid' => $course_uuid
-        ])->with(['instructor', 'lessons', 'pretestPosttests', 'pretestPosttests.test', 'lessons.lectures', 'lessons.quizzes', 'lessons.assignments'])->first();
+        ])->with([
+            'instructor',
+            'lessons',
+            'pretestPosttests',
+            'pretestPosttests.test',
+            'lessons.lectures' => function ($q) {
+                // Hanya tampil parent lectures di sidebar; variants disembunyikan (akses via tab di content area)
+                $q->whereNull('parent_lecture_uuid')->orderBy('order')->orderBy('created_at');
+            },
+            'lessons.quizzes',
+            'lessons.assignments',
+        ])->first();
 
         $pretest_posttests = [];
         foreach ($getCourse->pretestPosttests as $index => $test) {
