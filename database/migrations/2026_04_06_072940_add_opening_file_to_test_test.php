@@ -13,9 +13,11 @@ class AddOpeningFileToTestTest extends Migration
      */
     public function up()
     {
-        Schema::table('tests', function (Blueprint $table) {
-            $table->string('audio_test')->nullable();
-        });
+        if (!Schema::hasColumn('tests', 'audio_test')) {
+            Schema::table('tests', function (Blueprint $table) {
+                $table->string('audio_test')->nullable();
+            });
+        }
     }
 
     /**

@@ -19,6 +19,8 @@ class LessonLecture extends Model
      */
     protected $fillable = [
         'lesson_uuid',
+        'parent_lecture_uuid',
+        'order',
         'title',
         'body',
         'file_path',
@@ -44,5 +46,18 @@ class LessonLecture extends Model
     public function attendance()
     {
         return $this->hasOne(LessonAttendances::class, "lesson_lecture_uuid");
+    }
+
+    // Variants (child lectures dengan tipe berbeda — mis. PPT/Video untuk lecture PDF utama)
+    public function variants()
+    {
+        return $this->hasMany(LessonLecture::class, 'parent_lecture_uuid', 'uuid')
+            ->orderBy('order')
+            ->orderBy('created_at');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(LessonLecture::class, 'parent_lecture_uuid', 'uuid');
     }
 }

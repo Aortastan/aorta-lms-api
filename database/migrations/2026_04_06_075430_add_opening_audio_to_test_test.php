@@ -13,11 +13,11 @@ class AddOpeningAudioToTestTest extends Migration
      */
     public function up()
     {
-        Schema::table('tests', function (Blueprint $table) {
-            //
-            $table->string('opening_audio')->nullable();
-
-        });
+        if (!Schema::hasColumn('tests', 'opening_audio')) {
+            Schema::table('tests', function (Blueprint $table) {
+                $table->string('opening_audio')->nullable();
+            });
+        }
     }
 
     /**
