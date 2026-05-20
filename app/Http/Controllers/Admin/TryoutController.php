@@ -17,6 +17,7 @@ use App\Models\TryoutSegment;
 use App\Models\PackageTest;
 use App\Models\StudentTryout;
 use App\Models\Answer;
+use App\Models\StudentQuestionGrade;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RankingQuestionExport;
 use App\Exports\StudentTryoutExport;
@@ -586,6 +587,114 @@ class TryoutController extends Controller
         }
     }
 
+    public function getEssayLeaderboard($tryout_uuid)
+    {
+        try {
+            $tryout = Tryout::with([
+                'tryoutSegments.tryoutSegmentTests.test',
+                'tryoutSegments.tryoutSegmentTests.studentTryouts.user'
+            ])->where('uuid', $tryout_uuid)->first();
+
+            if (!$tryout) {
+                return response()->json([
+                    'message' => "Data tidak ditemukan",
+                ], 404);
+            }
+
+            $tryout_segment_test_uuids = $tryout->tryoutSegments->flatMap(function ($segment) {
+                return $segment->tryoutSegmentTests->pluck('uuid');
+            })->toArray();
+
+            $studentTryoutUuids = StudentTryout::whereIn('package_test_uuid', $tryout_segment_test_uuids)
+                ->pluck('uuid')
+                ->toArray();
+
+            $essayAttemptUuids = StudentQuestionGrade::whereIn('student_quiz_uuid', $studentTryoutUuids)
+                ->pluck('student_quiz_uuid')
+                ->unique()
+                ->toArray();
+
+            $usersWithEssay = StudentTryout::whereIn('uuid', $essayAttemptUuids)
+                ->pluck('user_uuid')
+                ->unique()
+                ->flip()
+                ->toArray();
+
+            $allUsers = StudentTryout::whereIn('package_test_uuid', $tryout_segment_test_uuids)
+                ->with('user')
+                ->get()
+                ->unique('user_uuid');
+
+            $pendingByUser = StudentQuestionGrade::whereIn('student_quiz_uuid', $essayAttemptUuids)
+                ->where('status', 'pending')
+                ->get()
+                ->groupBy('user_uuid')
+                ->map(function ($items) {
+                    return $items->count();
+                })
+                ->toArray();
+
+            $tryout_result = [];
+            foreach ($allUsers as $attempt) {
+                if (!isset($usersWithEssay[$attempt->user_uuid])) {
+                    continue;
+                }
+
+                $total_score = 0;
+                $segment_count = 0;
+                foreach ($tryout->tryoutSegments as $tryout_segment) {
+                    $segment_score = 0;
+                    $test_count = 0;
+                    foreach ($tryout_segment->tryoutSegmentTests as $tryout_segment_test) {
+                        $first_attempt = $tryout_segment_test->studentTryouts
+                            ->where('user_uuid', $attempt->user_uuid)
+                            ->sortBy('created_at')
+                            ->first();
+                        if ($first_attempt) {
+                            $segment_score += $first_attempt->score ?? 0;
+                            $test_count++;
+                        }
+                    }
+                    if ($test_count > 0) {
+                        $total_score += ($segment_score / max(1, $test_count));
+                        $segment_count++;
+                    }
+                }
+
+                $tryout_result[] = [
+                    "user_uuid" => $attempt->user_uuid,
+                    "name" => $attempt->user->username ?? 'Unknown',
+                    "tryout_uuid" => $tryout_uuid,
+                    'tryout_name' => $tryout->title,
+                    'score' => intval($total_score),
+                    'pending_essays' => $pendingByUser[$attempt->user_uuid] ?? 0,
+                ];
+            }
+
+            usort($tryout_result, function ($a, $b) {
+                return $b['score'] - $a['score'];
+            });
+
+            $ranking = 1;
+            foreach ($tryout_result as &$item) {
+                $item['ranking'] = $ranking++;
+            }
+
+            return response()->json([
+                'message' => 'Berhasil mengambil data leaderboard essay',
+                'status' => true,
+                'data' => [
+                    'allLeaderboard' => $tryout_result,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan server',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function getUserTryoutAnalytic($tryout_uuid, $user_uuid)
     {
         $tryout = Tryout::where([
@@ -631,12 +740,23 @@ class TryoutController extends Controller
                         $percentage = $attemptsData->score ? ($attemptsData->score / $maxPoint) * 100 : 0;
                         $passing_score = $tryout_segment_test['test']['passing_score'] ?? 0;
                         $status = $attemptsData->score >= $passing_score ? 'passed' : 'failed';
+
+                        $essayCount = StudentQuestionGrade::where('student_quiz_uuid', $attemptsData->uuid)->count();
+                        $pendingEssays = $essayCount > 0
+                            ? StudentQuestionGrade::where('student_quiz_uuid', $attemptsData->uuid)
+                                ->where('status', 'pending')
+                                ->count()
+                            : 0;
+
                         $attemptResult = [
                             'attempt_uuid' => $attemptsData->uuid,
                             'package_test_uuid' => $attemptsData->package_test_uuid,
                             'score' => $attemptsData->score ?: 0,
                             'percentage' => $percentage,
                             'status' => $status,
+                            'has_essay' => $essayCount > 0,
+                            'essay_count' => $essayCount,
+                            'pending_essays' => $pendingEssays,
                         ];
                     }
 
