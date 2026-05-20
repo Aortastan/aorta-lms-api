@@ -15,6 +15,7 @@ use App\Models\SessionTest;
 use App\Models\Test;
 use App\Models\Question;
 use App\Models\Answer;
+use App\Models\StudentQuestionGrade;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Auth;
 use DB;
@@ -526,12 +527,19 @@ class TryoutController extends Controller
                         $percentage = $attemptsData->score ? ($attemptsData->score / $maxPoint) * 100 : 0;
                         $passing_score = $tryout_segment_test['test']['passing_score'] ?? 0;
                         $status = $attemptsData->score >= $passing_score ? 'passed' : 'failed';
+
+                        $pendingEssays = StudentQuestionGrade::where('student_quiz_uuid', $attemptsData->uuid)
+                            ->where('status', 'pending')
+                            ->count();
+
                         $attemptResult = [
                             'attempt_uuid' => $attemptsData->uuid,
                             'package_test_uuid' => $attemptsData->package_test_uuid,
                             'score' => $attemptsData->score ?: 0,
                             'percentage' => $percentage,
                             'status' => $status,
+                            'pending_essays' => $pendingEssays,
+                            'has_pending_review' => $pendingEssays > 0,
                         ];
                     }
 

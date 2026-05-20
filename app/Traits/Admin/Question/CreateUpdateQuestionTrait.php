@@ -23,14 +23,23 @@ trait CreateUpdateQuestionTrait
         $validated = $this->cleanData($request);
 
         $this->question = Question::create($validated);
-        $this->storeAnswer($request, 'create');
+
+        // Essay tidak punya answers — skip storeAnswer
+        if ($request->question_type !== 'essay') {
+            $this->storeAnswer($request, 'create');
+        }
     }
 
     public function updateQuestion($request, $question){
         $this->question = $question;
 
         $validated = $this->cleanData($request);
-        $this->storeAnswer($request, 'update');
+        if ($request->question_type !== 'essay') {
+            $this->storeAnswer($request, 'update');
+        } else {
+            // Bersihkan answers lama kalau type diubah ke essay
+            \App\Models\Answer::where('question_uuid', $question->uuid)->delete();
+        }
         Question::where('uuid', $this->question->uuid)->update($validated);
     }
 
@@ -41,8 +50,10 @@ trait CreateUpdateQuestionTrait
         $validated = $this->cleanData($request);
         $question = Question::create($validated);
         $this->question_uuid = $question->uuid;
-        $this->storeAnswer($request, 'duplicate');
 
+        if ($request->question_type !== 'essay') {
+            $this->storeAnswer($request, 'duplicate');
+        }
     }
 
     public function storeAnswer($request, $method){
@@ -373,8 +384,14 @@ trait CreateUpdateQuestionTrait
                 ])->with(['answers'])->first();
         }
 
+        // Essay tidak punya media. Treat seperti type 'text' supaya skip file/url logic.
+        $isEssay = $request->question_type === 'essay';
+
+        if ($isEssay) {
+            // skip media handling block — semua null
+        }
         // jika ada template
-        if($this->getTemplate){
+        elseif($this->getTemplate){
             // jika ada file baru, baik saat menggunakan template atau tidak
             if($request->file){
                 $file_size = $request->file->getSize();

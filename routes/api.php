@@ -89,6 +89,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
     Route::get('leaderboard-old/{tryout_uuid}', 'Admin\TryoutController@getTryoutLeaderboard')->name('getTryoutLeaderboard');
     Route::get('leaderboard-new/{tryout_uuid}', 'Admin\TryoutController@getLeaderboardNew')->name('getLeaderboardNew');
+    Route::get('essay-leaderboard/{tryout_uuid}', 'Admin\TryoutController@getEssayLeaderboard')->name('getEssayLeaderboard');
 
     Route::get('analytics-old/{tryout_uuid}/{user_uuid}', 'Admin\TryoutController@getUserTryoutAnalytic')->name('getUserTryoutAnalyticsOld');
     Route::get('analytics-new/{tryout_uuid}/{user_uuid}', 'Admin\TryoutController@getUserTryoutAnalyticNew')->name('getUserTryoutAnalyticsNew');
@@ -98,6 +99,13 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::get('tryouts/{tryout_uuid}/student-tryout-export', 'Admin\TryoutController@exportStudentTryout')->name('exportStudentTryout');
     Route::get('ranking/{tryout_uuid}/question', 'Admin\TryoutController@rankingQuestion')->name('rankingQuestion');
     Route::get('admin-review/{student_quiz_uuid}/{user_uuid}', 'Admin\TryoutController@adminReview')->name('adminReview');
+
+    // Manual grading untuk soal essay
+    Route::group(['prefix' => 'admin/student-grades', 'as' => 'admin.studentGrades.'], function () {
+        Route::get('{student_quiz_uuid}', 'Admin\StudentQuestionGradeController@index')->name('index');
+        Route::post('batch', 'Admin\StudentQuestionGradeController@batchScore')->name('batchScore');
+        Route::post('{uuid}', 'Admin\StudentQuestionGradeController@score')->name('score');
+    });
 
     Route::group(['middleware' => ['auth', 'verified']], function () {
         // profile management
