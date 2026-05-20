@@ -9,18 +9,27 @@ trait QuestionValidationRuleTrait
 {
     use GetMimesRuleTrait;
     public function validateRule($request, $method){
+        $isEssay = $request->question_type === 'essay';
+
         $rules = [
             'subject_uuid' => 'required|string',
             'title' => 'required|string',
             'question' => 'required|string',
-            'question_type' => 'required|in:multi choice,most point,single choice,fill in blank,true false',
-            'type' => 'required|in:video,youtube,text,image,pdf,audio,slide document',
+            'question_type' => 'required|in:multi choice,most point,single choice,fill in blank,true false,essay',
+            // Essay tidak butuh field type (video/text/pdf/dll) — default "text"
+            'type' => $isEssay
+                ? 'nullable|in:video,youtube,text,image,pdf,audio,slide document'
+                : 'required|in:video,youtube,text,image,pdf,audio,slide document',
             'status' => 'required|in:Published,Waiting for review,Draft',
             'different_point' => 'required|in:1,0',
-            'answers' => 'required|array',
-            'answers.*' => 'required|array',
-            'answers.*.answer' => 'required|string',
         ];
+
+        // Essay: tidak butuh answers (manual scoring oleh instructor)
+        if (!$isEssay) {
+            $rules['answers'] = 'required|array';
+            $rules['answers.*'] = 'required|array';
+            $rules['answers.*.answer'] = 'required|string';
+        }
 
         if($method == 'duplicate'){
             $rules['question_uuid'] = 'required|string';
@@ -33,7 +42,8 @@ trait QuestionValidationRuleTrait
                 ])->with(['answers'])->first();
         }
 
-        if($request->type != 'text'){
+        // Skip media validation untuk essay
+        if(!$isEssay && $request->type != 'text'){
             if($request->type == 'youtube'){
                 $rules['url_path'] = 'required';
                 $rules['file_duration'] = 'required';
@@ -64,12 +74,16 @@ trait QuestionValidationRuleTrait
             $rules['hint'] = 'string';
         }
 
-        if($request->question_type != 'fill in blank'){
+        // Validasi per-answer hanya untuk non-essay & non-fill-in-blank
+        if(!$isEssay && $request->question_type != 'fill in blank'){
             $rules['answers.*.is_correct'] = 'required|in:1,0';
             $rules['answers.*.have_image'] = 'required|in:1,0';
         }
 
-        if($request->different_point == 1){
+        // Point/different_point: essay hanya pakai 'point' sebagai skor maksimum
+        if($isEssay){
+            $rules['point'] = 'required|integer|min:1';
+        } elseif($request->different_point == 1){
             $rules['answers.*.point'] = 'required|integer';
         }else{
             $rules['point'] = 'required|integer';

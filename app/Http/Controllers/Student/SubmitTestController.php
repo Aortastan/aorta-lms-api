@@ -17,8 +17,10 @@ use App\Models\TryoutSegment;
 use App\Models\Tryout;
 use App\Models\IrtPoint;
 use App\Models\Test;
+use App\Models\StudentQuestionGrade;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SubmitTestController extends Controller
 {
@@ -74,6 +76,7 @@ class SubmitTestController extends Controller
         $points = 0;
         $potensiPoints = 0;
         $tskkwk_points = 0;
+        $essayPending = []; // tampung essay yg perlu manual scoring
 
                 $total = count($request->data_question);
                 $current = 0;
@@ -84,6 +87,22 @@ class SubmitTestController extends Controller
 
                     $get_question = $questions[$data['question_uuid']] ?? null;
                     if (!$get_question) continue;
+
+                    // Essay: skip auto-scoring, tampung untuk manual grading
+                    if ($get_question->question_type === 'essay') {
+                        $answer_text = $data['answer_text'] ?? '';
+                        $essayPending[] = [
+                            'question_uuid' => $data['question_uuid'],
+                            'answer_text' => $answer_text,
+                        ];
+                        $data_question[] = [
+                            'question_uuid' => $data['question_uuid'],
+                            'is_essay' => true,
+                            'answer_text' => $answer_text,
+                            'status' => 'pending',
+                        ];
+                        continue;
+                    }
 
                     $get_answers = $answers[$data['question_uuid']] ?? collect();
 
@@ -144,25 +163,29 @@ class SubmitTestController extends Controller
                 // $this->pushProgress($channel, ProgressStatus::CALCULATING_SCORE, 65, $user_session->uuid);
 
                 $score = 0;
+                $createdAttempt = null;       // untuk link essay grades
+                $createdAttemptType = null;   // 'quiz' | 'pretest_posttest' | 'tryout'
 
         if ($user_session->type_test == 'quiz') {
 
-            StudentQuiz::create([
+            $createdAttempt = StudentQuiz::create([
                 'data_question' => json_encode($data_question),
                 'user_uuid' => $user_session->user_uuid,
                 'lesson_quiz_uuid' => $user_session->lesson_quiz_uuid,
                 'score' => $points,
             ]);
+                    $createdAttemptType = 'quiz';
 
                     $score = $points;
         } elseif ($user_session->type_test == 'pretest_posttest') {
 
-            StudentPretestPosttest::create([
+            $createdAttempt = StudentPretestPosttest::create([
                 'user_uuid' => $user_session->user_uuid,
                 'data_question' => json_encode($data_question),
                 'pretest_posttest_uuid' => $user_session->pretest_posttest_uuid,
                 'score' => $points,
             ]);
+                    $createdAttemptType = 'pretest_posttest';
 
                     $score = $points;
         } elseif ($user_session->type_test == 'tryout') {
@@ -220,6 +243,8 @@ class SubmitTestController extends Controller
                         'attempt' => $count + 1,
                         'score' => $points,
                     ]);
+                        $createdAttempt = $student_tryout;
+                        $createdAttemptType = 'tryout';
 
                         $score = $points;
 
@@ -289,7 +314,7 @@ class SubmitTestController extends Controller
                     }
 
                     if ($test->test_type != 'IRT') {
-                    StudentTryout::create([
+                    $createdAttempt = StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
                         'package_uuid' => $get_package->uuid,
@@ -297,7 +322,22 @@ class SubmitTestController extends Controller
                         'attempt' => $count + 1,
                             'score' => $score,
                     ]);
+                        $createdAttemptType = 'tryout';
                 }
+                }
+
+                // Persist essay answers (pending manual grading)
+                if ($createdAttempt && !empty($essayPending)) {
+                    foreach ($essayPending as $essay) {
+                        StudentQuestionGrade::create([
+                            'student_quiz_uuid' => $createdAttempt->uuid,
+                            'student_quiz_type' => $createdAttemptType,
+                            'question_uuid' => $essay['question_uuid'],
+                            'user_uuid' => $user_session->user_uuid,
+                            'answer_text' => $essay['answer_text'],
+                            'status' => 'pending',
+                        ]);
+                    }
                 }
 
                 // $this->pushProgress($channel, ProgressStatus::DONE, 100, $user_session->uuid);
@@ -306,7 +346,8 @@ class SubmitTestController extends Controller
 
         return response()->json([
             'message' => 'Test berhasil dikirim',
-            'score' => $score
+            'score' => $score,
+            'pending_essays' => count($essayPending),
         ], 200);
             });
 
