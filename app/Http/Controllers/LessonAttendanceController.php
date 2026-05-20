@@ -72,6 +72,23 @@ class LessonAttendanceController extends Controller
                 $path = $file->store('note', 'public');
             }
 
+$lecture = LessonLecture::where('uuid', $request->lesson_lecture_uuid)->first();
+
+if(!$lecture) {
+return response()->json([
+                "message" => "Lesson tidak ditemukan",
+                "success" => false
+            ], 200);
+}
+
+if($attendanceEndAt->diffInDays(now()) >= 7) {
+return response()->json([
+                "message" => "Sesi upload catatan sudah berakhir",
+                "success" => false
+            ], 200);
+}
+}
+
             LessonAttendances::updateOrCreate([
                 "lesson_lecture_uuid" => $request->lesson_lecture_uuid,
                 "user_uuid" => Auth::id(),
