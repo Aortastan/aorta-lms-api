@@ -80,6 +80,7 @@ return response()->json([
                 "success" => false
             ], 200);
 }
+$attendanceEndAt = Carbon::parse($lecture->attendance_ended_at);
 
 if($attendanceEndAt->diffInDays(now()) >= 7) {
 return response()->json([
