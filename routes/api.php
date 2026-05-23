@@ -38,6 +38,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('reset-password', 'AuthController@resetPassword')->name('resetPassword');
     Route::get('banners/active', 'AllRole\BannerController@index')->name('index');
     Route::post('logout', 'AuthController@logout');
+    Route::get('me/menu-access', 'AuthController@myMenuAccess')->name('me.menuAccess');
     Route::get('payment-methods', 'AllRole\PaymentMethodController@index');
     Route::get('admin-fee', "AllRole\PaymentMethodController@adminFee");
 
@@ -166,6 +167,17 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             });
 
             Route::delete('{uuid}', 'Admin\UserController@delete')->name('delete');
+
+            // Menu access per user
+            Route::get('menu-access/{uuid}', 'Admin\UserController@getUserMenuAccess')->name('menuAccess.get');
+            Route::post('menu-access/{uuid}', 'Admin\UserController@setUserMenuAccess')->name('menuAccess.set');
+
+            // Student verification
+            Route::post('student/{uuid}/verify-name', 'Admin\UserController@verifyStudentName')->name('student.verifyName');
+            Route::post('student/{uuid}/unverify-name', 'Admin\UserController@unverifyStudentName')->name('student.unverifyName');
+
+            // Student packages
+            Route::get('{uuid}/packages', 'Admin\UserController@getUserPackages')->name('packages.get');
         });
         // end user management
 

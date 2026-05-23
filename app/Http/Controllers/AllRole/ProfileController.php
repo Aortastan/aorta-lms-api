@@ -24,7 +24,7 @@ class ProfileController extends Controller
     public function index(){
         try{
             $profile = User::
-            select('name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar')
+            select('name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar', 'name_verified_at', 'name_verified_by')
             ->where([
                 'uuid' => $this->user->uuid,
             ])->first();
@@ -67,6 +67,16 @@ class ProfileController extends Controller
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Nama yang sudah diverifikasi admin tidak boleh diubah lagi oleh user sendiri
+        if ($this->user->name_verified_at && $this->user->name !== $request->name) {
+            return response()->json([
+                'message' => 'Nama Anda sudah diverifikasi admin dan tidak dapat diubah. Hubungi admin jika ada perubahan.',
+                'errors' => [
+                    'name' => ['Nama sudah terkunci karena terverifikasi'],
+                ],
             ], 422);
         }
 

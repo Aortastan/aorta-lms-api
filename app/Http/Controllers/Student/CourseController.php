@@ -30,6 +30,13 @@ class CourseController extends Controller
     public function downloadCourse(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
+
+        if ($user->role === 'student' && empty($user->name_verified_at)) {
+            return response()->json([
+                'message' => 'Nama akun mu belum di verifikasi oleh admin! Silahkan hubungi admin',
+            ], 403);
+        }
+
         $coursUuid = $request->input('course_uuid');
         $file = $request->input('filepath');
         $source = storage_path('app/public/' . $file);

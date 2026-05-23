@@ -1,23 +1,48 @@
 <?php
 namespace App\Traits\User;
 use App\Models\User;
+use App\Models\PurchasedPackage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 trait UserManagementTrait
 {
     public function usersByRole($role)
     {
         try{
+            $users = User::select(
+                'uuid', 'role', 'name', 'username', 'email',
+                'mobile_number', 'gender', 'avatar',
+                'name_verified_at', 'name_verified_by'
+            )->where(['role' => $role])->get();
+
+            if ($role === 'student' && $users->isNotEmpty()) {
+                $userUuids = $users->pluck('uuid')->toArray();
+
+                // Hanya hitung purchased_packages yang package-nya masih ada (skip orphan)
+                $packageCounts = DB::table('purchased_packages as pp')
+                    ->join('packages as p', 'p.uuid', '=', 'pp.package_uuid')
+                    ->select('pp.user_uuid', DB::raw('COUNT(*) as cnt'))
+                    ->whereIn('pp.user_uuid', $userUuids)
+                    ->groupBy('pp.user_uuid')
+                    ->pluck('cnt', 'pp.user_uuid')
+                    ->toArray();
+
+                $users = $users->map(function ($u) use ($packageCounts) {
+                    $u->packages_count = $packageCounts[$u->uuid] ?? 0;
+                    return $u;
+                });
+            }
 
             return response()->json([
                 'message' => 'Success get data',
-                'users' => User::select('uuid', 'role', 'name', 'username', 'email', 'mobile_number', 'gender', 'avatar')->where(['role' => $role])->get(),
+                'users' => $users,
             ], 200);
         }
         catch(\Exception $e){
             return response()->json([
-                'message' => $e,
+                'message' => $e->getMessage(),
             ], 404);
         }
     }
@@ -87,9 +112,16 @@ trait UserManagementTrait
     }
 
     public function updateUser($request, $uuid, $user){
-        $validated = [
-            'name' => $request->name,
-        ];
+        $validated = [];
+
+        // Lock name kalau sudah diverifikasi
+        if ($user->name_verified_at && $user->name !== $request->name) {
+            return response()->json([
+                'message' => 'Nama sudah diverifikasi dan tidak dapat diubah',
+            ], 422);
+        }
+
+        $validated['name'] = $request->name;
 
         if($user->email != $request->email){
             $validated['email'] = $request->email;
@@ -99,7 +131,7 @@ trait UserManagementTrait
             $validated['username'] = $request->username;
         }
 
-        $user =  User::where(['uuid' => $uuid])->update($validated);
+        User::where(['uuid' => $uuid])->update($validated);
 
         return response()->json([
             'message' => 'Success update user'
