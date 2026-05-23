@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserMenuAccess;
 use App\Models\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -175,6 +176,23 @@ class AuthController extends Controller
     public function me(): JsonResponse
     {
         return response()->json(auth()->user());
+    }
+
+    public function myMenuAccess(): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+        $menus = UserMenuAccess::where('user_uuid', $user->uuid)->pluck('menu_key')->toArray();
+        return response()->json([
+            'message' => 'Success',
+            'data' => [
+                'user_uuid' => $user->uuid,
+                'role' => $user->role,
+                'menu_keys' => $menus,
+            ],
+        ], 200);
     }
 
     /**

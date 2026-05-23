@@ -38,6 +38,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'avatar',
         'status',
         'email_verified_at',
+        'name_verified_at',
+        'name_verified_by',
     ];
 
     /**
@@ -56,6 +58,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'name_verified_at' => 'datetime',
     ];
 
 
@@ -89,5 +92,15 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function pauliRecords()
     {
         return $this->hasMany(PauliRecord::class, 'user_uuid', 'uuid');
+    }
+
+    public function menuAccess()
+    {
+        return $this->hasMany(UserMenuAccess::class, 'user_uuid', 'uuid');
+    }
+
+    public function purchasedPackages()
+    {
+        return $this->hasMany(PurchasedPackage::class, 'user_uuid', 'uuid');
     }
 }
