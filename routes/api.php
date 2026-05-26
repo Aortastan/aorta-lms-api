@@ -163,6 +163,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::group(['prefix' => 'student', 'as' => 'student.',], function () {
                 Route::get('', 'Admin\UserController@indexStudent')->name('get');
                 Route::put('{uuid}', 'Admin\UserController@updateStudent')->name('update');
+                Route::post('', 'Admin\UserController@storeStudent')->name('store');
                 Route::get('export', 'Admin\UserController@exportStudent')->name('export');
             });
 
@@ -178,6 +179,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
             // Student packages
             Route::get('{uuid}/packages', 'Admin\UserController@getUserPackages')->name('packages.get');
+            Route::post('{uuid}/packages', 'Admin\UserController@addPackageToUser')->name('packages.add');
+            Route::delete('{uuid}/packages/{ownershipUuid}', 'Admin\UserController@removePackageFromUser')->name('packages.remove');
         });
         // end user management
 
