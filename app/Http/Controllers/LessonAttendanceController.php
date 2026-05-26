@@ -243,8 +243,8 @@ class LessonAttendanceController extends Controller
             "data" => [
                 "lesson" => $lesson,
                 "attendances" => $resp,
-                "duration_start" => $attendanceStartAt->diffInMinutes(now()),
-                "duration_end" => $attendanceEndAt->diffInMinutes(now())
+                "duration_start" => $attendanceStartAt->diffInMinutes(now()) <= 60 ? $attendanceStartAt->diffInMinutes(now()) : 0,
+                "duration_end" => $attendanceEndAt->diffInMinutes(now()) <= 60 ? $attendanceEndAt->diffInMinutes(now()) : 0
             ]
         ], 200);
     }
