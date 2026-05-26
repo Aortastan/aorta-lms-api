@@ -9,7 +9,9 @@ use Auth;
 use Carbon\Carbon;
 
 use App\Exports\AttendanceExport;
+use Exception;
 use Maatwebsite\Excel\Facades\Excel;
+
 class LessonAttendanceController extends Controller
 {
     public function export($lesson_lecture_uuid)
@@ -67,28 +69,27 @@ class LessonAttendanceController extends Controller
     {
         try {
             $path = "";
-            if($request->hasFile("note")) {
+            if ($request->hasFile("note")) {
                 $file = $request->file('note');
                 $path = $file->store('note', 'public');
             }
 
-$lecture = LessonLecture::where('uuid', $request->lesson_lecture_uuid)->first();
+            $lecture = LessonLecture::where('uuid', $request->lesson_lecture_uuid)->first();
 
-if(!$lecture) {
-return response()->json([
-                "message" => "Lesson tidak ditemukan",
-                "success" => false
-            ], 200);
-}
-$attendanceEndAt = Carbon::parse($lecture->attendance_ended_at);
+            if (!$lecture) {
+                return response()->json([
+                    "message" => "Lesson tidak ditemukan",
+                    "success" => false
+                ], 200);
+            }
+            $attendanceEndAt = Carbon::parse($lecture->attendance_ended_at);
 
-if($attendanceEndAt->diffInDays(now()) >= 7) {
-return response()->json([
-                "message" => "Sesi upload catatan sudah berakhir",
-                "success" => false
-            ], 200);
-
-}
+            if ($attendanceEndAt->diffInDays(now()) >= 7) {
+                return response()->json([
+                    "message" => "Sesi upload catatan sudah berakhir",
+                    "success" => false
+                ], 200);
+            }
 
             LessonAttendances::updateOrCreate([
                 "lesson_lecture_uuid" => $request->lesson_lecture_uuid,
@@ -163,19 +164,20 @@ return response()->json([
 
             if ($attendanceStartAt->diffInHours(now()) >= 1 && $request->type === "start") {
                 return response()->json([
-                    "message" => "Tidak bisa absen awal, sesi absen awal sudah berakhir",
+                    "message" => "Tidak bisa absen awal, sesi absen awal sudah berakhir pada " . $attendanceStartAt->format('d/m/Y H:i:s'),
                 ], 200);
             }
 
             if ($attendanceStartAt->diffInMinutes(now()) <= 60 && $request->type === "end") {
                 return response()->json([
                     "message" => "Tidak bisa absen akhir, sesi absen akhir belum dimulai",
+                    "duration" => $attendanceStartAt->diffInMinutes(now())
                 ], 200);
             }
 
             if ($attendanceEndAt->diffInHours(now()) >= 1 && $request->type === "end") {
                 return response()->json([
-                    "message" => "Tidak bisa absen akhir, sesi absen akhir sudah berakhir",
+                    "message" => "Tidak bisa absen akhir, sesi absen akhir sudah berakhir pada " . $attendanceEndAt->format('d/m/Y H:i:s'),
                 ], 200);
             }
 
@@ -215,6 +217,7 @@ return response()->json([
      */
     public function show($id)
     {
+        $lesson = LessonLecture::where('lesson_lecture_uuid', $id)->first();
         $resp = LessonAttendances::with('user')
             ->where('lesson_lecture_uuid', $id)
             ->get()
@@ -233,10 +236,16 @@ return response()->json([
 
                 return $item;
             });
-
+        $attendanceStartAt = Carbon::parse($lesson->attendance_started_at);
+        $attendanceEndAt = Carbon::parse($lesson->attendance_ended_at);
         return response()->json([
             "message" => "Success",
-            "data" => $resp
+            "data" => [
+                "lesson" => $lesson,
+                "attendances" => $resp,
+                "duration_start" => $attendanceStartAt->diffInMinutes(now()),
+                "duration_end" => $attendanceEndAt->diffInMinutes(now())
+            ]
         ], 200);
     }
 
