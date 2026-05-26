@@ -217,7 +217,7 @@ class LessonAttendanceController extends Controller
      */
     public function show($id)
     {
-        $lesson = LessonLecture::where('lesson_lecture_uuid', $id)->first();
+        $lesson = LessonLecture::where('uuid', $id)->first();
         $resp = LessonAttendances::with('user')
             ->where('lesson_lecture_uuid', $id)
             ->get()
