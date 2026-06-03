@@ -201,6 +201,7 @@ class TestController extends Controller
                 'url_path' => $data['question']['url_path'],
                 'type' => $data['question']['type'],
                 'hint' => $data['question']['hint'],
+                'discussion' => $data['question']['discussion'],
                 'answers' => $answers,
             ];
         }
