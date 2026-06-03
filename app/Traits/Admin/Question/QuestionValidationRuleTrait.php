@@ -74,15 +74,20 @@ trait QuestionValidationRuleTrait
             $rules['hint'] = 'string';
         }
 
+        // Pembahasan soal (opsional) — ditampilkan ke siswa saat review
+        if($request->discussion){
+            $rules['discussion'] = 'string';
+        }
+
         // Validasi per-answer hanya untuk non-essay & non-fill-in-blank
         if(!$isEssay && $request->question_type != 'fill in blank'){
             $rules['answers.*.is_correct'] = 'required|in:1,0';
             $rules['answers.*.have_image'] = 'required|in:1,0';
         }
 
-        // Point/different_point: essay hanya pakai 'point' sebagai skor maksimum
+        // Point/different_point: essay pakai 'point' sebagai skor maksimum, boleh dikosongkan
         if($isEssay){
-            $rules['point'] = 'required|integer|min:1';
+            $rules['point'] = 'nullable|integer|min:0';
         } elseif($request->different_point == 1){
             $rules['answers.*.point'] = 'required|integer';
         }else{

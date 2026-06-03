@@ -251,6 +251,7 @@ class QuestionController extends Controller
                 'different_point' => $getQuestion->different_point,
                 'point' => $getQuestion->point,
                 'hint' => $getQuestion->hint,
+                'discussion' => $getQuestion->discussion,
                 'answers' => $getQuestion->answers,
                 'timer' => $getQuestion->timer
             ];

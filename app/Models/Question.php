@@ -31,6 +31,7 @@ class Question extends Model
         'different_point',
         'point',
         'hint',
+        'discussion',
         'status',
         'timer',
     ];

@@ -151,6 +151,7 @@ class PretestPosttestController extends Controller
                 'file_duration' => $get_question->file_duration,
                 'type' => $get_question->type,
                 'hint' => $get_question->hint,
+                'discussion' => $get_question->discussion,
                 'answers' => $answers,
             ];
         }
@@ -284,6 +285,7 @@ class PretestPosttestController extends Controller
                 'url_path' => $get_question->url_path,
                 'type' => $get_question->type,
                 'hint' => $get_question->hint,
+                'discussion' => $get_question->discussion,
                 'answers' => $answers,
             ];
         }
