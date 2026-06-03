@@ -74,6 +74,21 @@ class TryoutController extends Controller
 
         $tryouts = $tryouts->get();
 
+        // Kumpulan test_uuid yang punya minimal satu soal bertipe essay
+        $essayTestUuids = DB::table('question_tests')
+            ->join('questions', 'questions.uuid', '=', 'question_tests.question_uuid')
+            ->where('questions.question_type', 'essay')
+            ->pluck('question_tests.test_uuid')
+            ->unique()
+            ->flip();
+
+        // Peta tryout_uuid => daftar test_uuid yang ada di dalamnya
+        $tryoutTestsMap = DB::table('tryout_segments')
+            ->join('tryout_segment_tests', 'tryout_segment_tests.tryout_segment_uuid', '=', 'tryout_segments.uuid')
+            ->select('tryout_segments.tryout_uuid', 'tryout_segment_tests.test_uuid')
+            ->get()
+            ->groupBy('tryout_uuid');
+
         foreach ($tryouts as $index => $tryout) {
             $check_tryout = PackageTest::where([
                 'test_uuid' => $tryout->uuid,
@@ -84,6 +99,16 @@ class TryoutController extends Controller
             } else {
                 $tryout->deletable = true;
             }
+
+            // Tryout dianggap mengandung essay jika salah satu test-nya punya soal essay
+            $hasEssay = false;
+            foreach (($tryoutTestsMap[$tryout->uuid] ?? []) as $segmentTest) {
+                if ($essayTestUuids->has($segmentTest->test_uuid)) {
+                    $hasEssay = true;
+                    break;
+                }
+            }
+            $tryout->has_essay = $hasEssay;
         }
 
         return response()->json([
@@ -1030,6 +1055,7 @@ class TryoutController extends Controller
                     'file_duration' => $get_question->file_duration,
                     'type' => $get_question->type,
                     'hint' => $get_question->hint,
+                    'discussion' => $get_question->discussion,
                     'answers' => $answers,
                 ];
             }

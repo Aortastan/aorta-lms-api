@@ -228,7 +228,7 @@ class TestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validate = [
-            'test_type' => 'required|in:classical,IRT,Tes Potensi,TSKKWK',
+            'test_type' => 'required|in:classical,IRT,Tes Potensi,TSKKWK,essay',
             'title' => 'required|string',
             'test_category' => 'required|in:quiz,tryout',
             'passing_score' => 'required|numeric',

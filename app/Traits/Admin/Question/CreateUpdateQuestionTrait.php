@@ -485,6 +485,7 @@ trait CreateUpdateQuestionTrait
             'status' => $request->status,
             'point' => $point,
             'hint' => $request->hint,
+            'discussion' => $request->discussion,
             'file_path' => $path,
             'timer' => $request->timer
         ];
