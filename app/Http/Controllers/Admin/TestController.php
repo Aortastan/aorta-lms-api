@@ -201,6 +201,7 @@ class TestController extends Controller
                 'url_path' => $data['question']['url_path'],
                 'type' => $data['question']['type'],
                 'hint' => $data['question']['hint'],
+                'discussion' => $data['question']['discussion'],
                 'answers' => $answers,
             ];
         }
@@ -223,7 +224,7 @@ class TestController extends Controller
 
     public function store(Request $request): JsonResponse{
         $validate = [
-            'test_type' => 'required|in:classical,IRT,Tes Potensi,TSKKWK',
+            'test_type' => 'required|in:classical,IRT,Tes Potensi,TSKKWK,essay',
             'title' => 'required|string',
             'test_category' => 'required|in:quiz,tryout',
             'passing_score' => 'required|numeric',

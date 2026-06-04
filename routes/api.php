@@ -48,6 +48,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
     Route::group(['prefix' => 'packages', 'as' => 'packages.',], function () {
         Route::get('popular/{package_type}', 'AllRole\DashboardController@popularPackages')->name('popularPackages');
+        Route::get('latest', 'AllRole\DashboardController@latestPackages')->name('latestPackages');
     });
 
     // Blog for all role
@@ -163,6 +164,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::group(['prefix' => 'student', 'as' => 'student.',], function () {
                 Route::get('', 'Admin\UserController@indexStudent')->name('get');
                 Route::put('{uuid}', 'Admin\UserController@updateStudent')->name('update');
+                Route::post('', 'Admin\UserController@storeStudent')->name('store');
                 Route::get('export', 'Admin\UserController@exportStudent')->name('export');
             });
 
@@ -178,6 +180,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
             // Student packages
             Route::get('{uuid}/packages', 'Admin\UserController@getUserPackages')->name('packages.get');
+            Route::post('{uuid}/packages', 'Admin\UserController@addPackageToUser')->name('packages.add');
+            Route::delete('{uuid}/packages/{ownershipUuid}', 'Admin\UserController@removePackageFromUser')->name('packages.remove');
         });
         // end user management
 

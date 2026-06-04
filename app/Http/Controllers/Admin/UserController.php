@@ -8,7 +8,11 @@ use Illuminate\Http\JsonResponse;
 use App\Models\User;
 use App\Models\UserMenuAccess;
 use App\Models\PurchasedPackage;
+use App\Models\MembershipHistory;
 use App\Models\Package;
+use App\Models\Transaction;
+use App\Models\DetailTransaction;
+use App\Models\PaymentGatewaySetting;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +20,9 @@ use App\Traits\User\UserManagementTrait;
 use App\Exports\StudentExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Ramsey\Uuid\Uuid;
+use DateTime;
+use DateInterval;
 
 class UserController extends Controller
 {
@@ -53,9 +60,14 @@ class UserController extends Controller
             return response()->json(['message' => 'Paket tidak ditemukan'], 404);
         }
 
-        $userUuids = PurchasedPackage::where('package_uuid', $packageUuid)
-            ->pluck('user_uuid')
+        $purchasedUserUuids = PurchasedPackage::where('package_uuid', $packageUuid)
+            ->pluck('user_uuid');
+        $membershipUserUuids = MembershipHistory::where('package_uuid', $packageUuid)
+            ->pluck('user_uuid');
+        $userUuids = $purchasedUserUuids
+            ->merge($membershipUserUuids)
             ->unique()
+            ->values()
             ->toArray();
 
         $users = User::select(
@@ -69,13 +81,7 @@ class UserController extends Controller
 
         if ($users->isNotEmpty()) {
             $allUserUuids = $users->pluck('uuid')->toArray();
-            $packageCounts = DB::table('purchased_packages as pp')
-                ->join('packages as p', 'p.uuid', '=', 'pp.package_uuid')
-                ->select('pp.user_uuid', DB::raw('COUNT(*) as cnt'))
-                ->whereIn('pp.user_uuid', $allUserUuids)
-                ->groupBy('pp.user_uuid')
-                ->pluck('cnt', 'pp.user_uuid')
-                ->toArray();
+            $packageCounts = $this->countOwnedPackages($allUserUuids);
 
             $users = $users->map(function ($u) use ($packageCounts) {
                 $u->packages_count = $packageCounts[$u->uuid] ?? 0;
@@ -91,6 +97,30 @@ class UserController extends Controller
             ],
             'users' => $users,
         ], 200);
+    }
+
+    private function countOwnedPackages(array $userUuids): array
+    {
+        if (empty($userUuids)) {
+            return [];
+        }
+
+        $purchased = DB::table('purchased_packages')
+            ->select('user_uuid', 'package_uuid')
+            ->whereIn('user_uuid', $userUuids);
+
+        $combined = DB::table('membership_histories')
+            ->select('user_uuid', 'package_uuid')
+            ->whereIn('user_uuid', $userUuids)
+            ->union($purchased);
+
+        return DB::query()
+            ->fromSub($combined, 'combined')
+            ->join('packages as p', 'p.uuid', '=', 'combined.package_uuid')
+            ->select('combined.user_uuid', DB::raw('COUNT(DISTINCT combined.package_uuid) as cnt'))
+            ->groupBy('combined.user_uuid')
+            ->pluck('cnt', 'combined.user_uuid')
+            ->toArray();
     }
 
     public function exportStudent(){
@@ -113,6 +143,15 @@ class UserController extends Controller
         }
 
         return $this->storeUser($request, 'instructor');
+    }
+
+    public function storeStudent(Request $request): JsonResponse{
+        $validator = $this->storeValidation($request);
+        if($validator != null){
+            return $validator;
+        }
+
+        return $this->storeUser($request, 'student');
     }
 
     public function updateAdmin(Request $request, $uuid): JsonResponse{
@@ -293,6 +332,165 @@ class UserController extends Controller
         ], 200);
     }
 
+    public function addPackageToUser(Request $request, $uuid): JsonResponse
+    {
+        $user = User::where('uuid', $uuid)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'package_uuid' => 'required|string',
+            'type_of_purchase' => 'required|string|in:lifetime,one month,three months,six months,one year',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $package = Package::where('uuid', $request->package_uuid)->first();
+        if (!$package) {
+            return response()->json(['message' => 'Paket tidak ditemukan'], 404);
+        }
+
+        $typeOfPurchase = $request->type_of_purchase;
+        $isLifetime = $typeOfPurchase === 'lifetime';
+
+        $exists = $isLifetime
+            ? PurchasedPackage::where('user_uuid', $uuid)
+                ->where('package_uuid', $request->package_uuid)
+                ->exists()
+            : MembershipHistory::where('user_uuid', $uuid)
+                ->where('package_uuid', $request->package_uuid)
+                ->where('expired_date', '>=', now())
+                ->exists();
+        if ($exists) {
+            return response()->json([
+                'message' => $isLifetime
+                    ? 'User sudah memiliki paket ini (lifetime)'
+                    : 'User masih punya membership aktif untuk paket ini',
+            ], 422);
+        }
+
+        $actor = JWTAuth::parseToken()->authenticate();
+        $paymentMethod = PaymentGatewaySetting::first();
+
+        try {
+            $result = DB::transaction(function () use ($user, $package, $typeOfPurchase, $isLifetime, $paymentMethod) {
+                $transaction = Transaction::create([
+                    'external_id' => 'ADMIN-GRANT-' . Uuid::uuid4()->toString(),
+                    'user_uuid' => $user->uuid,
+                    'transaction_amount' => 0,
+                    'payment_method_uuid' => $paymentMethod ? $paymentMethod->uuid : '-',
+                    'transaction_status' => 'admin_grant',
+                    'expiry_date' => null,
+                    'url' => null,
+                ]);
+
+                DetailTransaction::create([
+                    'transaction_uuid' => $transaction->uuid,
+                    'package_uuid' => $package->uuid,
+                    'type_of_purchase' => $typeOfPurchase,
+                    'transaction_type' => 'admin_grant',
+                    'detail_amount' => 0,
+                ]);
+
+                if ($isLifetime) {
+                    $row = PurchasedPackage::create([
+                        'transaction_uuid' => $transaction->uuid,
+                        'package_uuid' => $package->uuid,
+                        'user_uuid' => $user->uuid,
+                    ]);
+                    return [
+                        'source' => 'lifetime',
+                        'uuid' => $row->uuid,
+                        'expired_date' => null,
+                    ];
+                }
+
+                $expiredDate = new DateTime();
+                $intervalMap = [
+                    'one month' => 'P1M',
+                    'three months' => 'P3M',
+                    'six months' => 'P6M',
+                    'one year' => 'P1Y',
+                ];
+                $expiredDate->add(new DateInterval($intervalMap[$typeOfPurchase]));
+
+                $row = MembershipHistory::create([
+                    'transaction_uuid' => $transaction->uuid,
+                    'package_uuid' => $package->uuid,
+                    'user_uuid' => $user->uuid,
+                    'expired_date' => $expiredDate->format('Y-m-d H:i:s'),
+                ]);
+                return [
+                    'source' => 'membership',
+                    'uuid' => $row->uuid,
+                    'expired_date' => $row->expired_date,
+                ];
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal menambah paket: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Berhasil menambah paket "' . $package->name . '" untuk ' . $user->name,
+            'data' => [
+                'user_uuid' => $user->uuid,
+                'package_uuid' => $package->uuid,
+                'package_name' => $package->name,
+                'type_of_purchase' => $typeOfPurchase,
+                'source' => $result['source'],
+                'ownership_uuid' => $result['uuid'],
+                'expired_date' => $result['expired_date'],
+                'granted_by' => $actor->uuid ?? null,
+            ],
+        ], 200);
+    }
+
+    public function removePackageFromUser(Request $request, $uuid, $ownershipUuid): JsonResponse
+    {
+        $user = User::where('uuid', $uuid)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
+        }
+
+        $source = $request->query('source');
+        if (!in_array($source, ['lifetime', 'membership'])) {
+            return response()->json([
+                'message' => 'Query param "source" harus "lifetime" atau "membership"',
+            ], 422);
+        }
+
+        $row = $source === 'lifetime'
+            ? PurchasedPackage::where('uuid', $ownershipUuid)->where('user_uuid', $uuid)->first()
+            : MembershipHistory::where('uuid', $ownershipUuid)->where('user_uuid', $uuid)->first();
+
+        if (!$row) {
+            return response()->json([
+                'message' => 'Kepemilikan paket tidak ditemukan untuk user ini',
+            ], 404);
+        }
+
+        $packageUuid = $row->package_uuid;
+        $package = Package::where('uuid', $packageUuid)->first();
+        $row->delete();
+
+        return response()->json([
+            'message' => 'Paket "' . ($package ? $package->name : '-') . '" berhasil dihapus dari ' . $user->name,
+            'data' => [
+                'user_uuid' => $user->uuid,
+                'package_uuid' => $packageUuid,
+                'source' => $source,
+                'ownership_uuid' => $ownershipUuid,
+            ],
+        ], 200);
+    }
+
     public function getUserPackages(Request $request, $uuid): JsonResponse
     {
         $user = User::where('uuid', $uuid)->first();
@@ -300,9 +498,32 @@ class UserController extends Controller
             return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
 
-        $rows = PurchasedPackage::where('user_uuid', $uuid)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $purchasedRows = PurchasedPackage::where('user_uuid', $uuid)->get()
+            ->map(function ($r) {
+                return [
+                    'uuid' => $r->uuid,
+                    'transaction_uuid' => $r->transaction_uuid,
+                    'package_uuid' => $r->package_uuid,
+                    'purchased_at' => $r->created_at,
+                    'expired_date' => null,
+                    'source' => 'lifetime',
+                ];
+            });
+        $membershipRows = MembershipHistory::where('user_uuid', $uuid)->get()
+            ->map(function ($r) {
+                return [
+                    'uuid' => $r->uuid,
+                    'transaction_uuid' => $r->transaction_uuid,
+                    'package_uuid' => $r->package_uuid,
+                    'purchased_at' => $r->created_at,
+                    'expired_date' => $r->expired_date,
+                    'source' => 'membership',
+                ];
+            });
+        $rows = $purchasedRows
+            ->concat($membershipRows)
+            ->sortByDesc('purchased_at')
+            ->values();
 
         $packageUuids = $rows->pluck('package_uuid')->unique()->toArray();
         $packages = Package::whereIn('uuid', $packageUuids)
@@ -310,15 +531,17 @@ class UserController extends Controller
             ->keyBy('uuid');
 
         $data = $rows->map(function ($row) use ($packages) {
-            $pkg = $packages->get($row->package_uuid);
+            $pkg = $packages->get($row['package_uuid']);
             if (!$pkg) {
                 return null;
             }
             return [
-                'uuid' => $row->uuid,
-                'transaction_uuid' => $row->transaction_uuid,
-                'package_uuid' => $row->package_uuid,
-                'purchased_at' => $row->created_at,
+                'uuid' => $row['uuid'],
+                'transaction_uuid' => $row['transaction_uuid'],
+                'package_uuid' => $row['package_uuid'],
+                'purchased_at' => $row['purchased_at'],
+                'expired_date' => $row['expired_date'],
+                'source' => $row['source'],
                 'package' => [
                     'uuid' => $pkg->uuid,
                     'name' => $pkg->name,
