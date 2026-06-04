@@ -67,6 +67,14 @@ class LessonAttendanceController extends Controller
 
     public function submitNote(Request $request)
     {
+        $request->validate([
+            'note' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120', // 5 MB
+            ],
+        ]);
         try {
             $path = "";
             if ($request->hasFile("note")) {
