@@ -161,6 +161,18 @@ class XenditController extends Controller
                 ], 404);
             }
 
+            $paymentStatus = strtoupper($request->status ?? '');
+            if (!in_array($paymentStatus, ['PAID', 'SETTLED'])) {
+                PaymentApiLog::create([
+                    'endpoint_url' => $request->path(),
+                    'method' => $request->method(),
+                    'status' => "Webhook ignored, payment status: " . $paymentStatus,
+                ]);
+                return response()->json([
+                    'message' => 'Webhook ignored, payment not completed',
+                ], 200);
+            }
+
             if ($transaction->transaction_status == 'settled') {
                 PaymentApiLog::create([
                     'endpoint_url' => $request->path(),
