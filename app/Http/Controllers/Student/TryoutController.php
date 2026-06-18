@@ -255,7 +255,17 @@ class TryoutController extends Controller
             // get session
             $sessionTest = $this->checkTestSession($user, $getTest);
 
+            if (!$sessionTest instanceof SessionTest) {
+                return response()->json(['message' => "Gagal membuat sesi tes"], 500);
+            }
+
             $data_questions = json_decode($sessionTest->data_question, true);
+
+            if (!is_array($data_questions) || count($data_questions) === 0) {
+                $data_questions = $this->buildDataQuestion($getTest->test_uuid);
+                $sessionTest->data_question = json_encode($data_questions);
+                $sessionTest->save();
+            }
 
             // 1 query only
             $questionUuids = array_column($data_questions, 'question_uuid');
@@ -351,21 +361,37 @@ class TryoutController extends Controller
         return $sessionTest;
     }
 
+    /**
+     * Bangun struktur data_question awal dari daftar soal pada sebuah test.
+     * Mengembalikan array kosong bila test tidak ditemukan / belum punya soal.
+     */
+    public function buildDataQuestion($test_uuid)
+    {
+        $data_question = [];
+        $get_test = Test::where([
+            'uuid' => $test_uuid
+        ])->with(['questions'])->first();
+
+        if (!$get_test) {
+            return $data_question;
+        }
+
+        foreach ($get_test->questions as $index => $data) {
+            $data_question[] = [
+                'question_uuid' => $data->question_uuid,
+                'answer_uuid' => [],
+                'answer_text' => '',
+                'status' => '',
+            ];
+        }
+
+        return $data_question;
+    }
+
     public function createTestSession($user, $test)
     {
         try {
-            $data_question = [];
-            $get_test = Test::where([
-                'uuid' => $test->test_uuid
-            ])->with(['questions'])->first();
-
-            foreach ($get_test->questions as $index => $data) {
-                $data_question[] = [
-                    'question_uuid' => $data->question_uuid,
-                    'answer_uuid' => [],
-                    'status' => '',
-                ];
-            }
+            $data_question = $this->buildDataQuestion($test->test_uuid);
 
             $sessionTest = SessionTest::create([
                 'user_uuid' => $user->uuid,
