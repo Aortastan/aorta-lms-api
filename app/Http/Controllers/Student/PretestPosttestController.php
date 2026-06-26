@@ -152,6 +152,8 @@ class PretestPosttestController extends Controller
                 'type' => $get_question->type,
                 'hint' => $get_question->hint,
                 'discussion' => $get_question->discussion,
+                'max_answers' => $get_question->max_answers,
+                'reference' => $get_question->reference,
                 'answers' => $answers,
             ];
         }
@@ -286,6 +288,8 @@ class PretestPosttestController extends Controller
                 'type' => $get_question->type,
                 'hint' => $get_question->hint,
                 'discussion' => $get_question->discussion,
+                'max_answers' => $get_question->max_answers,
+                'reference' => $get_question->reference,
                 'answers' => $answers,
             ];
         }

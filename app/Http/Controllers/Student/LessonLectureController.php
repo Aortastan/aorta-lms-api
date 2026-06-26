@@ -110,11 +110,18 @@ class LessonLectureController extends Controller
                     ];
                 }
 
+                // Toggle download hanya ada di level parent lecture (tidak ada
+                // UI per-variant), jadi variant mewarisi setting dari parent-nya.
+                $is_download_enabled = $getLecture->is_download_enabled;
+                if (!$is_download_enabled && $parentLecture) {
+                    $is_download_enabled = $parentLecture->is_download_enabled;
+                }
+
                 $lecture = [
                     "lecture_uuid" => $lecture_uuid,
                     "title" => $getLecture->title,
                     "body" => $getLecture->body,
-                    "is_download_enabled" => $getLecture->is_download_enabled,
+                    "is_download_enabled" => $is_download_enabled,
                     "is_attendance_enabled" => $getLecture->is_attendance_enabled,
                     "file_path" => $getLecture->file_path,
                     "attendance" => $getLecture->attendance,
