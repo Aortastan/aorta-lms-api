@@ -252,6 +252,8 @@ class QuestionController extends Controller
                 'point' => $getQuestion->point,
                 'hint' => $getQuestion->hint,
                 'discussion' => $getQuestion->discussion,
+                'max_answers' => $getQuestion->max_answers,
+                'reference' => $getQuestion->reference,
                 'answers' => $getQuestion->answers,
                 'timer' => $getQuestion->timer
             ];

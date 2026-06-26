@@ -143,6 +143,8 @@ class TryoutController extends Controller
                     'type' => $get_question->type,
                     'hint' => $get_question->hint,
                     'discussion' => $get_question->discussion,
+                    'max_answers' => $get_question->max_answers,
+                    'reference' => $get_question->reference,
                     'answers' => $answers,
                 ];
             }
@@ -304,6 +306,9 @@ class TryoutController extends Controller
                     'url_path'            => $q->url_path,
                     'type'                => $q->type,
                     'hint'                => $q->hint,
+                    'discussion'          => $q->discussion,
+                    'max_answers'         => $q->max_answers,
+                    'reference'           => $q->reference,
                     'answers'             => $answers,
                     'timer'               => $q->timer,
                 ];

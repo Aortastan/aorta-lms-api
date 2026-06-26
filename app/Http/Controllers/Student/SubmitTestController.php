@@ -123,6 +123,12 @@ class SubmitTestController extends Controller
                             $is_true = 0;
                 }
 
+                        // All-or-nothing: memilih jawaban yang SALAH juga membuat soal dianggap salah.
+                        // Penting untuk tipe "checklist" (multi-benar); tidak mengubah perilaku single choice.
+                        if ($answer->is_correct != 1 && $is_selected == 1) {
+                            $is_true = 0;
+                        }
+
                 if ($get_question->different_point == 0) {
 
                             $answers_result[] = [

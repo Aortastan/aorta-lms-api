@@ -15,7 +15,7 @@ trait QuestionValidationRuleTrait
             'subject_uuid' => 'required|string',
             'title' => 'required|string',
             'question' => 'required|string',
-            'question_type' => 'required|in:multi choice,most point,single choice,fill in blank,true false,essay',
+            'question_type' => 'required|in:multi choice,most point,single choice,fill in blank,true false,essay,diagram reasoning,checklist,visual matching',
             // Essay tidak butuh field type (video/text/pdf/dll) — default "text"
             'type' => $isEssay
                 ? 'nullable|in:video,youtube,text,image,pdf,audio,slide document'
@@ -92,6 +92,16 @@ trait QuestionValidationRuleTrait
             $rules['answers.*.point'] = 'required|integer';
         }else{
             $rules['point'] = 'required|integer';
+        }
+
+        // Checklist (multi-pilih) : batas maksimum jawaban dipilih (opsional).
+        if($request->question_type == 'checklist'){
+            $rules['max_answers'] = 'nullable|integer|min:1';
+        }
+
+        // Visual matching : konten referensi yang ditampilkan menempel di atas soal.
+        if($request->question_type == 'visual matching' && $request->reference){
+            $rules['reference'] = 'string';
         }
 
         return Validator::make($request->all(), $rules);

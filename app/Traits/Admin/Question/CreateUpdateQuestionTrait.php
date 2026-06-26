@@ -472,6 +472,14 @@ trait CreateUpdateQuestionTrait
             $point = $request->point;
         }
 
+        // Tipe soal psikotes baru:
+        // - max_answers : batas pilihan utk "checklist" (null = tanpa batas).
+        // - reference   : konten referensi (HTML) utk "visual matching".
+        $max_answers = ($request->question_type == 'checklist' && $request->max_answers !== null && $request->max_answers !== '')
+            ? (int) $request->max_answers
+            : null;
+        $reference = $request->question_type == 'visual matching' ? $request->reference : null;
+
         $validated=[
             'subject_uuid' => $request->subject_uuid,
             'question_type' => $request->question_type,
@@ -487,7 +495,9 @@ trait CreateUpdateQuestionTrait
             'hint' => $request->hint,
             'discussion' => $request->discussion,
             'file_path' => $path,
-            'timer' => $request->timer
+            'timer' => $request->timer,
+            'max_answers' => $max_answers,
+            'reference' => $reference,
         ];
 
         if($this->question == null || $this->duplicate_question){
