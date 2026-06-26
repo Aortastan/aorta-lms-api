@@ -34,6 +34,9 @@ class Question extends Model
         'discussion',
         'status',
         'timer',
+        // Tipe soal psikotes baru:
+        'max_answers', // batas pilihan utk tipe "checklist"
+        'reference',   // konten referensi (HTML) utk tipe "visual matching"
     ];
 
     public function subject()

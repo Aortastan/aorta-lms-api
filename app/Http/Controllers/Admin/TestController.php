@@ -206,6 +206,8 @@ class TestController extends Controller
                 'type' => $data['question']['type'],
                 'hint' => $data['question']['hint'],
                 'discussion' => $data['question']['discussion'],
+                'max_answers' => $data['question']['max_answers'],
+                'reference' => $data['question']['reference'],
                 'answers' => $answers,
             ];
         }
