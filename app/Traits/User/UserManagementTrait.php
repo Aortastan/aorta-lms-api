@@ -20,13 +20,24 @@ trait UserManagementTrait
             if ($role === 'student' && $users->isNotEmpty()) {
                 $userUuids = $users->pluck('uuid')->toArray();
 
-                // Hanya hitung purchased_packages yang package-nya masih ada (skip orphan)
-                $packageCounts = DB::table('purchased_packages as pp')
-                    ->join('packages as p', 'p.uuid', '=', 'pp.package_uuid')
-                    ->select('pp.user_uuid', DB::raw('COUNT(*) as cnt'))
-                    ->whereIn('pp.user_uuid', $userUuids)
-                    ->groupBy('pp.user_uuid')
-                    ->pluck('cnt', 'pp.user_uuid')
+                $purchasedSub = DB::table('purchased_packages')
+                    ->select('user_uuid', 'package_uuid')
+                    ->whereIn('user_uuid', $userUuids);
+
+                $combined = DB::table('membership_histories')
+                    ->select('user_uuid', 'package_uuid')
+                    ->whereIn('user_uuid', $userUuids)
+                    ->union($purchasedSub);
+
+                $packageCounts = DB::query()
+                    ->fromSub($combined, 'combined')
+                    ->join('packages as p', 'p.uuid', '=', 'combined.package_uuid')
+                    ->select(
+                        'combined.user_uuid',
+                        DB::raw('COUNT(DISTINCT combined.package_uuid) as cnt')
+                    )
+                    ->groupBy('combined.user_uuid')
+                    ->pluck('cnt', 'combined.user_uuid')
                     ->toArray();
 
                 $users = $users->map(function ($u) use ($packageCounts) {
