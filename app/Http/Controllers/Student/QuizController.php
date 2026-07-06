@@ -154,6 +154,7 @@ class QuizController extends Controller
                 'max_answers' => $get_question->max_answers,
                 'reference' => $get_question->reference,
                 'answers' => $answers,
+                'status' => isset($data->status) ? $data->status : "",
             ];
         }
 
