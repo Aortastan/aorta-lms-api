@@ -158,7 +158,8 @@ class SubmitTestController extends Controller
 
             $data_question[] = [
                 "question_uuid" => $data['question_uuid'],
-                        "answers" => $answers_result,
+                "answers" => $answers_result,
+                "status" => isset($data['status']) ? $data['status'] : "",
             ];
 
                     $progress = 10 + intval(($current / max($total, 1)) * 50);
