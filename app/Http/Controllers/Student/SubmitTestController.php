@@ -217,17 +217,18 @@ class SubmitTestController extends Controller
                 'uuid' => $check_tryout_segment->tryout_uuid,
             ])->first();
 
-            $get_package_test = PackageTest::where([
-                'test_uuid' => $check_tryout->uuid,
-            ])->first();
-
-            $get_package = Package::where([
-                'uuid' => $get_package_test->package_uuid
-            ])->first();
+            $package_uuid = $user_session->package_uuid;
+            if (!$package_uuid) {
+                $get_package_test = PackageTest::where([
+                    'test_uuid' => $check_tryout->uuid,
+                ])->first();
+                $package_uuid = $get_package_test ? $get_package_test->package_uuid : null;
+            }
 
                     $count = StudentTryout::where([
                         'user_uuid' => $user_session->user_uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
+                        'package_uuid' => $package_uuid,
                     ])->count();
 
                     if ($test->test_type == 'TSKKWK') {
@@ -245,8 +246,8 @@ class SubmitTestController extends Controller
                     $student_tryout = StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
-                        'package_uuid' => $get_package->uuid,
-                            'package_test_uuid' => $package_test_uuid,
+                        'package_uuid' => $package_uuid,
+                        'package_test_uuid' => $package_test_uuid,
                         'attempt' => $count + 1,
                         'score' => $points,
                     ]);

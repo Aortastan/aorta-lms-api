@@ -362,6 +362,7 @@ class PretestPosttestController extends Controller
             'type_test' => 'pretest_posttest',
             'test_uuid' => $test->test_uuid,
             'data_question' => json_encode($data_question),
+            'package_uuid' => request()->get('package_uuid'),
         ]);
 
         return $sessionTest;
