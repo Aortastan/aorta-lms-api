@@ -445,7 +445,7 @@ class TestController extends Controller
                 }
 
                 StudentQuiz::where([
-                    'uuid' => $student_quiz->uuid
+                    'uuid' => $session->uuid
                 ])->update([
                     'data_question' => json_encode($student_session),
                 ]);
@@ -542,7 +542,7 @@ class TestController extends Controller
                 }
 
                 StudentTryout::where([
-                    'uuid' => $student_tryout->uuid
+                    'uuid' => $session->uuid
                 ])->update([
                     'data_question' => json_encode($student_session),
                 ]);
