@@ -47,6 +47,27 @@ class AuthController extends Controller
         //Verify login information
         $credentials = $request->only(['email','password']);
         $user = User::where('email', $request->email)->first();
+        
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Incorrect credentials'], 401);
+        }
+
+        // Check if there is already an active session on a different device
+        if ($user->active_token && $user->active_device_id) {
+            $requestDeviceId = $request->input('device_id');
+            if ($user->active_device_id !== $requestDeviceId) {
+                try {
+                    if (JWTAuth::setToken($user->active_token)->check()) {
+                        return response()->json([
+                            'message' => 'Anda sudah login di device lain, silahkan logout terlebih dahulu di device tersebut.'
+                        ], 400);
+                    }
+                } catch (\Exception $e) {
+                    // Token is invalid/expired, continue to login
+                }
+            }
+        }
+
         if (! $token = auth()->attempt($credentials)) {
             return response()->json(['message' => 'Incorrect credentials'], 401);
         }
@@ -54,6 +75,13 @@ class AuthController extends Controller
             $user->sendEmailVerificationNotification();
             return response()->json(['message' => 'Please verify your email first'], 403);
         }
+
+        // Save active session token and device id
+        $user->update([
+            'active_token' => $token,
+            'active_device_id' => $request->input('device_id'),
+        ]);
+
         return $this->respondWithToken($token);
 
     }
@@ -202,6 +230,13 @@ class AuthController extends Controller
      */
     public function logout(): JsonResponse
     {
+        $user = auth()->user();
+        if ($user) {
+            $user->update([
+                'active_token' => null,
+                'active_device_id' => null,
+            ]);
+        }
         auth()->logout();
 
         return response()->json(['message' => 'Successfully logged out'], 200);
@@ -226,6 +261,13 @@ class AuthController extends Controller
      */
     protected function respondWithToken($token): JsonResponse
     {
+        $user = auth()->user();
+        if ($user) {
+            $user->update([
+                'active_token' => $token,
+            ]);
+        }
+
         return response()->json([
             'user' => [
                 'role'          => auth()->user()->role,

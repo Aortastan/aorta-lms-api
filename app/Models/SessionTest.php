@@ -26,6 +26,7 @@ class SessionTest extends Model
         'type_test',
         'test_uuid',
         'data_question',
+        'package_uuid',
     ];
 
     protected static function boot()

@@ -477,6 +477,7 @@ class QuizController extends Controller
             'type_test' => 'quiz',
             'test_uuid' => $quiz->test_uuid,
             'data_question' => json_encode($data_question),
+            'package_uuid' => request()->get('package_uuid'),
         ]);
 
         return $sessionTest;
