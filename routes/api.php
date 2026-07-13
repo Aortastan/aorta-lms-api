@@ -38,6 +38,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('reset-password', 'AuthController@resetPassword')->name('resetPassword');
     Route::get('banners/active', 'AllRole\BannerController@index')->name('index');
     Route::post('logout', 'AuthController@logout');
+    Route::post('ping', 'AuthController@ping');
     Route::get('me/menu-access', 'AuthController@myMenuAccess')->name('me.menuAccess');
     Route::get('payment-methods', 'AllRole\PaymentMethodController@index');
     Route::get('admin-fee', "AllRole\PaymentMethodController@adminFee");

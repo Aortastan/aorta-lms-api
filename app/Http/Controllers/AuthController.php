@@ -56,14 +56,28 @@ class AuthController extends Controller
         if ($user->active_token && $user->active_device_id) {
             $requestDeviceId = $request->input('device_id');
             if ($user->active_device_id !== $requestDeviceId) {
-                try {
-                    if (JWTAuth::setToken($user->active_token)->check()) {
-                        return response()->json([
-                            'message' => 'Anda sudah login di device lain, silahkan logout terlebih dahulu di device tersebut.'
-                        ], 400);
+                $isIdle = false;
+                if ($user->last_activity_at) {
+                    $isIdle = \Carbon\Carbon::parse($user->last_activity_at)->addMinutes(5)->isPast();
+                }
+
+                if (!$isIdle) {
+                    try {
+                        if (JWTAuth::setToken($user->active_token)->check()) {
+                            return response()->json([
+                                'message' => 'Anda sudah login di device lain, silahkan logout terlebih dahulu di device tersebut.'
+                            ], 400);
+                        }
+                    } catch (\Exception $e) {
+                        // Token is invalid/expired, continue to login
                     }
-                } catch (\Exception $e) {
-                    // Token is invalid/expired, continue to login
+                } else {
+                    // Invalidate the old token since the device is idle
+                    try {
+                        JWTAuth::setToken($user->active_token)->invalidate();
+                    } catch (\Exception $e) {
+                        // Ignored
+                    }
                 }
             }
         }
@@ -282,5 +296,16 @@ class AuthController extends Controller
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60
         ]);
+    }
+
+    public function ping(): JsonResponse
+    {
+        $user = auth()->user();
+        if ($user) {
+            $user->last_activity_at = now();
+            $user->save();
+            return response()->json(['message' => 'pong'], 200);
+        }
+        return response()->json(['message' => 'Unauthenticated'], 401);
     }
 }
