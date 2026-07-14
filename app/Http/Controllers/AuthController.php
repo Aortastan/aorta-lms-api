@@ -64,8 +64,9 @@ class AuthController extends Controller
                 if (!$isIdle) {
                     try {
                         if (JWTAuth::setToken($user->active_token)->check()) {
+                            $activeDeviceName = $user->active_device_name ?: 'Device Lain';
                             return response()->json([
-                                'message' => 'Anda sudah login di device lain, silahkan logout terlebih dahulu di device tersebut.'
+                                'message' => "Anda sudah login di device lain ({$activeDeviceName}), silahkan logout terlebih dahulu di device tersebut."
                             ], 400);
                         }
                     } catch (\Exception $e) {
@@ -90,10 +91,11 @@ class AuthController extends Controller
             return response()->json(['message' => 'Please verify your email first'], 403);
         }
 
-        // Save active session token and device id
+        // Save active session token, device id and device name
         $user->update([
             'active_token' => $token,
             'active_device_id' => $request->input('device_id'),
+            'active_device_name' => $request->input('device_name'),
         ]);
 
         return $this->respondWithToken($token);
@@ -249,6 +251,7 @@ class AuthController extends Controller
             $user->update([
                 'active_token' => null,
                 'active_device_id' => null,
+                'active_device_name' => null,
             ]);
         }
         auth()->logout();
