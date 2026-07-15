@@ -52,8 +52,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'Incorrect credentials'], 401);
         }
 
-        // Check if there is already an active session on a different device
-        if ($user->active_token && $user->active_device_id) {
+        // Check if there is already an active session on a different device (except for admin)
+        if ($user->role !== 'admin' && $user->active_token && $user->active_device_id) {
             $requestDeviceId = $request->input('device_id');
             if ($user->active_device_id !== $requestDeviceId) {
                 $isIdle = false;
