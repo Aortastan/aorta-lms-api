@@ -11,11 +11,20 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
+            $query = Transaction::with(['user', 'detailTransaction', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon']);
+
+            if ($request->startDate) {
+                $query->where('created_at', '>=', Carbon::parse($request->startDate)->startOfDay());
+            }
+            if ($request->endDate) {
+                $query->where('created_at', '<=', Carbon::parse($request->endDate)->endOfDay());
+            }
+
             // Mengambil data transaksi tanpa relasi terlebih dahulu
-            $get_transactions = Transaction::with(['user', 'detailTransaction', 'claimedCoupons', 'claimedCoupons.coupon'])->get();
+            $get_transactions = $query->get();
             \Log::info('Transactions: ', $get_transactions->toArray());
 
             if ($get_transactions->isEmpty()) {
@@ -71,8 +80,11 @@ class TransactionController extends Controller
         $startDate = $request->startDate;
         $endDate = $request->endDate;
         $selectedPackage = $request->selectedPackage;
-        $cleanedPackage = str_replace('+', ' ', $selectedPackage);
+        $selectedCoupon = $request->selectedCoupon;
+        $status = $request->status;
 
-        return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage), 'transaction.xlsx');
+        $cleanedPackage = $selectedPackage ? str_replace('+', ' ', $selectedPackage) : null;
+
+        return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage, $selectedCoupon, $status), 'transaction.xlsx');
     }
 }
