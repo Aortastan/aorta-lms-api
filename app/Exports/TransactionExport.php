@@ -35,7 +35,7 @@ class TransactionExport implements FromCollection, WithHeadings, WithStyles
     {
 
 
-        $query = Transaction::with(['detailTransaction', 'detailTransaction.package', 'user', 'payment']);
+        $query = Transaction::with(['user', 'detailTransaction', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon']);
 
         // Apply date filtering if provided
         if ($this->startDate) {

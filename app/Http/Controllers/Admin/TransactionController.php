@@ -14,7 +14,7 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Transaction::with(['user', 'detailTransaction', 'claimedCoupons', 'claimedCoupons.coupon']);
+            $query = Transaction::with(['user', 'detailTransaction', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon']);
 
             if ($request->startDate) {
                 $query->where('created_at', '>=', Carbon::parse($request->startDate)->startOfDay());
