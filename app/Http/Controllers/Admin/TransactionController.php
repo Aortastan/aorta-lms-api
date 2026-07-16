@@ -80,8 +80,11 @@ class TransactionController extends Controller
         $startDate = $request->startDate;
         $endDate = $request->endDate;
         $selectedPackage = $request->selectedPackage;
-        $cleanedPackage = str_replace('+', ' ', $selectedPackage);
+        $selectedCoupon = $request->selectedCoupon;
+        $status = $request->status;
 
-        return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage), 'transaction.xlsx');
+        $cleanedPackage = $selectedPackage ? str_replace('+', ' ', $selectedPackage) : null;
+
+        return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage, $selectedCoupon, $status), 'transaction.xlsx');
     }
 }
