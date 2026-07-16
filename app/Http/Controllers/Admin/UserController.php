@@ -258,6 +258,81 @@ class UserController extends Controller
         ], 200);
     }
 
+    public function updateUserRole(Request $request, $uuid): JsonResponse
+    {
+        $actor = JWTAuth::parseToken()->authenticate();
+        if (!$actor || $actor->email !== 'aortastan@gmail.com') {
+            return response()->json([
+                'message' => 'Hanya super admin yang dapat mengubah role user',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'role' => 'required|in:admin,student',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::where('uuid', $uuid)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
+        }
+
+        if ($user->email === 'aortastan@gmail.com') {
+            return response()->json([
+                'message' => 'Role super admin tidak dapat diubah',
+            ], 422);
+        }
+
+        if ($actor->uuid === $user->uuid) {
+            return response()->json([
+                'message' => 'Tidak dapat mengubah role akun sendiri',
+            ], 422);
+        }
+
+        if (!in_array($user->role, ['admin', 'student'])) {
+            return response()->json([
+                'message' => 'Hanya user dengan role student atau admin yang dapat diubah',
+            ], 422);
+        }
+
+        $newRole = $request->input('role');
+        if ($user->role === $newRole) {
+            return response()->json([
+                'message' => 'User sudah memiliki role tersebut',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($user, $uuid, $newRole) {
+            User::where('uuid', $uuid)->update(['role' => $newRole]);
+
+            // Bersihkan menu access lama apa pun arah perubahannya
+            UserMenuAccess::where('user_uuid', $uuid)->delete();
+
+            if ($newRole === 'admin') {
+                // Default aman: hanya profil. Super admin lalu mengatur menunya lewat "Atur Menu".
+                UserMenuAccess::create([
+                    'user_uuid' => $uuid,
+                    'menu_key' => '/dashboard/admin/profile',
+                ]);
+            }
+        });
+
+        return response()->json([
+            'message' => $newRole === 'admin'
+                ? 'Berhasil mengangkat user menjadi admin'
+                : 'Berhasil menurunkan admin menjadi student',
+            'data' => [
+                'uuid' => $uuid,
+                'role' => $newRole,
+            ],
+        ], 200);
+    }
+
     public function getUserMenuAccess(Request $request, $uuid): JsonResponse
     {
         $user = User::where('uuid', $uuid)->first();
