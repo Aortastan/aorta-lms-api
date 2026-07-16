@@ -11,11 +11,20 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
+            $query = Transaction::with(['user', 'detailTransaction', 'claimedCoupons', 'claimedCoupons.coupon']);
+
+            if ($request->startDate) {
+                $query->whereDate('created_at', '>=', $request->startDate);
+            }
+            if ($request->endDate) {
+                $query->whereDate('created_at', '<=', $request->endDate);
+            }
+
             // Mengambil data transaksi tanpa relasi terlebih dahulu
-            $get_transactions = Transaction::with(['user', 'detailTransaction', 'claimedCoupons', 'claimedCoupons.coupon'])->get();
+            $get_transactions = $query->get();
             \Log::info('Transactions: ', $get_transactions->toArray());
 
             if ($get_transactions->isEmpty()) {
