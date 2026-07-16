@@ -39,10 +39,10 @@ class TransactionExport implements FromCollection, WithHeadings, WithStyles
 
         // Apply date filtering if provided
         if ($this->startDate) {
-            $query->whereDate('created_at', '>=', $this->startDate);
+            $query->where('created_at', '>=', Carbon::parse($this->startDate)->startOfDay());
         }
         if ($this->endDate) {
-            $query->whereDate('created_at', '<=', $this->endDate);
+            $query->where('created_at', '<=', Carbon::parse($this->endDate)->endOfDay());
         }
 
 

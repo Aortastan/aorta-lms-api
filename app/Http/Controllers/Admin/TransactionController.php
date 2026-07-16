@@ -17,10 +17,10 @@ class TransactionController extends Controller
             $query = Transaction::with(['user', 'detailTransaction', 'claimedCoupons', 'claimedCoupons.coupon']);
 
             if ($request->startDate) {
-                $query->whereDate('created_at', '>=', $request->startDate);
+                $query->where('created_at', '>=', Carbon::parse($request->startDate)->startOfDay());
             }
             if ($request->endDate) {
-                $query->whereDate('created_at', '<=', $request->endDate);
+                $query->where('created_at', '<=', Carbon::parse($request->endDate)->endOfDay());
             }
 
             // Mengambil data transaksi tanpa relasi terlebih dahulu
