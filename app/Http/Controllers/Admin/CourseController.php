@@ -602,19 +602,7 @@ class CourseController extends Controller
                 'message' => 'Lesson Lectures not found'
             ], 404);
         }
-        if($request->has('attendance_ended_at') && !$lessonLectures->attendance_started_at) {
-            return response()->json([
-                'message' => 'Mulai presensi terlebih dahulu'
-            ], 404);    
-        }
-
         if($request->has('attendance_started_at')) {
-            if($lessonLectures->attendance_started_at) {
-                return response()->json([
-                    'message' => 'Absensi awal sudah dimulai'
-                ], 400);    
-            }
-
             if($lessonLectures->is_attendance_enabled != 1) {
                 return response()->json([
                     'message' => 'Aktifkan absensi terlebih dahulu'
@@ -622,18 +610,13 @@ class CourseController extends Controller
             }
 
             $lessonLectures->update([
-                'attendance_started_at' => Carbon::now()
+                'attendance_started_at' => $request->attendance_started_at ? Carbon::parse($request->attendance_started_at) : Carbon::now()
             ]);
         }
 
         if($request->has('attendance_ended_at')) {
-            if($lessonLectures->attendance_ended_at) {
-                return response()->json([
-                    'message' => 'Absen akhir sudah dimulai'
-                ], 400);    
-            }
             $lessonLectures->update([
-                'attendance_ended_at' => Carbon::now()
+                'attendance_ended_at' => $request->attendance_ended_at ? Carbon::parse($request->attendance_ended_at) : Carbon::now()
             ]);
         }
 

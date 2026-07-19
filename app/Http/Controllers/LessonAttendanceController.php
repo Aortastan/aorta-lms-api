@@ -170,23 +170,32 @@ class LessonAttendanceController extends Controller
                 ], 200);
             }
 
-            if ($attendanceStartAt->diffInHours(now()) >= 1 && $request->type === "start") {
-                return response()->json([
-                    "message" => "Tidak bisa absen awal, sesi absen awal sudah berakhir pada " . $attendanceStartAt->format('d/m/Y H:i:s'),
-                ], 200);
+            $now = Carbon::now();
+
+            if ($request->type === "start") {
+                if ($now->lt($attendanceStartAt)) {
+                    return response()->json([
+                        "message" => "Tidak bisa absen awal, sesi absen awal belum dimulai",
+                    ], 200);
+                }
+                if ($now->gt($attendanceEndAt)) {
+                    return response()->json([
+                        "message" => "Tidak bisa absen awal, sesi absen awal sudah berakhir pada " . $attendanceEndAt->format('d/m/Y H:i:s'),
+                    ], 200);
+                }
             }
 
-            if ($attendanceStartAt->diffInMinutes(now()) <= 60 && $request->type === "end") {
-                return response()->json([
-                    "message" => "Tidak bisa absen akhir, sesi absen akhir belum dimulai",
-                    "duration" => $attendanceStartAt->diffInMinutes(now())
-                ], 200);
-            }
-
-            if ($attendanceEndAt->diffInHours(now()) >= 1 && $request->type === "end") {
-                return response()->json([
-                    "message" => "Tidak bisa absen akhir, sesi absen akhir sudah berakhir pada " . $attendanceEndAt->format('d/m/Y H:i:s'),
-                ], 200);
+            if ($request->type === "end") {
+                if ($now->lt($attendanceStartAt)) {
+                    return response()->json([
+                        "message" => "Tidak bisa absen akhir, sesi absen akhir belum dimulai",
+                    ], 200);
+                }
+                if ($now->gt($attendanceEndAt)) {
+                    return response()->json([
+                        "message" => "Tidak bisa absen akhir, sesi absen akhir sudah berakhir pada " . $attendanceEndAt->format('d/m/Y H:i:s'),
+                    ], 200);
+                }
             }
 
 
