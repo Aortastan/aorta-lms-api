@@ -67,16 +67,25 @@ class LessonAttendanceController extends Controller
 
     public function submitNote(Request $request)
     {
+        $attendance = LessonAttendances::where([
+            'lesson_lecture_uuid' => $request->lesson_lecture_uuid,
+            'user_uuid' => Auth::id(),
+        ])->first();
+
+        $hasExistingNote = $attendance && !empty($attendance->note);
+
         $request->validate([
             'note' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
+                $hasExistingNote ? 'nullable' : 'required',
+                'file',
+                'mimes:jpg,jpeg,png,webp,pdf',
                 'max:5120', // 5 MB
             ],
+        ], [
+            'note.max' => 'Ukuran file tidak boleh melebihi 5mb',
         ]);
         try {
-            $path = "";
+            $path = $hasExistingNote ? $attendance->note : "";
             if ($request->hasFile("note")) {
                 $file = $request->file('note');
                 $path = $file->store('note', 'public');
@@ -92,7 +101,7 @@ class LessonAttendanceController extends Controller
             }
             $attendanceEndAt = Carbon::parse($lecture->attendance_ended_at);
 
-            if ($attendanceEndAt->diffInDays(now()) >= 7) {
+            if (now()->gt($attendanceEndAt) && $attendanceEndAt->diffInDays(now()) >= 7) {
                 return response()->json([
                     "message" => "Sesi upload catatan sudah berakhir",
                     "success" => false
