@@ -51,7 +51,7 @@ class VerificationController extends Controller
         if(!$user->hasVerifiedEmail()){
             $user->markEmailAsVerified();
         }
-        return redirect('https://aortastan.com/');
+        return redirect(env('FRONTEND_URL'));
     }
 
     public function manualVerification(Request $request, $email){
