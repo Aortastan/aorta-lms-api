@@ -171,6 +171,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
 
             Route::delete('{uuid}', 'Admin\UserController@delete')->name('delete');
 
+            Route::put('{uuid}/role', 'Admin\UserController@updateUserRole')->name('updateRole');
+
             // Menu access per user
             Route::get('menu-access/{uuid}', 'Admin\UserController@getUserMenuAccess')->name('menuAccess.get');
             Route::post('menu-access/{uuid}', 'Admin\UserController@setUserMenuAccess')->name('menuAccess.set');

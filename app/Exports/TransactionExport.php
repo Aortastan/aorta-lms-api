@@ -22,26 +22,45 @@ class TransactionExport implements FromCollection, WithHeadings, WithStyles
 
     protected $startDate;
     protected $endDate;
-    protected $cleanedPackage;
+    protected $selectedPackage;
+    protected $selectedCoupon;
+    protected $status;
 
-    public function __construct($startDate = null, $endDate = null, $cleanedPackage = null)
+    public function __construct($startDate = null, $endDate = null, $selectedPackage = null, $selectedCoupon = null, $status = null)
     {
         $this->startDate = $startDate;
         $this->endDate = $endDate;
-        $this->cleanedPackage = $cleanedPackage;
+        $this->selectedPackage = $selectedPackage;
+        $this->selectedCoupon = $selectedCoupon;
+        $this->status = $status;
     }
 
     public function collection()
     {
 
 
+<<<<<<< HEAD
         $query = Transaction::whereBetween("created_at", [$this->startDate, $this->endDate])->with(['detailTransaction', 'detailTransaction.package', 'user', 'payment']);
 
+=======
+        $query = Transaction::with(['user', 'detailTransaction', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon']);
 
+        // Apply date filtering if provided
+        if ($this->startDate) {
+            $query->where('created_at', '>=', Carbon::parse($this->startDate)->startOfDay());
+        }
+        if ($this->endDate) {
+            $query->where('created_at', '<=', Carbon::parse($this->endDate)->endOfDay());
+        }
+>>>>>>> 6315d6a49e2377bcff4a5fafa1a8def43be6a604
 
-        if ($this->cleanedPackage) {
-            // Get the UUIDs of packages that match the cleaned package name
-            $uuids = Package::where('name', 'like', "%{$this->cleanedPackage}%")->pluck('uuid');
+        if ($this->status) {
+            $query->where('transaction_status', 'like', "%{$this->status}%");
+        }
+
+        if ($this->selectedPackage) {
+            // Get the UUIDs of packages that match the package name
+            $uuids = Package::where('name', 'like', "%{$this->selectedPackage}%")->pluck('uuid');
 
             // Check if any UUIDs were found
             if ($uuids->isNotEmpty()) {
@@ -50,6 +69,12 @@ class TransactionExport implements FromCollection, WithHeadings, WithStyles
                     $q->whereIn('package_uuid', $uuids);
                 });
             }
+        }
+
+        if ($this->selectedCoupon) {
+            $query->whereHas('claimedCoupons.coupon', function ($q) {
+                $q->where('code', $this->selectedCoupon);
+            });
         }
         $detailRab = $query->get();
 
