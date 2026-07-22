@@ -6,7 +6,7 @@ use DateTime;
 use DateInterval;
 use App\Traits\Package\PackageTrait;
 use App\Models\PaymentGatewaySetting;
-
+use App\Models\Category;
 trait CouponTrait
 {
     use PackageTrait;
@@ -182,6 +182,7 @@ trait CouponTrait
                 ];
             }
         }
+	$list_package = [];
 
         foreach ($request->packages as $index => $package) {
             // cek apakah package tersebut tersedia
@@ -191,6 +192,7 @@ trait CouponTrait
                     'message' => "Package not found",
                 ], 404);
             }
+	   $list_package[] = $getPackage;
 
             // cek apakah user sudah pernah membeli lifetime package tersebut
             $checkPurchasedPackage = $this->checkPurchasedPackage($request, $package['package_uuid'], $user->uuid);
@@ -298,6 +300,9 @@ trait CouponTrait
         }
 
         if(count($list_coupon_category) > 0){
+
+            $totalDiscCategory = 0;
+            $listDiscCategory = [];
             foreach ($list_coupon_category as $key1 => $coupon_category) {
                 $list_of_package_by_this_category= [];
                 foreach ($list_of_package_and_category as $index1 => $data) {
@@ -308,7 +313,6 @@ trait CouponTrait
                 }
 
 
-                if(count($list_of_package_by_this_category) > 0){
                     $total_percategory = 0;
                     foreach ($list_of_package_by_this_category as $index2 => $list) {
                         $total_percategory += $list['total_detail_amount'];
@@ -351,16 +355,17 @@ trait CouponTrait
 
                     if($coupon_category['type_coupon'] == 'discount amount'){
                         $total_percategory = $total_percategory - $coupon_category['price'];
-                        if($total_percategory < 0){
-                            $total_percategory = 0;
-                        }
+                        // if($total_percategory < 0){
+                        //     $total_percategory = 0;
+                        // }
                     }
                     if($coupon_category['type_coupon'] == 'percentage discount'){
                         $total_percategory = ((100 - $coupon_category['discount']) / 100) * $total_percategory;
                     }
 
+                    
                     $total_amount += $total_percategory;
-                }
+                
             }
         }
 
@@ -421,17 +426,30 @@ trait CouponTrait
         if($total_amount > 0) {
             $final_amount = $total_amount + $this->paymentGateway->admin_fee;
         }
-        $selectedCoupon = Coupon::with('package')->where([
+        $selectedCoupon = Coupon::with(['package', 'category'])->where([
                 'code' => $request->selectedCoupon,
             ])->first();
         if($selectedCoupon->is_restricted == 1){
-            $exists = collect($request->packages)->contains('package_uuid', $selectedCoupon->package_uuid);
-            if (!$exists) {
-                return response()->json([
-                    'coupon_code' => $selectedCoupon,
-                    'message' => 'Coupon ' . $selectedCoupon['code'] . ' is only available for ' . $selectedCoupon->package->name . ' package',
-                ], 400);
+            if($selectedCoupon->restricted_by === "package") {
+                $exists = collect($request->packages)->contains('package_uuid', $selectedCoupon->package_uuid);
+                if (!$exists) {
+                    return response()->json([
+                        'coupon_code' => $selectedCoupon,
+                        'message' => 'Coupon ' . $selectedCoupon['code'] . ' is only available for ' . $selectedCoupon->package->name . ' package',
+                    ], 400);
+                }
+            } else if($selectedCoupon->restricted_by === "category") {
+                $exists = collect($list_package)->contains('category_uuid', $selectedCoupon->category_uuid);
+		
+                if (!$exists) {
+                    return response()->json([
+                        'coupon_code' => $selectedCoupon,
+                        'message' => 'Coupon ' . $selectedCoupon['code'] . ' is only available for ' . $selectedCoupon->category->name . ' category',
+                    ], 400);
+                }
+
             }
+
         }
         return response()->json([
             'message' => 'Success count discount',

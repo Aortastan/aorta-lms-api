@@ -51,7 +51,7 @@ class VerificationController extends Controller
         if(!$user->hasVerifiedEmail()){
             $user->markEmailAsVerified();
         }
-        return redirect(env('FRONTEND_URL'));
+        return redirect(config('app.frontend_url'));
     }
 
     public function manualVerification(Request $request, $email){

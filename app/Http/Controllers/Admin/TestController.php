@@ -31,7 +31,8 @@ class TestController extends Controller
 {
     use DuplicateTrait, TestTrait;
 
-    public function index(){
+    public function index()
+    {
         $search = "";
         $test_type = "";
         $type = "";
@@ -40,27 +41,27 @@ class TestController extends Controller
         $orderBy = "";
         $order = "";
 
-        if(isset($_GET['search'])){
+        if (isset($_GET['search'])) {
             $search = $_GET['search'];
         }
 
-        if(isset($_GET['test_type'])){
+        if (isset($_GET['test_type'])) {
             $test_type = $_GET['test_type'];
         }
 
-        if(isset($_GET['type'])){
+        if (isset($_GET['type'])) {
             $type = $_GET['type'];
         }
 
-        if(isset($_GET['status'])){
+        if (isset($_GET['status'])) {
             $status = $_GET['status'];
         }
 
-        if(isset($_GET['test_category'])){
+        if (isset($_GET['test_category'])) {
             $test_category = $_GET['test_category'];
         }
 
-        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+        if (isset($_GET['orderBy']) && isset($_GET['order'])) {
             $orderBy = $_GET['orderBy'];
             $order = $_GET['order'];
         }
@@ -68,7 +69,8 @@ class TestController extends Controller
         return $this->getTests($search, $test_type, $type, $status, $test_category, $orderBy, $order);
     }
 
-    public function published(){
+    public function published()
+    {
         $search = "";
         $test_type = "";
         $type = "";
@@ -77,23 +79,23 @@ class TestController extends Controller
         $orderBy = "";
         $order = "";
 
-        if(isset($_GET['search'])){
+        if (isset($_GET['search'])) {
             $search = $_GET['search'];
         }
 
-        if(isset($_GET['test_type'])){
+        if (isset($_GET['test_type'])) {
             $test_type = $_GET['test_type'];
         }
 
-        if(isset($_GET['type'])){
+        if (isset($_GET['type'])) {
             $type = $_GET['type'];
         }
 
-        if(isset($_GET['test_category'])){
+        if (isset($_GET['test_category'])) {
             $test_category = $_GET['test_category'];
         }
 
-        if(isset($_GET['orderBy']) && isset($_GET['order'])){
+        if (isset($_GET['orderBy']) && isset($_GET['order'])) {
             $orderBy = $_GET['orderBy'];
             $order = $_GET['order'];
         }
@@ -101,13 +103,14 @@ class TestController extends Controller
         return $this->getTests($search, $test_type, $type, $status, $test_category, $orderBy, $order);
     }
 
-    public function show(Request $request, $uuid){
+    public function show(Request $request, $uuid)
+    {
         $test = Test::select('uuid', 'test_type', 'title', 'student_title_display', 'passing_score', 'status', 'test_category', 'opening_audio', 'audio_test')
-        ->where([
-            'uuid' => $uuid
-        ])->with(['questions.question.subject'])->first();
+            ->where([
+                'uuid' => $uuid
+            ])->with(['questions.question.subject'])->first();
 
-        if(!$test){
+        if (!$test) {
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
@@ -165,13 +168,14 @@ class TestController extends Controller
         ], 200);
     }
 
-    public function preview(Request $request, $uuid){
+    public function preview(Request $request, $uuid)
+    {
         $test = Test::select('uuid', 'test_type', 'title', 'status', 'test_category')
-        ->where([
-            'uuid' => $uuid
-        ])->with(['questions.question', 'questions.question.answers'])->first();
+            ->where([
+                'uuid' => $uuid
+            ])->with(['questions.question', 'questions.question.answers'])->first();
 
-        if(!$test){
+        if (!$test) {
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
@@ -224,7 +228,8 @@ class TestController extends Controller
     }
 
 
-    public function store(Request $request): JsonResponse{
+    public function store(Request $request): JsonResponse
+    {
         $validate = [
             'test_type' => 'required|in:classical,IRT,Tes Potensi,TSKKWK,essay',
             'title' => 'required|string',
@@ -257,9 +262,10 @@ class TestController extends Controller
         ], 200);
     }
 
-    public function duplicate(Request $request, $uuid){
+    public function duplicate(Request $request, $uuid)
+    {
         $test = Test::where(['uuid' => $uuid])->first();
-        if(!$test){
+        if (!$test) {
             return response()->json([
                 'message' => 'Test not found',
             ], 404);
@@ -281,15 +287,16 @@ class TestController extends Controller
         return $this->duplicateTest($request, $uuid);
     }
 
-    public function addQuestions(Request $request, $uuid): JsonResponse{
+    public function addQuestions(Request $request, $uuid): JsonResponse
+    {
         $test = Test::where(['uuid' => $uuid])->first();
-        if(!$test){
+        if (!$test) {
             return response()->json([
                 'message' => 'Test not found',
             ], 404);
         }
 
-        if($test->status == "Published"){
+        if ($test->status == "Published") {
             return response()->json([
                 'message' => 'Test already published, you cannot edit this test.',
             ], 422);
@@ -315,7 +322,7 @@ class TestController extends Controller
         $allQuestionsUuid = [];
         foreach ($request->questions as $index => $question) {
             $checkQuestion = Question::where('uuid', $question['question_uuid'])->first();
-            if(!$checkQuestion){
+            if (!$checkQuestion) {
                 return response()->json([
                     'message' => 'Question not found'
                 ], 404);
@@ -323,21 +330,21 @@ class TestController extends Controller
 
             $checkQuestionTest = QuestionTest::where('uuid', $question['uuid'])->first();
 
-            if(!$checkQuestionTest){
+            if (!$checkQuestionTest) {
                 $newQuestions[] = [
                     'uuid' => Uuid::uuid4()->toString(),
                     'test_uuid' => $test->uuid,
                     'question_uuid' => $question['question_uuid'],
                 ];
-            }else{
+            } else {
                 $allQuestionsUuid[] = $checkQuestionTest->uuid;
             }
         }
-        foreach($newQuestions as $new) {
+        foreach ($newQuestions as $new) {
             QuestionTest::where('test_uuid', $new['test_uuid'])->delete();
         }
 
-        if(count($newQuestions) > 0){
+        if (count($newQuestions) > 0) {
             QuestionTest::insert($newQuestions);
         }
 
@@ -351,7 +358,8 @@ class TestController extends Controller
         ], 200);
     }
 
-    public function updateSessionQuestions($test){
+    public function updateSessionQuestions($test)
+    {
         // update session
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
@@ -396,7 +404,8 @@ class TestController extends Controller
         }
     }
 
-    public function updateLessonQuizQuestionsStudent($test){
+    public function updateLessonQuizQuestionsStudent($test)
+    {
         // update session
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
@@ -444,7 +453,8 @@ class TestController extends Controller
         }
     }
 
-    public function updatePretestPosttestQuestionsStudent($test){
+    public function updatePretestPosttestQuestionsStudent($test)
+    {
         // update session
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
@@ -488,13 +498,12 @@ class TestController extends Controller
                 ])->update([
                     'data_question' => json_encode($student_session),
                 ]);
-
             }
         }
-
     }
 
-    public function updateTryoutQuestionsStudent($test){
+    public function updateTryoutQuestionsStudent($test)
+    {
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
         ])->get();
@@ -539,7 +548,7 @@ class TestController extends Controller
                 ]);
             }
 
-            if(count($student_tryout) > 0){
+            if (count($student_tryout) > 0) {
                 $check_irt_point = IrtPoint::where([
                     'package_test_uuid' => $package_test->uuid,
                 ])->first();
@@ -547,13 +556,13 @@ class TestController extends Controller
                 $SubmitTestController->calculateIRT($package_test->uuid, $student_tryout[0]);
                 $SubmitTestController->RecalculatePoint($check_irt_point, $student_tryout);
             }
-
         }
     }
 
-    public function update(Request $request, $uuid): JsonResponse{
+    public function update(Request $request, $uuid): JsonResponse
+    {
         $test = Test::where(['uuid' => $uuid])->first();
-        if(!$test){
+        if (!$test) {
             return response()->json([
                 'message' => 'Test not found',
             ], 404);
@@ -583,7 +592,7 @@ class TestController extends Controller
 
             $path = $file->store('opening_audio', 'public');
         }
-
+        $pathAudioTest = null;
         if ($request->hasFile('audio_test')) {
             $file = $request->file('audio_test');
 
@@ -606,9 +615,10 @@ class TestController extends Controller
         ], 200);
     }
 
-    public function updateTag(Request $request, $uuid){
+    public function updateTag(Request $request, $uuid)
+    {
         $checkTest = Test::where(['uuid' => $uuid])->first();
-        if(!$checkTest){
+        if (!$checkTest) {
             return response()->json([
                 'message' => 'Test not found',
             ], 404);
@@ -633,7 +643,7 @@ class TestController extends Controller
                 'uuid' => $tag_uuid,
             ])->first();
 
-            if(!$checkTag){
+            if (!$checkTag) {
                 return response()->json([
                     'message' => 'Tag not found',
                 ], 404);
@@ -649,22 +659,22 @@ class TestController extends Controller
             'test_uuid' => $checkTest->uuid,
         ])->delete();
 
-        if(count($test_tags) > 0){
+        if (count($test_tags) > 0) {
             TestTag::insert($test_tags);
         }
 
         return response()->json([
             'message' => 'Success update tag',
         ], 200);
-
     }
 
-    public function delete($uuid){
+    public function delete($uuid)
+    {
         $check_test = Test::where([
             'uuid' => $uuid,
         ])->first();
 
-        if($check_test == null){
+        if ($check_test == null) {
             return response()->json([
                 'message' => 'Data not found',
             ], 404);
@@ -680,7 +690,7 @@ class TestController extends Controller
             'test_uuid' => $check_test->uuid,
         ])->first();
 
-        if($check_tryout_segment_test || $check_lesson_quiz || $check_pretest_posttest){
+        if ($check_tryout_segment_test || $check_lesson_quiz || $check_pretest_posttest) {
             return response()->json([
                 'message' => 'This test has published and used in tryouts. You can\'t delete it',
             ], 404);

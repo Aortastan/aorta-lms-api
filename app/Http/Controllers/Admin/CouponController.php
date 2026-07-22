@@ -304,4 +304,12 @@ class CouponController extends Controller
             ]
         ], 200);
     }
+
+    public function delete(Request $request, $uuid): JsonResponse
+    {
+        Coupon::where('uuid', $uuid)->delete();
+        return response()->json([
+            "message" => "Berhasil menghapus data"
+        ], 200);
+    }
 }

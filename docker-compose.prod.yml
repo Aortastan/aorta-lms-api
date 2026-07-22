@@ -1,0 +1,94 @@
+version: "3.9"
+
+services:
+  backend-prod:
+    image: backend-image:latest
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./:/var/www/backend
+      - ./storage/app/public:/var/www/backend/storage/app/public
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      FRONTEND_URL: https://aorta-edu.com
+      APP_URL: https://api.aorta-edu.com
+
+      PUSHER_APP_CLUSTER: "ap1"
+      PUSHER_APP_ID: 2142562
+      PUSHER_APP_KEY: 66a7a7ae3140b8326008
+      PUSHER_APP_SECRET: 18fbba95cf055d0a62b2
+      PUSHER_CHANNEL: aorta-edu-production
+
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1  # Wajib 127.0.0.1 karena backend di mode host
+      DB_PORT: 3306
+      DB_DATABASE: aorta-prod
+      DB_USERNAME: root
+      DB_PASSWORD: AortaDev2024!
+
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+
+      MAIL_MAILER: smtp
+      MAIL_HOST: mx5.mailspace.id
+      MAIL_PORT: 465
+      MAIL_USERNAME: admin@aorta-edu.com
+      MAIL_PASSWORD: Aortaedu2021
+      MAIL_ENCRYPTION: ssl
+      MAIL_FROM_ADDRESS: admin@aorta-edu.com
+      MAIL_FROM_NAME: Aorta Edu Support
+      JWT_SECRET: JUrSvOCuwCfvHdegz3x6Kyk79Ca1F8NQpyOcWHnyZsWwPo4O8xg1AT830AxygsQy
+
+    depends_on:
+      - mysql
+      - redis
+
+  queue-worker:
+    image: backend-image:latest
+    network_mode: host
+    restart: unless-stopped
+    entrypoint: []
+    volumes:
+      - ./:/var/www/backend
+    command: sh -c "cd /var/www/backend && php artisan queue:work --tries=3 --timeout=120"
+    environment:
+      DB_HOST: 127.0.0.1 # Wajib 127.0.0.1
+      REDIS_HOST: 127.0.0.1
+      QUEUE_CONNECTION: redis
+    depends_on:
+      - mysql
+      - redis
+
+  mysql:
+    container_name: "database"
+    image: mysql:8.0
+    restart: unless-stopped
+    # Tetap di Bridge (default), tapi port harus di-expose ke Host
+    ports:
+      - "3306:3306" 
+    environment:
+      MYSQL_ROOT_PASSWORD: AortaDev2024!
+      MYSQL_DATABASE: aorta-prod
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql # Bisa pakai 'mysql' karena sesama bridge
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:

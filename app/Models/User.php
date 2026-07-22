@@ -9,6 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Ramsey\Uuid\Uuid;
+use App\Notifications\ResetPasswordCustom;
+use App\Notifications\VerifyEmailNotification;
+
 
 
 class User extends Authenticatable implements JWTSubject, MustVerifyEmail
@@ -62,6 +65,17 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'name_verified_at' => 'datetime',
         'last_activity_at' => 'datetime',
     ];
+
+
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordCustom($token));
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification());
+    }
 
     public function getJWTIdentifier() {
         return $this->getKey();

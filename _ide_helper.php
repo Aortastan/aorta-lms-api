@@ -3,7 +3,7 @@
 
 /**
  * A helper file for Laravel, to provide autocomplete information to your IDE
- * Generated for Laravel 7.30.6.
+ * Generated for Laravel 7.30.7.
  *
  * This file should not be included in your code, only analyzed by your IDE!
  *
@@ -1095,7 +1095,7 @@
          * Resolve all of the bindings for a given tag.
          *
          * @param string $tag
-         * @return \Illuminate\Container\iterable 
+         * @return iterable 
          * @static 
          */ 
         public static function tagged($tag)
@@ -2966,9 +2966,9 @@
                     /**
          * Obtains multiple cache items by their unique keys.
          *
-         * @param \Psr\SimpleCache\iterable $keys A list of keys that can obtained in a single operation.
+         * @param iterable $keys A list of keys that can obtained in a single operation.
          * @param mixed $default Default value to return for keys that do not exist.
-         * @return \Psr\SimpleCache\iterable A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
+         * @return iterable A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
          * @throws \Psr\SimpleCache\InvalidArgumentException
          *   MUST be thrown if $keys is neither an array nor a Traversable,
          *   or if any of the $keys are not a legal value.
@@ -3040,7 +3040,7 @@
                     /**
          * Persists a set of key => value pairs in the cache, with an optional TTL.
          *
-         * @param \Psr\SimpleCache\iterable $values A list of key => value pairs for a multiple-set operation.
+         * @param iterable $values A list of key => value pairs for a multiple-set operation.
          * @param null|int|\DateInterval $ttl Optional. The TTL value of this item. If no value is sent and
          *                                       the driver supports TTL then the library may set a default value
          *                                       for it or let the driver take care of that.
@@ -3177,7 +3177,7 @@
                     /**
          * Deletes multiple cache items in a single operation.
          *
-         * @param \Psr\SimpleCache\iterable $keys A list of string-based keys to be deleted.
+         * @param iterable $keys A list of string-based keys to be deleted.
          * @return bool True if the items were successfully removed. False if there was an error.
          * @throws \Psr\SimpleCache\InvalidArgumentException
          *   MUST be thrown if $keys is neither an array nor a Traversable,
@@ -5673,7 +5673,7 @@
                     /**
          * Determine if all of the given abilities should be granted for the current user.
          *
-         * @param \Illuminate\Auth\Access\iterable|string $abilities
+         * @param iterable|string $abilities
          * @param array|mixed $arguments
          * @return bool 
          * @static 
@@ -5686,7 +5686,7 @@
                     /**
          * Determine if any one of the given abilities should be granted for the current user.
          *
-         * @param \Illuminate\Auth\Access\iterable|string $abilities
+         * @param iterable|string $abilities
          * @param array|mixed $arguments
          * @return bool 
          * @static 
@@ -5699,7 +5699,7 @@
                     /**
          * Determine if all of the given abilities should be denied for the current user.
          *
-         * @param \Illuminate\Auth\Access\iterable|string $abilities
+         * @param iterable|string $abilities
          * @param array|mixed $arguments
          * @return bool 
          * @static 
@@ -7728,6 +7728,80 @@
                         return $instance->setConnectionName($name);
         }
                     /**
+         * Migrate the delayed jobs that are ready to the regular queue.
+         *
+         * @param string $from
+         * @param string $to
+         * @return array 
+         * @static 
+         */ 
+        public static function migrateExpiredJobs($from, $to)
+        {
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
+                        return $instance->migrateExpiredJobs($from, $to);
+        }
+                    /**
+         * Delete a reserved job from the queue.
+         *
+         * @param string $queue
+         * @param \Illuminate\Queue\Jobs\RedisJob $job
+         * @return void 
+         * @static 
+         */ 
+        public static function deleteReserved($queue, $job)
+        {
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
+                        $instance->deleteReserved($queue, $job);
+        }
+                    /**
+         * Delete a reserved job from the reserved queue and release it.
+         *
+         * @param string $queue
+         * @param \Illuminate\Queue\Jobs\RedisJob $job
+         * @param int $delay
+         * @return void 
+         * @static 
+         */ 
+        public static function deleteAndRelease($queue, $job, $delay)
+        {
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
+                        $instance->deleteAndRelease($queue, $job, $delay);
+        }
+                    /**
+         * Get the queue or return the default.
+         *
+         * @param string|null $queue
+         * @return string 
+         * @static 
+         */ 
+        public static function getQueue($queue)
+        {
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
+                        return $instance->getQueue($queue);
+        }
+                    /**
+         * Get the connection for the queue.
+         *
+         * @return \Illuminate\Redis\Connections\Connection 
+         * @static 
+         */ 
+        public static function getConnection()
+        {
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
+                        return $instance->getConnection();
+        }
+                    /**
+         * Get the underlying Redis instance.
+         *
+         * @return \Illuminate\Contracts\Redis\Factory 
+         * @static 
+         */ 
+        public static function getRedis()
+        {
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
+                        return $instance->getRedis();
+        }
+                    /**
          * Get the retry delay for an object-based queue handler.
          *
          * @param mixed $job
@@ -7736,7 +7810,7 @@
          */ 
         public static function getJobRetryDelay($job)
         {            //Method inherited from \Illuminate\Queue\Queue         
-                        /** @var \Illuminate\Queue\SyncQueue $instance */
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
                         return $instance->getJobRetryDelay($job);
         }
                     /**
@@ -7748,7 +7822,7 @@
          */ 
         public static function getJobExpiration($job)
         {            //Method inherited from \Illuminate\Queue\Queue         
-                        /** @var \Illuminate\Queue\SyncQueue $instance */
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
                         return $instance->getJobExpiration($job);
         }
                     /**
@@ -7760,7 +7834,7 @@
          */ 
         public static function createPayloadUsing($callback)
         {            //Method inherited from \Illuminate\Queue\Queue         
-                        \Illuminate\Queue\SyncQueue::createPayloadUsing($callback);
+                        \Illuminate\Queue\RedisQueue::createPayloadUsing($callback);
         }
                     /**
          * Set the IoC container instance.
@@ -7771,7 +7845,7 @@
          */ 
         public static function setContainer($container)
         {            //Method inherited from \Illuminate\Queue\Queue         
-                        /** @var \Illuminate\Queue\SyncQueue $instance */
+                        /** @var \Illuminate\Queue\RedisQueue $instance */
                         $instance->setContainer($container);
         }
          
@@ -8597,6 +8671,7 @@
          * @param array $server The server parameters ($_SERVER)
          * @param string|resource|null $content The raw body data
          * @return static 
+         * @throws BadRequestException When the URI is invalid
          * @static 
          */ 
         public static function create($uri, $method = 'GET', $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
@@ -8766,7 +8841,7 @@
          * 
          *
          * @internal 
-         * @param \Symfony\Component\HttpFoundation\callable():  SessionInterface $factory
+         * @param callable():  SessionInterface $factory
          * @static 
          */ 
         public static function setSessionFactory($factory)
@@ -14281,6 +14356,42 @@
                         return $instance->queueImport($import, $filePath, $disk, $readerType);
         }
                     /**
+         * Register a custom macro.
+         *
+         * @param string $name
+         * @param object|callable $macro
+         * @return void 
+         * @static 
+         */ 
+        public static function macro($name, $macro)
+        {
+                        \Maatwebsite\Excel\Excel::macro($name, $macro);
+        }
+                    /**
+         * Mix another object into the class.
+         *
+         * @param object $mixin
+         * @param bool $replace
+         * @return void 
+         * @throws \ReflectionException
+         * @static 
+         */ 
+        public static function mixin($mixin, $replace = true)
+        {
+                        \Maatwebsite\Excel\Excel::mixin($mixin, $replace);
+        }
+                    /**
+         * Checks if macro is registered.
+         *
+         * @param string $name
+         * @return bool 
+         * @static 
+         */ 
+        public static function hasMacro($name)
+        {
+                        return \Maatwebsite\Excel\Excel::hasMacro($name);
+        }
+                    /**
          * 
          *
          * @param string $concern
@@ -14664,7 +14775,7 @@
                     /**
          * Returns an array of all data collectors
          *
-         * @return \DebugBar\array[DataCollectorInterface] 
+         * @return array[DataCollectorInterface] 
          * @static 
          */ 
         public static function getCollectors()

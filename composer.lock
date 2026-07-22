@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "12dd482688bc70c5fe43e774bcad27e0",
+    "content-hash": "cc83aff77ca9a08d45379141a3df4505",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -1146,82 +1146,6 @@
                 }
             ],
             "time": "2023-04-17T16:00:37+00:00"
-        },
-        {
-            "name": "itsgoingd/clockwork",
-            "version": "v5.3.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/itsgoingd/clockwork.git",
-                "reference": "c27ad77a08a9e58bf0049de46969fa4fe3b506e5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/itsgoingd/clockwork/zipball/c27ad77a08a9e58bf0049de46969fa4fe3b506e5",
-                "reference": "c27ad77a08a9e58bf0049de46969fa4fe3b506e5",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "php": ">=7.1"
-            },
-            "suggest": {
-                "ext-pdo": "Needed in order to use a SQL database for metadata storage",
-                "ext-pdo_mysql": "Needed in order to use MySQL for metadata storage",
-                "ext-pdo_postgres": "Needed in order to use Postgres for metadata storage",
-                "ext-pdo_sqlite": "Needed in order to use a SQLite for metadata storage",
-                "ext-redis": "Needed in order to use Redis for metadata storage",
-                "php-http/discovery": "Vanilla integration - required for the middleware zero-configuration setup"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "Clockwork": "Clockwork\\Support\\Laravel\\Facade"
-                    },
-                    "providers": [
-                        "Clockwork\\Support\\Laravel\\ClockworkServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Clockwork\\": "Clockwork/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "itsgoingd",
-                    "email": "itsgoingd@luzer.sk",
-                    "homepage": "https://twitter.com/itsgoingd"
-                }
-            ],
-            "description": "php dev tools in your browser",
-            "homepage": "https://underground.works/clockwork",
-            "keywords": [
-                "Devtools",
-                "debugging",
-                "laravel",
-                "logging",
-                "lumen",
-                "profiling",
-                "slim"
-            ],
-            "support": {
-                "issues": "https://github.com/itsgoingd/clockwork/issues",
-                "source": "https://github.com/itsgoingd/clockwork/tree/v5.3.4"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/itsgoingd",
-                    "type": "github"
-                }
-            ],
-            "time": "2025-02-09T15:57:21+00:00"
         },
         {
             "name": "laravel/framework",
@@ -3519,74 +3443,28 @@
             "time": "2021-09-25T23:10:38+00:00"
         },
         {
-            "name": "setasign/fpdf",
-            "version": "1.8.6",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Setasign/FPDF.git",
-                "reference": "0838e0ee4925716fcbbc50ad9e1799b5edfae0a0"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Setasign/FPDF/zipball/0838e0ee4925716fcbbc50ad9e1799b5edfae0a0",
-                "reference": "0838e0ee4925716fcbbc50ad9e1799b5edfae0a0",
-                "shasum": ""
-            },
-            "require": {
-                "ext-gd": "*",
-                "ext-zlib": "*"
-            },
-            "type": "library",
-            "autoload": {
-                "classmap": [
-                    "fpdf.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Olivier Plathey",
-                    "email": "oliver@fpdf.org",
-                    "homepage": "http://fpdf.org/"
-                }
-            ],
-            "description": "FPDF is a PHP class which allows to generate PDF files with pure PHP. F from FPDF stands for Free: you may use it for any kind of usage and modify it to suit your needs.",
-            "homepage": "http://www.fpdf.org",
-            "keywords": [
-                "fpdf",
-                "pdf"
-            ],
-            "support": {
-                "source": "https://github.com/Setasign/FPDF/tree/1.8.6"
-            },
-            "time": "2023-06-26T14:44:25+00:00"
-        },
-        {
             "name": "setasign/fpdi",
-            "version": "v2.6.4",
+            "version": "v2.6.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Setasign/FPDI.git",
-                "reference": "4b53852fde2734ec6a07e458a085db627c60eada"
+                "reference": "de0cf35911be3e9ea63b48e0f307883b1c7c48ac"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Setasign/FPDI/zipball/4b53852fde2734ec6a07e458a085db627c60eada",
-                "reference": "4b53852fde2734ec6a07e458a085db627c60eada",
+                "url": "https://api.github.com/repos/Setasign/FPDI/zipball/de0cf35911be3e9ea63b48e0f307883b1c7c48ac",
+                "reference": "de0cf35911be3e9ea63b48e0f307883b1c7c48ac",
                 "shasum": ""
             },
             "require": {
                 "ext-zlib": "*",
-                "php": "^7.1 || ^8.0"
+                "php": ">=7.2 <=8.5.99999"
             },
             "conflict": {
                 "setasign/tfpdf": "<1.31"
             },
             "require-dev": {
-                "phpunit/phpunit": "^7",
+                "phpunit/phpunit": "^8.5.52",
                 "setasign/fpdf": "~1.8.6",
                 "setasign/tfpdf": "~1.33",
                 "squizlabs/php_codesniffer": "^3.5",
@@ -3626,7 +3504,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Setasign/FPDI/issues",
-                "source": "https://github.com/Setasign/FPDI/tree/v2.6.4"
+                "source": "https://github.com/Setasign/FPDI/tree/v2.6.6"
             },
             "funding": [
                 {
@@ -3634,7 +3512,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-08-05T09:57:14+00:00"
+            "time": "2026-03-13T08:38:20+00:00"
         },
         {
             "name": "setasign/fpdi-tcpdf",
@@ -6004,16 +5882,16 @@
         },
         {
             "name": "tecnickcom/tcpdf",
-            "version": "6.10.0",
+            "version": "6.11.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tecnickcom/TCPDF.git",
-                "reference": "ca5b6de294512145db96bcbc94e61696599c391d"
+                "reference": "e1e2ade18e574e963473f53271591edd8c0033ec"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tecnickcom/TCPDF/zipball/ca5b6de294512145db96bcbc94e61696599c391d",
-                "reference": "ca5b6de294512145db96bcbc94e61696599c391d",
+                "url": "https://api.github.com/repos/tecnickcom/TCPDF/zipball/e1e2ade18e574e963473f53271591edd8c0033ec",
+                "reference": "e1e2ade18e574e963473f53271591edd8c0033ec",
                 "shasum": ""
             },
             "require": {
@@ -6063,7 +5941,7 @@
             ],
             "support": {
                 "issues": "https://github.com/tecnickcom/TCPDF/issues",
-                "source": "https://github.com/tecnickcom/TCPDF/tree/6.10.0"
+                "source": "https://github.com/tecnickcom/TCPDF/tree/6.11.2"
             },
             "funding": [
                 {
@@ -6071,7 +5949,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2025-05-27T18:02:28+00:00"
+            "time": "2026-03-03T08:58:10+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
@@ -10191,8 +10069,8 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.2.5 || ^8.0"
+        "php": "^7.2.5"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

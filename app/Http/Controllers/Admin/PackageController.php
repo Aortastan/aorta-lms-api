@@ -105,14 +105,27 @@ class PackageController extends Controller
             $validate['test_type'] = 'required|in:classical,IRT,Tes Potensi,TSKKWK';
         }
 
-        if($request->learner_accesibility == 'paid'){
-            $validate['price_lifetime'] = 'required|numeric';
+        if ($request->learner_accesibility == 'paid') {
+
             $validate['price_one_month'] = 'required|numeric';
             $validate['price_three_months'] = 'required|numeric';
             $validate['price_six_months'] = 'required|numeric';
             $validate['price_one_year'] = 'required|numeric';
             $validate['discount'] = 'required|numeric';
             $validate['is_membership'] = 'required|boolean';
+
+            // cek apakah ada price selain lifetime yang > 0
+            $hasOtherPrice = 
+                $request->price_one_month > 0 ||
+                $request->price_three_months > 0 ||
+                $request->price_six_months > 0 ||
+                $request->price_one_year > 0;
+
+            if ($hasOtherPrice) {
+                $validate['price_lifetime'] = 'required|numeric';
+            } else {
+                $validate['price_lifetime'] = 'nullable|numeric';
+            }
         }
 
         // if($request->test_type == 'IRT'){

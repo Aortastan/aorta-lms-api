@@ -53,6 +53,7 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:8000'),
 
     'asset_url' => env('ASSET_URL', null),
 
@@ -67,6 +68,10 @@ return [
     |
     */
 
+<<<<<<< HEAD
+    // 'timezone' => 'UTC',
+=======
+>>>>>>> 6315d6a49e2377bcff4a5fafa1a8def43be6a604
     'timezone' => 'Asia/Jakarta',
 
     /*

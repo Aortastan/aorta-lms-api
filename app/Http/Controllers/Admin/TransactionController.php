@@ -14,6 +14,13 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         try {
+<<<<<<< HEAD
+
+            $startDate = Carbon::parse($request->input('startDate', Carbon::now()->startOfMonth()));
+            $endDate   = Carbon::parse($request->input('endDate', Carbon::now()->endOfMonth()));
+            // Mengambil data transaksi tanpa relasi terlebih dahulu
+            $get_transactions = Transaction::whereBetween('created_at', [$startDate, $endDate])->with(['user', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon'])->get();
+=======
             $query = Transaction::with(['user', 'detailTransaction', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon']);
 
             if ($request->startDate) {
@@ -26,10 +33,15 @@ class TransactionController extends Controller
             // Mengambil data transaksi tanpa relasi terlebih dahulu
             $get_transactions = $query->get();
             \Log::info('Transactions: ', $get_transactions->toArray());
+>>>>>>> 6315d6a49e2377bcff4a5fafa1a8def43be6a604
 
             if ($get_transactions->isEmpty()) {
                 return response()->json([
                     'message' => 'No transactions found.',
+                    'date_range' => [
+                        'start_date' => $startDate->toDateString(),
+                        'end_date' => $endDate->toDateString()
+                    ],
                 ]);
             }
 
@@ -57,9 +69,9 @@ class TransactionController extends Controller
                     'packages' => $packages,
                     'claimed_coupons' => $transaction->claimedCoupons ? $transaction->claimedCoupons->pluck('coupon.code')->implode(', ') : 'N/A',
                     "url" => $transaction->url,
-                    "expired_date" => $transaction->expiry_date, // Format here
-                    "created_at" => $transaction->created_at, // Format here
-                    "updated_at" => $transaction->updated_at, // Format here if needed
+                    "expired_date" => Carbon::parse($transaction->expiry_date)->format('d/m/Y H:i:s'),
+                    "created_at" => Carbon::parse($transaction->created_at)->format('d/m/Y H:i:s'),
+                    "updated_at" => Carbon::parse($transaction->updated_at)->format('d/m/Y H:i:s'),
                 ];
             }
 
@@ -77,6 +89,21 @@ class TransactionController extends Controller
 
     public function exportTransaction(Request $request)
     {
+<<<<<<< HEAD
+        // $startDate = $request->input('startDate');
+        // $endDate = $request->input('endDate');
+        $startDate = Carbon::parse($request->input('startDate', Carbon::now()->startOfMonth()));
+        $endDate   = Carbon::parse($request->input('endDate', Carbon::now()->endOfMonth()));
+        if (!$startDate || !$endDate) {
+            return response()->json([
+                'message' => 'startDate and endDate parameters are required.'
+            ], 400);
+        }
+        $selectedPackage = $request->input('selectedPackage');
+        $cleanedPackage = str_replace('+', ' ', $selectedPackage);
+
+        return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage), $startDate->toDateString() . '-' . $endDate->toDateString() . '-transaction.xlsx');
+=======
         $startDate = $request->startDate;
         $endDate = $request->endDate;
         $selectedPackage = $request->selectedPackage;
@@ -86,5 +113,6 @@ class TransactionController extends Controller
         $cleanedPackage = $selectedPackage ? str_replace('+', ' ', $selectedPackage) : null;
 
         return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage, $selectedCoupon, $status), 'transaction.xlsx');
+>>>>>>> 6315d6a49e2377bcff4a5fafa1a8def43be6a604
     }
 }

@@ -41,6 +41,11 @@ return [
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
+            'stream' => [
+                'socket' => [
+                    'bindto' => '0.0.0.0:0', // 👈 FORCE IPv4
+                ],
+            ],
         ],
 
         'ses' => [
