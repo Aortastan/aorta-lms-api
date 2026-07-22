@@ -238,6 +238,9 @@ trait XenditPaymentTrait
         }
 
         if(count($list_coupon_category) > 0){
+
+            $totalDiscCategory = 0;
+            $listDiscCategory = [];
             foreach ($list_coupon_category as $key1 => $coupon_category) {
                 $list_of_package_by_this_category= [];
                 foreach ($list_of_package_and_category as $index1 => $data) {
@@ -248,7 +251,6 @@ trait XenditPaymentTrait
                 }
 
 
-                if(count($list_of_package_by_this_category) > 0){
                     $total_percategory = 0;
                     foreach ($list_of_package_by_this_category as $index2 => $list) {
                         $total_percategory += $list['total_detail_amount'];
@@ -260,6 +262,7 @@ trait XenditPaymentTrait
 
                     if(count($checkClaimedCoupon) >= $coupon_category['limit_per_user']){
                         return response()->json([
+                            'coupon_code' => $coupon_category['code'],
                             'message' => 'You\'ve already redeemed this coupon',
                         ], 400);
                     }
@@ -271,6 +274,7 @@ trait XenditPaymentTrait
                         ])->count();
                         if($checkClaimedCoupon >= $coupon_category['limit']){
                             return response()->json([
+                                'coupon_code' => $coupon_category['code'],
                                 'message' => 'The coupon has run out of limit',
                             ], 400);
                         }
@@ -281,6 +285,7 @@ trait XenditPaymentTrait
 
                         if ($today > $expiredDate) {
                             return response()->json([
+                                'coupon_code' => $coupon_category['code'],
                                 'message' => 'The coupon has expired',
                             ], 400);
                         }
@@ -288,16 +293,17 @@ trait XenditPaymentTrait
 
                     if($coupon_category['type_coupon'] == 'discount amount'){
                         $total_percategory = $total_percategory - $coupon_category['price'];
-                        if($total_percategory < 0){
-                            $total_percategory = 0;
-                        }
+                        // if($total_percategory < 0){
+                        //     $total_percategory = 0;
+                        // }
                     }
                     if($coupon_category['type_coupon'] == 'percentage discount'){
                         $total_percategory = ((100 - $coupon_category['discount']) / 100) * $total_percategory;
                     }
 
+                    
                     $total_amount += $total_percategory;
-                }
+                
             }
         }
 

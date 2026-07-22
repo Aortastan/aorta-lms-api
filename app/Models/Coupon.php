@@ -53,6 +53,11 @@ class Coupon extends Model
         return $this->belongsTo(Package::class, 'package_uuid', 'uuid');
     }
 
+    function category()
+    {
+        return $this->belongsTo(Category::class, 'category_uuid', 'uuid');
+    }
+
     protected static function boot()
     {
         parent::boot();
