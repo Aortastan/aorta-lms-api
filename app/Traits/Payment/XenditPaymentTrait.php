@@ -492,7 +492,7 @@ trait XenditPaymentTrait
         $params = [
             'external_id' => Uuid::uuid4()->toString(),
             'amount' => $total_amount,
-            'success_redirect_url' => config('app.frontend_url').'/dashboard/student/transactions',
+            'success_redirect_url' => config('frontend_url').'/dashboard/student/transactions',
             "customer"=> [
                 "given_names" => $user->name,
                 "email" => $user->email,
