@@ -68,10 +68,6 @@ return [
     |
     */
 
-<<<<<<< HEAD
-    // 'timezone' => 'UTC',
-=======
->>>>>>> 6315d6a49e2377bcff4a5fafa1a8def43be6a604
     'timezone' => 'Asia/Jakarta',
 
     /*
