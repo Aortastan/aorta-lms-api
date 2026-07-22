@@ -36,7 +36,7 @@ class ResetPasswordCustom extends Notification implements ShouldQueue
         $expires = Carbon::now()->addMinutes(config('auth.passwords.users.expire'))->timestamp;
 
         // Ambil base url dari APP_URL
-        $baseUrl = config('frontend_url'); // APP_URL dari .env
+        $baseUrl = config('app.frontend_url'); // APP_URL dari .env
 
         // Buat URL frontend untuk reset password
         $url = $baseUrl . "/auth/change-password?email={$email}&token={$token}&expires={$expires}";
