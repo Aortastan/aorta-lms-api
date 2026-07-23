@@ -610,13 +610,13 @@ class CourseController extends Controller
             }
 
             $lessonLectures->update([
-                'attendance_started_at' => $request->attendance_started_at ? Carbon::parse($request->attendance_started_at) : Carbon::now()
+                'attendance_started_at' => $request->attendance_started_at ? Carbon::parse($request->attendance_started_at)->setTimezone('Asia/Jakarta') : Carbon::now('Asia/Jakarta')
             ]);
         }
 
         if($request->has('attendance_ended_at')) {
             $lessonLectures->update([
-                'attendance_ended_at' => $request->attendance_ended_at ? Carbon::parse($request->attendance_ended_at) : Carbon::now()
+                'attendance_ended_at' => $request->attendance_ended_at ? Carbon::parse($request->attendance_ended_at)->setTimezone('Asia/Jakarta') : Carbon::now('Asia/Jakarta')
             ]);
         }
 
