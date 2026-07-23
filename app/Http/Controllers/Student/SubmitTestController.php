@@ -325,7 +325,7 @@ class SubmitTestController extends Controller
                     $createdAttempt = StudentTryout::create([
                         'data_question' => json_encode($data_question),
                         'user_uuid' => $user_session->user_uuid,
-                        'package_uuid' => $get_package->uuid,
+                        'package_uuid' => $package_uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
                         'attempt' => $count + 1,
                             'score' => $score,
@@ -367,7 +367,8 @@ class SubmitTestController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Terjadi kesalahan di server'
+                'message' => 'Terjadi kesalahan di server',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
