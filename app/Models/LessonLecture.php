@@ -32,6 +32,8 @@ class LessonLecture extends Model
         'is_attendance_enabled',
         'attendance_started_at',
         'attendance_ended_at',
+        'attendance_start_duration',
+        'attendance_end_duration',
     ];
 
     protected static function boot()

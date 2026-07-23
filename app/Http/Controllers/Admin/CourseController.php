@@ -237,6 +237,8 @@ class CourseController extends Controller
                         'is_attendance_enabled' => $lecture->is_attendance_enabled,
                         'attendance_started_at' => $lecture->attendance_started_at,
                         'attendance_ended_at' => $lecture->attendance_ended_at,
+                        'attendance_start_duration' => $lecture->attendance_start_duration,
+                        'attendance_end_duration' => $lecture->attendance_end_duration,
                     ];
                 }
                 $courseLessons[] = [
@@ -602,21 +604,38 @@ class CourseController extends Controller
                 'message' => 'Lesson Lectures not found'
             ], 404);
         }
+        $attendanceStartedAt = $lessonLectures->attendance_started_at;
         if($request->has('attendance_started_at')) {
-            if($lessonLectures->is_attendance_enabled != 1) {
-                return response()->json([
-                    'message' => 'Aktifkan absensi terlebih dahulu'
-                ], 400);
-            }
-
+            $attendanceStartedAt = $request->attendance_started_at ? Carbon::parse($request->attendance_started_at)->setTimezone('Asia/Jakarta') : null;
             $lessonLectures->update([
-                'attendance_started_at' => $request->attendance_started_at ? Carbon::parse($request->attendance_started_at)->setTimezone('Asia/Jakarta') : Carbon::now('Asia/Jakarta')
+                'attendance_started_at' => $attendanceStartedAt
             ]);
         }
 
+        $attendanceEndedAt = $lessonLectures->attendance_ended_at;
         if($request->has('attendance_ended_at')) {
+            $attendanceEndedAt = $request->attendance_ended_at ? Carbon::parse($request->attendance_ended_at)->setTimezone('Asia/Jakarta') : null;
             $lessonLectures->update([
-                'attendance_ended_at' => $request->attendance_ended_at ? Carbon::parse($request->attendance_ended_at)->setTimezone('Asia/Jakarta') : Carbon::now('Asia/Jakarta')
+                'attendance_ended_at' => $attendanceEndedAt
+            ]);
+        }
+
+        if($request->has('attendance_start_duration')) {
+            $lessonLectures->update([
+                'attendance_start_duration' => $request->attendance_start_duration
+            ]);
+        }
+
+        if($request->has('attendance_end_duration')) {
+            $lessonLectures->update([
+                'attendance_end_duration' => $request->attendance_end_duration
+            ]);
+        }
+
+        if($request->has('attendance_started_at') || $request->has('attendance_ended_at')) {
+            $isEnabled = ($attendanceStartedAt !== null || $attendanceEndedAt !== null) ? 1 : 0;
+            $lessonLectures->update([
+                'is_attendance_enabled' => $isEnabled
             ]);
         }
 
@@ -625,9 +644,17 @@ class CourseController extends Controller
                 'is_download_enabled' => $request->is_download_enabled
             ]);
         } elseif($request->has('is_attendance_enabled')) {
-            $lessonLectures->update([
-                'is_attendance_enabled' => $request->is_attendance_enabled
-            ]);
+            $isEnabled = $request->is_attendance_enabled;
+            $updateData = [
+                'is_attendance_enabled' => $isEnabled
+            ];
+            if (!$isEnabled) {
+                $updateData['attendance_started_at'] = null;
+                $updateData['attendance_ended_at'] = null;
+                $updateData['attendance_start_duration'] = null;
+                $updateData['attendance_end_duration'] = null;
+            }
+            $lessonLectures->update($updateData);
         }
 
 

@@ -160,14 +160,23 @@ class LessonAttendanceController extends Controller
             }
 
             $lecture = LessonLecture::where('uuid', $request->lesson_lecture_uuid)->first();
-            if (!$lecture->attendance_started_at) {
+            if (!$lecture) {
                 return response()->json([
-                    "message" => "Absensi belum dimulai",
+                    "message" => "Materi tidak ditemukan",
+                ], 404);
+            }
+
+            if ($request->type === "start" && !$lecture->attendance_started_at) {
+                return response()->json([
+                    "message" => "Absen awal tidak diaktifkan untuk materi ini",
                 ], 200);
             }
 
-            $attendanceStartAt = Carbon::parse($lecture->attendance_started_at);
-            $attendanceEndAt = Carbon::parse($lecture->attendance_ended_at);
+            if ($request->type === "end" && !$lecture->attendance_ended_at) {
+                return response()->json([
+                    "message" => "Absen akhir tidak diaktifkan untuk materi ini",
+                ], 200);
+            }
 
             if ($exist && $exist->start_attendance && $request->type === "start") {
                 return response()->json([
@@ -182,27 +191,35 @@ class LessonAttendanceController extends Controller
             $now = Carbon::now();
 
             if ($request->type === "start") {
+                $attendanceStartAt = Carbon::parse($lecture->attendance_started_at);
+                $duration = $lecture->attendance_start_duration ?? 60;
+                $attendanceStartEndAt = $attendanceStartAt->copy()->addMinutes($duration);
+
                 if ($now->lt($attendanceStartAt)) {
                     return response()->json([
                         "message" => "Tidak bisa absen awal, sesi absen awal belum dimulai",
                     ], 200);
                 }
-                if ($now->gt($attendanceEndAt)) {
+                if ($now->gt($attendanceStartEndAt)) {
                     return response()->json([
-                        "message" => "Tidak bisa absen awal, sesi absen awal sudah berakhir pada " . $attendanceEndAt->format('d/m/Y H:i:s'),
+                        "message" => "Tidak bisa absen awal, sesi absen awal sudah berakhir pada " . $attendanceStartEndAt->format('d/m/Y H:i:s'),
                     ], 200);
                 }
             }
 
             if ($request->type === "end") {
-                if ($now->lt($attendanceStartAt)) {
+                $attendanceEndAt = Carbon::parse($lecture->attendance_ended_at);
+                $duration = $lecture->attendance_end_duration ?? 60;
+                $attendanceEndEndAt = $attendanceEndAt->copy()->addMinutes($duration);
+
+                if ($now->lt($attendanceEndAt)) {
                     return response()->json([
                         "message" => "Tidak bisa absen akhir, sesi absen akhir belum dimulai",
                     ], 200);
                 }
-                if ($now->gt($attendanceEndAt)) {
+                if ($now->gt($attendanceEndEndAt)) {
                     return response()->json([
-                        "message" => "Tidak bisa absen akhir, sesi absen akhir sudah berakhir pada " . $attendanceEndAt->format('d/m/Y H:i:s'),
+                        "message" => "Tidak bisa absen akhir, sesi absen akhir sudah berakhir pada " . $attendanceEndEndAt->format('d/m/Y H:i:s'),
                     ], 200);
                 }
             }
