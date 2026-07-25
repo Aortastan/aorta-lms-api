@@ -222,6 +222,29 @@ class AuthController extends Controller
         return response()->json(auth()->user());
     }
 
+    public function botSso(): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+        if ($user->email !== 'aortastan@gmail.com') {
+            return response()->json(['message' => 'Hanya super admin'], 403);
+        }
+        // Pakai config() (bukan env() langsung) supaya tetap terbaca walau config di-cache.
+        $secret = config('services.bot_sso_secret');
+        if (!$secret) {
+            return response()->json(['message' => 'BOT_SSO_SECRET belum di-set di server'], 500);
+        }
+        $exp = (int) round(microtime(true) * 1000) + 60000; // berlaku 60 detik
+        $payload = (string) $exp;
+        $sig = hash_hmac('sha256', $payload, $secret);
+        return response()->json([
+            'message' => 'Success',
+            'data' => ['token' => $payload . '.' . $sig],
+        ], 200);
+    }
+
     public function myMenuAccess(): JsonResponse
     {
         $user = auth()->user();
