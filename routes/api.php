@@ -40,6 +40,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('logout', 'AuthController@logout');
     Route::post('ping', 'AuthController@ping');
     Route::get('me/menu-access', 'AuthController@myMenuAccess')->name('me.menuAccess');
+    Route::get('bot-sso', 'AuthController@botSso')->name('botSso');
     Route::get('payment-methods', 'AllRole\PaymentMethodController@index');
     Route::get('admin-fee', "AllRole\PaymentMethodController@adminFee");
 
