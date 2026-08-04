@@ -228,8 +228,15 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
-        if ($user->email !== 'aortastan@gmail.com') {
-            return response()->json(['message' => 'Hanya super admin'], 403);
+        $isSuperAdmin = $user->email === 'aortastan@gmail.com';
+        $hasBotAccess = $isSuperAdmin || (
+            $user->role === 'admin' &&
+            UserMenuAccess::where('user_uuid', $user->uuid)
+                ->where('menu_key', '/dashboard/admin/bot')
+                ->exists()
+        );
+        if (!$hasBotAccess) {
+            return response()->json(['message' => 'Tidak punya akses bot'], 403);
         }
         // Pakai config() (bukan env() langsung) supaya tetap terbaca walau config di-cache.
         $secret = config('services.bot_sso_secret');
