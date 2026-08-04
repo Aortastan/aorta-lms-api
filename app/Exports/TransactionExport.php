@@ -39,10 +39,6 @@ class TransactionExport implements FromCollection, WithHeadings, WithStyles
     {
 
 
-<<<<<<< HEAD
-        $query = Transaction::whereBetween("created_at", [$this->startDate, $this->endDate])->with(['detailTransaction', 'detailTransaction.package', 'user', 'payment']);
-
-=======
         $query = Transaction::with(['user', 'detailTransaction', 'detailTransaction.package', 'claimedCoupons', 'claimedCoupons.coupon']);
 
         // Apply date filtering if provided
@@ -52,7 +48,6 @@ class TransactionExport implements FromCollection, WithHeadings, WithStyles
         if ($this->endDate) {
             $query->where('created_at', '<=', Carbon::parse($this->endDate)->endOfDay());
         }
->>>>>>> 6315d6a49e2377bcff4a5fafa1a8def43be6a604
 
         if ($this->status) {
             $query->where('transaction_status', 'like', "%{$this->status}%");

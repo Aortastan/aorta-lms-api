@@ -452,7 +452,8 @@ class CourseController extends Controller
                 ];
             }
 
-            $progress = $progressPoint / (count($lesson_lectures) * 3) * 100;
+            $total_lectures_weight = count($lesson_lectures) * 3;
+            $progress = $total_lectures_weight > 0 ? ($progressPoint / $total_lectures_weight * 100) : 0;
             $lessons[] = [
                 "lesson_uuid" => $lesson->uuid,
                 "title" => $lesson->title,
