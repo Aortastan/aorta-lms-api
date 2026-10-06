@@ -184,6 +184,7 @@ trait CreateUpdateQuestionTrait
                                 'answer' => $answer['answer'],
                                 'image' => $path,
                                 'is_correct' => $answer['is_correct'],
+                                'correct_answer_explanation' => $answer['correct_answer_explanation'] ?? null,
                                 'point' => $answer['point'],
                             ];
                     }else{
@@ -313,6 +314,7 @@ trait CreateUpdateQuestionTrait
                                 'answer' => $answer['answer'],
                                 'image' => $path,
                                 'is_correct' => $answer['is_correct'],
+                                'correct_answer_explanation' => $answer['correct_answer_explanation'] ?? null,
                                 'point' => $answer['point'],
                             ];
                     }else{
