@@ -117,7 +117,7 @@ class AuthController extends Controller
             'active_device_name' => $request->input('device_name'),
         ]);
 
-        return $this->respondWithToken($token);
+        return $this->respondWithToken($token, $user);
 
     }
 
@@ -325,9 +325,17 @@ class AuthController extends Controller
      *
      * @return JsonResponse
      */
-    protected function respondWithToken($token): JsonResponse
+    protected function respondWithToken($token, $user = null): JsonResponse
     {
-        $user = auth()->user();
+        $user = $user ?: auth()->user();
+        if (!$user) {
+            try {
+                $user = JWTAuth::setToken($token)->toUser();
+            } catch (\Exception $e) {
+                // fallback
+            }
+        }
+
         if ($user) {
             $user->update([
                 'active_token' => $token,
@@ -336,13 +344,13 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => [
-                'role'          => auth()->user()->role,
-                'name'          => auth()->user()->name,
-                'username'      => auth()->user()->username,
-                'email'         => auth()->user()->email,
-                'mobile_number' => auth()->user()->mobile_number,
-                'gender'        => auth()->user()->gender,
-                'avatar'        => auth()->user()->avatar,
+                'role'          => $user ? $user->role : null,
+                'name'          => $user ? $user->name : null,
+                'username'      => $user ? $user->username : null,
+                'email'         => $user ? $user->email : null,
+                'mobile_number' => $user ? $user->mobile_number : null,
+                'gender'        => $user ? $user->gender : null,
+                'avatar'        => $user ? $user->avatar : null,
             ],
             'access_token' => $token,
             'token_type' => 'bearer',
