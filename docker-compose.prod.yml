@@ -10,8 +10,8 @@ services:
       - ./:/var/www/backend
       - ./storage/app/public:/var/www/backend/storage/app/public
     environment:
-      APP_ENV: local
-      APP_DEBUG: true
+      APP_ENV: production
+      APP_DEBUG: false
       FRONTEND_URL: https://aorta-edu.com
       APP_URL: https://api.aorta-edu.com
 
