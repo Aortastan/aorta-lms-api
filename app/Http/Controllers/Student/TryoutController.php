@@ -266,7 +266,26 @@ class TryoutController extends Controller
                 return response()->json(['message' => "Gagal membuat sesi tes"], 500);
             }
 
-            $data_questions = json_decode($sessionTest->data_question, true);
+            $durationLeft = $sessionTest->duration_left;
+            $data_questions = null;
+
+            // Prioritaskan state terbaru dari Redis jika ada autosave in-memory
+            try {
+                $cachedSession = \Illuminate\Support\Facades\Redis::get("test_session:{$sessionTest->uuid}");
+                if ($cachedSession) {
+                    $decoded = json_decode($cachedSession, true);
+                    if (isset($decoded['data_question']) && is_array($decoded['data_question'])) {
+                        $data_questions = $decoded['data_question'];
+                    }
+                    if (isset($decoded['duration_left'])) {
+                        $durationLeft = $decoded['duration_left'];
+                    }
+                }
+            } catch (\Throwable $e) {}
+
+            if ($data_questions === null) {
+                $data_questions = json_decode($sessionTest->data_question, true);
+            }
 
             if (!is_array($data_questions) || count($data_questions) === 0) {
                 $data_questions = $this->buildDataQuestion($getTest->test_uuid);
@@ -321,7 +340,7 @@ class TryoutController extends Controller
 
             $test = [
                 'session_uuid'         => $sessionTest->uuid,
-                'duration_left'        => $sessionTest->duration_left,
+                'duration_left'        => $durationLeft,
                 'test_uuid'            => $getTest->test_uuid,
                 'duration_per_question' => $getTest->duration_per_question,
                 'duration_type'        => $getTest->duration_type,

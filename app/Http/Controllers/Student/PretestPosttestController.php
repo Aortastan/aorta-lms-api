@@ -253,8 +253,25 @@ class PretestPosttestController extends Controller
         $sessionTest = $this->checkTestSession($user, $getTest);
 
         $questions = [];
+        $durationLeft = $sessionTest->duration_left;
+        $data_questions = null;
 
-        $data_questions = json_decode($sessionTest->data_question);
+        try {
+            $cachedSession = \Illuminate\Support\Facades\Redis::get("test_session:{$sessionTest->uuid}");
+            if ($cachedSession) {
+                $decoded = json_decode($cachedSession, true);
+                if (isset($decoded['data_question']) && is_array($decoded['data_question'])) {
+                    $data_questions = json_decode(json_encode($decoded['data_question']));
+                }
+                if (isset($decoded['duration_left'])) {
+                    $durationLeft = $decoded['duration_left'];
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        if ($data_questions === null) {
+            $data_questions = json_decode($sessionTest->data_question);
+        }
 
 
         foreach ($data_questions as $index => $data) {
@@ -297,7 +314,7 @@ class PretestPosttestController extends Controller
 
         $test = [
             'session_uuid' => $sessionTest->uuid,
-            'duration_left' => $sessionTest->duration_left,
+            'duration_left' => $durationLeft,
             'questions' => $questions,
         ];
 
