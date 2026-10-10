@@ -56,8 +56,12 @@ services:
       - ./:/var/www/backend
     command: sh -c "cd /var/www/backend && php artisan queue:work --tries=3 --timeout=120"
     environment:
-      DB_HOST: 127.0.0.1 # Wajib 127.0.0.1
-      REDIS_HOST: 127.0.0.1
+      DB_HOST: mysql           # 👈 Gunakan nama service container mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
       QUEUE_CONNECTION: redis
     depends_on:
       - mysql
