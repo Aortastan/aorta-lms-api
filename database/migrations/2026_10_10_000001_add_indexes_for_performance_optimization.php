@@ -70,6 +70,37 @@ class AddIndexesForPerformanceOptimization extends Migration
                 }
             }
         });
+
+        // 4. Index pada carts untuk mempercepat GET /api/v1/student/carts
+        if (Schema::hasTable('carts') && Schema::hasColumn('carts', 'user_uuid')) {
+            if (!$this->hasIndex('carts', 'carts_user_uuid_idx')) {
+                Schema::table('carts', function (Blueprint $table) {
+                    $table->index('user_uuid', 'carts_user_uuid_idx');
+                });
+            }
+        }
+
+        // 5. Index pada purchased_packages untuk mempercepat GET /api/v1/student/packages
+        if (Schema::hasTable('purchased_packages')) {
+            if (Schema::hasColumns('purchased_packages', ['user_uuid', 'package_uuid'])) {
+                if (!$this->hasIndex('purchased_packages', 'purchased_packages_user_package_idx')) {
+                    Schema::table('purchased_packages', function (Blueprint $table) {
+                        $table->index(['user_uuid', 'package_uuid'], 'purchased_packages_user_package_idx');
+                    });
+                }
+            }
+        }
+
+        // 6. Index pada membership_histories untuk mempercepat cek kepemilikan paket
+        if (Schema::hasTable('membership_histories')) {
+            if (Schema::hasColumns('membership_histories', ['user_uuid', 'package_uuid'])) {
+                if (!$this->hasIndex('membership_histories', 'membership_histories_user_package_idx')) {
+                    Schema::table('membership_histories', function (Blueprint $table) {
+                        $table->index(['user_uuid', 'package_uuid'], 'membership_histories_user_package_idx');
+                    });
+                }
+            }
+        }
     }
 
     /**
