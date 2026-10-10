@@ -353,13 +353,17 @@ class SubmitTestController extends Controller
 
                 // $this->pushProgress($channel, ProgressStatus::DONE, 100, $user_session->uuid);
 
-        SessionTest::where(['uuid' => $session_uuid])->delete();
+                SessionTest::where(['uuid' => $session_uuid])->delete();
 
-        return response()->json([
-            'message' => 'Test berhasil dikirim',
-            'score' => $score,
-            'pending_essays' => count($essayPending),
-        ], 200);
+                try {
+                    \Illuminate\Support\Facades\Redis::del("test_session:{$session_uuid}", "test_session_last_db:{$session_uuid}");
+                } catch (\Throwable $e) {}
+
+                return response()->json([
+                    'message' => 'Test berhasil dikirim',
+                    'score' => $score,
+                    'pending_essays' => count($essayPending),
+                ], 200);
             });
 
         } catch (\Throwable $e) {

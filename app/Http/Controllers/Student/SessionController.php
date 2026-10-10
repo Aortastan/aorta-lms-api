@@ -34,20 +34,57 @@ class SessionController extends Controller
             }
         }
 
-        $user_session = SessionTest::where(['uuid' => $session_uuid])->first();
-        if($user_session == null){
-            return response()->json([
-                'message'=>'Session tidak ditemukan'
-            ], 404);
+        $redisKey = "test_session:{$session_uuid}";
+        $now = time();
+
+        // 1. Simpan selalu ke Redis (in-memory, sangat cepat, 0 disk I/O)
+        try {
+            $sessionData = [
+                'duration_left' => $request->duration_left,
+                'data_question' => $request->data_question,
+                'updated_at'    => $now,
+            ];
+            \Illuminate\Support\Facades\Redis::setex($redisKey, 86400, json_encode($sessionData));
+        } catch (\Throwable $e) {
+            // Jika Redis offline, failover aman lanjut ke DB
         }
 
-        SessionTest::where(['uuid' => $session_uuid])->update([
-            'duration_left' => $request->duration_left,
-            'data_question' => json_encode($request->data_question),
-        ]);
+        // 2. Throttle penulisan ke MySQL: Hanya tulis ke DB maksimal 1x per 15 detik per session
+        // atau jika belum pernah ada timestamp last_db_write di Redis
+        $lastWriteKey = "test_session_last_db:{$session_uuid}";
+        $shouldWriteDb = true;
+
+        try {
+            $lastWrite = \Illuminate\Support\Facades\Redis::get($lastWriteKey);
+            if ($lastWrite && ($now - (int)$lastWrite) < 15) {
+                $shouldWriteDb = false;
+            }
+        } catch (\Throwable $e) {
+            $shouldWriteDb = true;
+        }
+
+        if ($shouldWriteDb) {
+            $affected = SessionTest::where(['uuid' => $session_uuid])->update([
+                'duration_left' => $request->duration_left,
+                'data_question' => json_encode($request->data_question),
+            ]);
+
+            if ($affected === 0) {
+                $exists = SessionTest::where(['uuid' => $session_uuid])->exists();
+                if (!$exists) {
+                    return response()->json([
+                        'message' => 'Session tidak ditemukan'
+                    ], 404);
+                }
+            }
+
+            try {
+                \Illuminate\Support\Facades\Redis::setex($lastWriteKey, 60, (string)$now);
+            } catch (\Throwable $e) {}
+        }
 
         return response()->json([
-            'message'=>'Session berhasil diupdate'
+            'message' => 'Session berhasil diupdate'
         ], 200);
 
     //         $validator = Validator::make($request->all(), [
