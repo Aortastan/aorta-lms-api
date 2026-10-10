@@ -83,8 +83,9 @@ class AuthController extends Controller
             }
         }
 
-        if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['message' => 'Incorrect credentials'], 401);
+        // Login user and generate token directly without second bcrypt hash check
+        if (! $token = JWTAuth::fromUser($user)) {
+            return response()->json(['message' => 'Failed to generate token'], 500);
         }
         if($user->email_verified_at === null) {
             $user->sendEmailVerificationNotification();

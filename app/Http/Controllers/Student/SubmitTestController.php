@@ -65,10 +65,12 @@ class SubmitTestController extends Controller
                     ->unique();
 
                 $questions = Question::whereIn('uuid', $questionUuids)
+                    ->select('uuid', 'question_type', 'different_point', 'point')
                     ->get()
                     ->keyBy('uuid');
 
                 $answers = Answer::whereIn('question_uuid', $questionUuids)
+                    ->select('uuid', 'question_uuid', 'is_correct', 'point')
                     ->get()
                     ->groupBy('question_uuid');
 
@@ -139,7 +141,8 @@ class SubmitTestController extends Controller
                 } else {
 
                     if ($is_selected == 1) {
-                                $points += abs($answer->point);
+                        $points += abs($answer->point);
+                        $tskkwk_points += abs($answer->point);
                     }
 
                             $answers_result[] = [
