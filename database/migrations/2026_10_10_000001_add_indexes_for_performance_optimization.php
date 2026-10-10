@@ -7,6 +7,20 @@ use Illuminate\Support\Facades\Schema;
 class AddIndexesForPerformanceOptimization extends Migration
 {
     /**
+     * Check if an index exists on a table.
+     */
+    protected function hasIndex(string $table, string $indexName): bool
+    {
+        $conn = Schema::getConnection();
+        $dbName = $conn->getDatabaseName();
+        $result = $conn->select(
+            "SELECT COUNT(1) as cnt FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?",
+            [$dbName, $table, $indexName]
+        );
+        return !empty($result) && $result[0]->cnt > 0;
+    }
+
+    /**
      * Run the migrations.
      *
      * @return void
@@ -14,32 +28,46 @@ class AddIndexesForPerformanceOptimization extends Migration
     public function up()
     {
         // 1. Index pada tabel answers untuk mempercepat pencarian jawaban berdasarkan question_uuid
-        Schema::table('answers', function (Blueprint $table) {
-            if (Schema::hasColumn('answers', 'question_uuid')) {
-                $table->index('question_uuid', 'answers_question_uuid_idx');
+        if (Schema::hasTable('answers') && Schema::hasColumn('answers', 'question_uuid')) {
+            if (!$this->hasIndex('answers', 'answers_question_uuid_idx')) {
+                Schema::table('answers', function (Blueprint $table) {
+                    $table->index('question_uuid', 'answers_question_uuid_idx');
+                });
             }
-        });
+        }
 
         // 2. Index pada student_tryouts untuk mempercepat count attempt dan filter per user & package_test
-        Schema::table('student_tryouts', function (Blueprint $table) {
+        if (Schema::hasTable('student_tryouts')) {
             if (Schema::hasColumns('student_tryouts', ['user_uuid', 'package_test_uuid'])) {
-                $table->index(['user_uuid', 'package_test_uuid'], 'student_tryouts_user_package_test_idx');
+                if (!$this->hasIndex('student_tryouts', 'student_tryouts_user_package_test_idx')) {
+                    Schema::table('student_tryouts', function (Blueprint $table) {
+                        $table->index(['user_uuid', 'package_test_uuid'], 'student_tryouts_user_package_test_idx');
+                    });
+                }
             }
             if (Schema::hasColumn('student_tryouts', 'package_test_uuid')) {
-                $table->index('package_test_uuid', 'student_tryouts_package_test_idx');
+                if (!$this->hasIndex('student_tryouts', 'student_tryouts_package_test_idx')) {
+                    Schema::table('student_tryouts', function (Blueprint $table) {
+                        $table->index('package_test_uuid', 'student_tryouts_package_test_idx');
+                    });
+                }
             }
-        });
+        }
 
         // 3. Index pada student_quizzes dan student_pretest_posttests untuk riwayat attempt
-        Schema::table('student_quizzes', function (Blueprint $table) {
-            if (Schema::hasColumns('student_quizzes', ['user_uuid', 'lesson_quiz_uuid'])) {
-                $table->index(['user_uuid', 'lesson_quiz_uuid'], 'student_quizzes_user_lesson_idx');
+        if (Schema::hasTable('student_quizzes') && Schema::hasColumns('student_quizzes', ['user_uuid', 'lesson_quiz_uuid'])) {
+            if (!$this->hasIndex('student_quizzes', 'student_quizzes_user_lesson_idx')) {
+                Schema::table('student_quizzes', function (Blueprint $table) {
+                    $table->index(['user_uuid', 'lesson_quiz_uuid'], 'student_quizzes_user_lesson_idx');
+                });
             }
-        });
+        }
 
         Schema::table('student_pretest_posttests', function (Blueprint $table) {
             if (Schema::hasColumns('student_pretest_posttests', ['user_uuid', 'pretest_posttest_uuid'])) {
-                $table->index(['user_uuid', 'pretest_posttest_uuid'], 'student_pretest_posttests_user_pretest_idx');
+                if (!$this->hasIndex('student_pretest_posttests', 'student_pretest_posttests_user_pretest_idx')) {
+                    $table->index(['user_uuid', 'pretest_posttest_uuid'], 'student_pretest_posttests_user_pretest_idx');
+                }
             }
         });
     }
@@ -51,21 +79,33 @@ class AddIndexesForPerformanceOptimization extends Migration
      */
     public function down()
     {
-        Schema::table('answers', function (Blueprint $table) {
-            $table->dropIndex('answers_question_uuid_idx');
-        });
+        if (Schema::hasTable('answers') && $this->hasIndex('answers', 'answers_question_uuid_idx')) {
+            Schema::table('answers', function (Blueprint $table) {
+                $table->dropIndex('answers_question_uuid_idx');
+            });
+        }
 
-        Schema::table('student_tryouts', function (Blueprint $table) {
-            $table->dropIndex('student_tryouts_user_package_test_idx');
-            $table->dropIndex('student_tryouts_package_test_idx');
-        });
+        if (Schema::hasTable('student_tryouts')) {
+            Schema::table('student_tryouts', function (Blueprint $table) {
+                if ($this->hasIndex('student_tryouts', 'student_tryouts_user_package_test_idx')) {
+                    $table->dropIndex('student_tryouts_user_package_test_idx');
+                }
+                if ($this->hasIndex('student_tryouts', 'student_tryouts_package_test_idx')) {
+                    $table->dropIndex('student_tryouts_package_test_idx');
+                }
+            });
+        }
 
-        Schema::table('student_quizzes', function (Blueprint $table) {
-            $table->dropIndex('student_quizzes_user_lesson_idx');
-        });
+        if (Schema::hasTable('student_quizzes') && $this->hasIndex('student_quizzes', 'student_quizzes_user_lesson_idx')) {
+            Schema::table('student_quizzes', function (Blueprint $table) {
+                $table->dropIndex('student_quizzes_user_lesson_idx');
+            });
+        }
 
-        Schema::table('student_pretest_posttests', function (Blueprint $table) {
-            $table->dropIndex('student_pretest_posttests_user_pretest_idx');
-        });
+        if (Schema::hasTable('student_pretest_posttests') && $this->hasIndex('student_pretest_posttests', 'student_pretest_posttests_user_pretest_idx')) {
+            Schema::table('student_pretest_posttests', function (Blueprint $table) {
+                $table->dropIndex('student_pretest_posttests_user_pretest_idx');
+            });
+        }
     }
 }
