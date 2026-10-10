@@ -26,20 +26,47 @@ class SubmitTestController extends Controller
 {
     public function submitTest(Request $request, $session_uuid)
     {
+        $incomingDataQuestion = $request->input('data_question');
+
+        if (empty($incomingDataQuestion) || !is_array($incomingDataQuestion)) {
+            // Coba ambil dari Redis test_session
+            try {
+                $cached = \Illuminate\Support\Facades\Redis::get("test_session:{$session_uuid}");
+                if ($cached) {
+                    $decoded = json_decode($cached, true);
+                    if (!empty($decoded['data_question']) && is_array($decoded['data_question'])) {
+                        $incomingDataQuestion = $decoded['data_question'];
+                    }
+                }
+            } catch (\Throwable $e) {}
+
+            // Jika masih kosong, coba ambil dari tabel session_tests
+            if (empty($incomingDataQuestion)) {
+                $dbSession = SessionTest::where(['uuid' => $session_uuid])->first();
+                if ($dbSession && !empty($dbSession->data_question)) {
+                    $incomingDataQuestion = json_decode($dbSession->data_question, true);
+                }
+            }
+
+            if (!empty($incomingDataQuestion) && is_array($incomingDataQuestion)) {
+                $request->merge(['data_question' => $incomingDataQuestion]);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
-            'duration_left' => 'required',
-            'data_question' => 'required',
+            'duration_left' => 'nullable',
+            'data_question' => 'required|array|min:1',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation failed',
+                'message' => 'Validation failed: data question tidak boleh kosong',
                 'errors' => $validator->errors(),
             ], 422);
         }
 
         try {
-            return DB::transaction(function () use ($request, $session_uuid) {
+            return DB::transaction(function () use ($request, $session_uuid, $incomingDataQuestion) {
 
                 $user_session = SessionTest::where(['uuid' => $session_uuid])
                     ->lockForUpdate()
@@ -60,7 +87,9 @@ class SubmitTestController extends Controller
 
                 // $this->pushProgress($channel, ProgressStatus::FETCHING_QUESTIONS, 10, $user_session->uuid);
 
-                $questionUuids = collect($request->data_question)
+                $dataQuestionsToProcess = !empty($request->data_question) ? $request->data_question : $incomingDataQuestion;
+
+                $questionUuids = collect($dataQuestionsToProcess)
                     ->pluck('question_uuid')
                     ->unique();
 
@@ -80,10 +109,10 @@ class SubmitTestController extends Controller
         $tskkwk_points = 0;
         $essayPending = []; // tampung essay yg perlu manual scoring
 
-                $total = count($request->data_question);
+                $total = count($dataQuestionsToProcess);
                 $current = 0;
 
-                foreach ($request->data_question as $data) {
+                foreach ($dataQuestionsToProcess as $data) {
 
                     $current++;
 
