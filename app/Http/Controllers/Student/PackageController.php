@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Package;
+use Illuminate\Support\Facades\Cache;
 
 use App\Traits\Package\PackageTrait;
 
@@ -233,7 +234,17 @@ class PackageController extends Controller
     }
 
     public function allPackage(Request $request){
-        return $this->getAllPackages(false, $request);
+        $cacheKey = 'student_packages_all_' . md5(json_encode($request->all()));
+
+        $cachedData = Cache::remember($cacheKey, 600, function () use ($request) {
+            $response = $this->getAllPackages(false, $request);
+            return [
+                'status' => $response->getStatusCode(),
+                'data' => $response->getData(true),
+            ];
+        });
+
+        return response()->json($cachedData['data'], $cachedData['status']);
     }
 
     public function show($package_type, $uuid){
