@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddIndexesForPerformanceOptimization extends Migration
+class AddIndexesForPerformanceOptimizationPart2 extends Migration
 {
     /**
      * Check if an index exists on a table.
