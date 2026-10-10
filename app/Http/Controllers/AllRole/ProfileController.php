@@ -23,11 +23,12 @@ class ProfileController extends Controller
 
     public function index(){
         try{
-            $profile = User::
-            select('name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar', 'name_verified_at', 'name_verified_by')
-            ->where([
-                'uuid' => $this->user->uuid,
-            ])->first();
+            $profile = \Illuminate\Support\Facades\Cache::remember("user_profile:{$this->user->uuid}", 300, function () {
+                return User::select('name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar', 'name_verified_at', 'name_verified_by')
+                    ->where([
+                        'uuid' => $this->user->uuid,
+                    ])->first();
+            });
 
             return response()->json([
                 'message' => 'Success get data',
@@ -117,6 +118,8 @@ class ProfileController extends Controller
             "gender" => $request->gender,
             "avatar" => $path,
         ]);
+
+        \Illuminate\Support\Facades\Cache::forget("user_profile:{$this->user->uuid}");
 
         return response()->json([
             'message' => 'Update profile successfully',

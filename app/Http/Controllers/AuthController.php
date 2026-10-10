@@ -277,7 +277,11 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
-        $menus = UserMenuAccess::where('user_uuid', $user->uuid)->pluck('menu_key')->toArray();
+
+        $menus = \Illuminate\Support\Facades\Cache::remember("user_menu_access:{$user->uuid}", 300, function () use ($user) {
+            return UserMenuAccess::where('user_uuid', $user->uuid)->pluck('menu_key')->toArray();
+        });
+
         return response()->json([
             'message' => 'Success',
             'data' => [
