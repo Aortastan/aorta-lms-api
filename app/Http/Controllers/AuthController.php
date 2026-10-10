@@ -52,6 +52,24 @@ class AuthController extends Controller
             return response()->json(['message' => 'Incorrect credentials'], 401);
         }
 
+        // Limit maximum concurrent logged-in users (excluding admin)
+        if ($user->role !== 'admin' && empty($user->active_token)) {
+            $idleThreshold = \Carbon\Carbon::now()->subMinutes(15);
+            $activeUsersCount = User::where('role', '!=', 'admin')
+                ->whereNotNull('active_token')
+                ->where(function ($query) use ($idleThreshold) {
+                    $query->where('last_activity_at', '>=', $idleThreshold)
+                        ->orWhereNull('last_activity_at');
+                })
+                ->count();
+
+            if ($activeUsersCount >= 100) {
+                return response()->json([
+                    'message' => 'Kapasitas pengguna aktif saat ini telah mencapai batas maksimal (100 pengguna). Silahkan coba beberapa saat lagi.'
+                ], 429);
+            }
+        }
+
         // Check if there is already an active session on a different device (except for admin)
         if ($user->role !== 'admin' && $user->active_token && $user->active_device_id) {
             $requestDeviceId = $request->input('device_id');
