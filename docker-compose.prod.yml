@@ -32,6 +32,8 @@ services:
       REDIS_PORT: 6379
       QUEUE_CONNECTION: redis
       CACHE_DRIVER: redis
+      LOG_CHANNEL: daily
+      LOG_LEVEL: error
 
       MAIL_MAILER: smtp
       MAIL_HOST: mx5.mailspace.id
