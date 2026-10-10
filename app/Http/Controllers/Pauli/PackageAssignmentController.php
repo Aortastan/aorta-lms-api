@@ -116,31 +116,35 @@ class PackageAssignmentController extends Controller
             ], 404);
         }
 
-        $validTestUuids = PackageTest::where('package_uuid', $packageUuid)
-            ->pluck('test_uuid');
+        $result = \Illuminate\Support\Facades\Cache::remember("pauli_check_package:{$packageUuid}", 600, function () use ($packageUuid, $package) {
+            $validTestUuids = PackageTest::where('package_uuid', $packageUuid)
+                ->pluck('test_uuid');
 
-        $hasValidTest = Test::whereIn('uuid', $validTestUuids)
-            ->where(function ($query) {
-                $query->where('title', 'LIKE', '%pauli%')
-                    ->orWhere('title', 'LIKE', '%Pauli%')
-                    ->orWhere('title', 'LIKE', '%koran%')
-                    ->orWhere('title', 'LIKE', '%Koran%');
-            })
-            ->exists();
+            $hasValidTest = Test::whereIn('uuid', $validTestUuids)
+                ->where(function ($query) {
+                    $query->where('title', 'LIKE', '%pauli%')
+                        ->orWhere('title', 'LIKE', '%Pauli%')
+                        ->orWhere('title', 'LIKE', '%koran%')
+                        ->orWhere('title', 'LIKE', '%Koran%');
+                })
+                ->exists();
 
-        if ($hasValidTest) {
-            return response()->json([
-                'validation' => 1,
-                'message' => "Package {$package->name} valid mengandung Tes Pauli Durasi 60 Menit",
-                'status' => 'OK'
-            ], 200);
-        } else {
-            return response()->json([
-                'validation' => 0,
-                'message' => "Package {$package->name} tidak memiliki test yang valid",
-                'status' => 'NOT OK'
-            ], 200);
-        }
+            if ($hasValidTest) {
+                return [
+                    'validation' => 1,
+                    'message' => "Package {$package->name} valid mengandung Tes Pauli Durasi 60 Menit",
+                    'status' => 'OK'
+                ];
+            } else {
+                return [
+                    'validation' => 0,
+                    'message' => "Package {$package->name} tidak memiliki test yang valid",
+                    'status' => 'NOT OK'
+                ];
+            }
+        });
+
+        return response()->json($result, 200);
     }
 
     public function unassignFromPackage(Request $request)
