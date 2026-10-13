@@ -7,14 +7,10 @@ use App\Models\ChatSession;
 use App\Services\WebChat;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
-/**
- * Kelola Chat: admin melihat daftar & isi percakapan web chat
- * (konteks sebelum user beralih ke WhatsApp admin).
- */
 class ChatController extends Controller
 {
-    /** Daftar sesi chat, terbaru di atas. ?search= ?filter=unread|handoff ?page= (handoff = minta admin yang masih aktif) */
     public function index(Request $request): JsonResponse
     {
         $query = ChatSession::query();
@@ -37,7 +33,6 @@ class ChatController extends Controller
 
         $chats = $query->orderByDesc('last_message_at')->paginate(30);
 
-        // Total untuk badge tab (tidak terpengaruh pencarian/filter).
         $allTotal = ChatSession::count();
         $unreadTotal = $this->whereUnread(ChatSession::query())->count();
         $handoffTotal = $this->whereHandoffActive(ChatSession::query())->count();
@@ -58,7 +53,6 @@ class ChatController extends Controller
         ], 200);
     }
 
-    /** Kode link riwayat chat (dari pesan WA) → uuid sesi untuk membuka chatroom. */
     public function byCode($code): JsonResponse
     {
         $uuid = ChatSession::where('share_code', (string) $code)->value('uuid');
@@ -69,7 +63,6 @@ class ChatController extends Controller
         return response()->json(['message' => 'Success get data', 'uuid' => $uuid], 200);
     }
 
-    /** Detail sesi (sekaligus menandai sudah dibaca). */
     public function show($uuid): JsonResponse
     {
         $session = ChatSession::find($uuid);
@@ -97,7 +90,6 @@ class ChatController extends Controller
         ], 200);
     }
 
-    /** Isi chat: 30 pesan terbaru, ?before={uuid} untuk yang lebih lama. */
     public function messages(Request $request, $uuid): JsonResponse
     {
         $session = ChatSession::find($uuid);
@@ -105,16 +97,19 @@ class ChatController extends Controller
             return response()->json(['message' => 'Data not found'], 404);
         }
         $before = $request->query('before');
-        if (!$before) {
-            // Admin sedang membuka chat ini → pesan terbaru dianggap sudah dibaca.
-            $session->admin_read_at = now();
-            $session->save();
+        $page = WebChat::page($session, $before ?: null, null, true);
+
+        if (!$before && $request->query('mark_read') && $page['messages']) {
+            $newest = Carbon::parse(end($page['messages'])['created_at']);
+            if (!$session->admin_read_at || $newest->gt($session->admin_read_at)) {
+                $session->admin_read_at = $newest;
+                $session->save();
+            }
         }
 
-        return response()->json(['message' => 'Success get data'] + WebChat::page($session, $before ?: null, null, true));
+        return response()->json(['message' => 'Success get data'] + $page);
     }
 
-    /** Tandai permintaan admin sudah ditangani → status "minta admin" hilang. */
     public function resolve($uuid): JsonResponse
     {
         $session = ChatSession::find($uuid);

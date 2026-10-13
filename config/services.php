@@ -32,15 +32,10 @@ return [
 
     'bot_sso_secret' => env('BOT_SSO_SECRET', ''),
 
-    // Web chat Aorta: mesin balasan otomatis = bot-baileys (/engine/reply, ditandatangani
-    // HMAC pakai BOT_SSO_SECRET). Riwayat chat disimpan di DB ini.
     'webchat' => [
         'bot_url' => env('WEBCHAT_BOT_URL', 'https://bot.aorta-edu.com'),
-        // Base URL lampiran (PDF/gambar) untuk browser; kosong = sama dengan WEBCHAT_BOT_URL.
         'bot_public_url' => env('WEBCHAT_BOT_PUBLIC_URL', ''),
-        // Nomor WhatsApp admin tujuan "Chat Admin via WhatsApp" (format bebas, mis. 0812... / 62812...)
         'admin_wa' => env('WEBCHAT_ADMIN_WA', ''),
-        // Base URL web Aorta untuk link riwayat chat di pesan WA admin
         'site_url' => env('WEBCHAT_SITE_URL', 'https://aorta-edu.com'),
     ],
 

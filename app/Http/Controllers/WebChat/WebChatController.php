@@ -6,34 +6,26 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatSession;
 use App\Services\WebChat;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-/**
- * Endpoint publik widget web chat (guest maupun user login).
- * Guest dikenali lewat visitor_key acak yang disimpan di localStorage browser;
- * user login dikenali dari token JWT (opsional di semua endpoint ini).
- */
 class WebChatController extends Controller
 {
-    // Widget menampilkan riwayat 24 jam terakhir; sisanya lewat "muat chat sebelumnya".
     const RECENT_HOURS = 24;
 
-    /** Buat / lanjutkan sesi chat. */
     public function session(Request $request): JsonResponse
     {
         $user = $this->currentUser();
 
         if ($user) {
-            $session = ChatSession::where('user_uuid', $user->uuid)->orderByDesc('last_message_at')->first();
+            $session = ChatSession::where('user_uuid', $user->uuid)->first();
             if (!$session) {
-                $session = ChatSession::create([
-                    'user_uuid' => $user->uuid,
+                $session = $this->createOnce(['user_uuid' => $user->uuid], [
                     'name' => $user->name ?: ($user->username ?: 'Pengguna'),
                     'phone' => $user->mobile_number,
                 ]);
-                WebChat::runBot($session, '');
             } else {
                 WebChat::recoverIfEngineFailed($session);
             }
@@ -57,15 +49,12 @@ class WebChatController extends Controller
 
         if (!$session) {
             if ($name === '') {
-                // Belum pernah chat → frontend harus menampilkan form nama dulu.
                 return response()->json(['message' => 'Nama wajib diisi', 'need_profile' => true], 422);
             }
-            $session = ChatSession::create([
-                'visitor_key_hash' => $hash,
+            $session = $this->createOnce(['visitor_key_hash' => $hash], [
                 'name' => $name,
                 'phone' => $request->phone ?: null,
             ]);
-            WebChat::runBot($session, '');
         } else {
             if ($name !== '') {
                 $session->update(['name' => $name, 'phone' => $request->phone ?: $session->phone]);
@@ -76,7 +65,6 @@ class WebChatController extends Controller
         return $this->sessionResponse($session);
     }
 
-    /** Riwayat: default 24 jam terakhir, ?before={uuid} untuk yang lebih lama. */
     public function messages(Request $request, $uuid): JsonResponse
     {
         $session = $this->ownedSession($request, $uuid);
@@ -89,7 +77,6 @@ class WebChatController extends Controller
         return response()->json(['message' => 'Success get data'] + $page);
     }
 
-    /** Kirim pesan user → balasan otomatis bot. */
     public function send(Request $request, $uuid): JsonResponse
     {
         $session = $this->ownedSession($request, $uuid);
@@ -112,7 +99,6 @@ class WebChatController extends Controller
         ]);
     }
 
-    /** "Mulai ulang": reset menu bot ke menu utama (riwayat tetap tersimpan). */
     public function reset(Request $request, $uuid): JsonResponse
     {
         $session = $this->ownedSession($request, $uuid);
@@ -128,7 +114,6 @@ class WebChatController extends Controller
         ]);
     }
 
-    /** User beralih ke WhatsApp admin: catat & kembalikan link wa.me berisi link riwayat chat. */
     public function handoff(Request $request, $uuid): JsonResponse
     {
         $session = $this->ownedSession($request, $uuid);
@@ -149,6 +134,21 @@ class WebChatController extends Controller
         ]);
     }
 
+    private function createOnce(array $key, array $attributes): ChatSession
+    {
+        try {
+            $session = ChatSession::create($key + $attributes);
+        } catch (QueryException $e) {
+            if ((string) $e->getCode() !== '23000') {
+                throw $e;
+            }
+            return ChatSession::where($key)->firstOrFail();
+        }
+        WebChat::runBot($session, '');
+
+        return $session;
+    }
+
     private function sessionResponse(ChatSession $session): JsonResponse
     {
         return response()->json([
@@ -163,7 +163,6 @@ class WebChatController extends Controller
         ]);
     }
 
-    /** Sesi milik pemanggil: user login (JWT) atau guest (visitor_key cocok). */
     private function ownedSession(Request $request, $uuid): ?ChatSession
     {
         $session = ChatSession::find($uuid);
@@ -179,7 +178,6 @@ class WebChatController extends Controller
         return $key !== '' && hash_equals($session->visitor_key_hash, ChatSession::hashVisitorKey($key)) ? $session : null;
     }
 
-    /** JWT opsional: null kalau tidak login / token tidak valid. */
     private function currentUser()
     {
         if (!request()->bearerToken()) {

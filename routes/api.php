@@ -42,9 +42,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::get('me/menu-access', 'AuthController@myMenuAccess')->name('me.menuAccess');
     Route::get('bot-sso', 'AuthController@botSso')->name('botSso');
 
-    // Web chat publik (guest / user login; JWT opsional)
     Route::group(['prefix' => 'webchat', 'as' => 'webchat.', 'middleware' => 'throttle:60,1,webchat'], function () {
-        Route::post('session', 'WebChat\WebChatController@session')->name('session');
+        Route::post('session', 'WebChat\WebChatController@session')->name('session')->middleware('throttle:20,1,webchat-session');
         Route::get('session/{uuid}/messages', 'WebChat\WebChatController@messages')->name('messages');
         Route::post('session/{uuid}/messages', 'WebChat\WebChatController@send')->name('send');
         Route::post('session/{uuid}/reset', 'WebChat\WebChatController@reset')->name('reset');
@@ -208,7 +207,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
         // end category management
 
-        // kelola chat (web chat)
         Route::group(['prefix' => 'chats', 'as' => 'chats.',], function () {
             Route::get('', 'Admin\ChatController@index')->name('index');
             Route::get('by-code/{code}', 'Admin\ChatController@byCode')->name('byCode');
@@ -216,7 +214,6 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{uuid}/messages', 'Admin\ChatController@messages')->name('messages');
             Route::post('{uuid}/resolve', 'Admin\ChatController@resolve')->name('resolve');
         });
-        // end kelola chat
 
         // tag management
         Route::group(['prefix' => 'tags', 'as' => 'tags.',], function () {

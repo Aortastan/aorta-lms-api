@@ -3,27 +3,20 @@
 namespace App\Services;
 
 use App\Models\ChatSession;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Klien mesin balasan otomatis web chat (bot-baileys POST /engine/reply).
- * Menu & template sama dengan bot WA dan diedit dari dashboard bot.
- * Request ditandatangani HMAC-SHA256(BOT_SSO_SECRET, "{ts}.{body}").
- */
 class BotEngine
 {
-    // Balasan saat mesin bot tidak bisa dihubungi (juga dipakai untuk mendeteksi pesan lama).
+    const CIRCUIT_KEY = 'webchat:engine_down';
+    const CIRCUIT_SECONDS = 30;
+
     const ENGINE_ERROR_TEXT = "Maaf kak, chat otomatis sedang gangguan 🙏\n\nSilakan klik tombol *Chat Admin via WhatsApp* di bawah supaya dibantu langsung oleh admin ya.";
 
-    /**
-     * @param string $text pesan user; '' = sesi baru / mulai ulang (menu utama)
-     * @return array{replies: array, state: array|null, handoff: bool, not_understood: bool, engine_error: bool}
-     */
     public static function reply(ChatSession $session, string $text): array
     {
         $baseUrl = rtrim((string) config('services.webchat.bot_url'), '/');
-        // URL lampiran harus bisa dibuka browser; bisa beda dengan alamat internal bot.
         $publicUrl = rtrim((string) (config('services.webchat.bot_public_url') ?: $baseUrl), '/');
         $secret = (string) config('services.bot_sso_secret');
 
@@ -32,14 +25,16 @@ class BotEngine
             'text' => $text,
             'name' => $session->name,
             'state' => $session->bot_state,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $ts = (string) round(microtime(true) * 1000);
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+        $ts = (string) (int) floor(microtime(true) * 1000);
 
         try {
             if (!$baseUrl || !$secret) {
                 throw new \RuntimeException('WEBCHAT_BOT_URL / BOT_SSO_SECRET belum di-set');
             }
-            // Timeout pendek: selama menunggu bot, satu worker PHP-FPM tertahan.
+            if (Cache::has(self::CIRCUIT_KEY)) {
+                throw new \RuntimeException('engine ditandai mati (circuit breaker)');
+            }
             $res = Http::timeout(5)
                 ->withOptions(['connect_timeout' => 2])
                 ->withHeaders([
@@ -53,6 +48,9 @@ class BotEngine
                 throw new \RuntimeException('HTTP ' . $res->status());
             }
             $data = $res->json();
+            if (!is_array($data) || empty($data['replies']) || !is_array($data['replies'])) {
+                throw new \RuntimeException('payload engine tidak valid');
+            }
 
             $replies = [];
             foreach ((array) ($data['replies'] ?? []) as $r) {
@@ -75,9 +73,11 @@ class BotEngine
                 'engine_error' => false,
             ];
         } catch (\Throwable $e) {
-            Log::warning('Web chat engine gagal: ' . $e->getMessage());
+            if (strpos($e->getMessage(), 'circuit breaker') === false) {
+                Log::warning('Web chat engine gagal: ' . $e->getMessage());
+                Cache::put(self::CIRCUIT_KEY, 1, self::CIRCUIT_SECONDS);
+            }
 
-            // Mesin bot mati → jangan biarkan user tanpa jawaban; arahkan ke admin.
             return [
                 'replies' => [['text' => self::ENGINE_ERROR_TEXT, 'media' => null]],
                 'state' => $session->bot_state,

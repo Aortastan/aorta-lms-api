@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class ChatMessage extends Model
 {
-    public $incrementing = false; // Non-incrementing primary key
-    protected $keyType = 'string'; // Primary key type is string
-    protected $primaryKey = 'uuid'; // Name of the UUID column
+    public $incrementing = false;
+    protected $keyType = 'string';
+    protected $primaryKey = 'uuid';
 
     protected $fillable = [
         'chat_session_uuid',

@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class ChatSession extends Model
 {
-    public $incrementing = false; // Non-incrementing primary key
-    protected $keyType = 'string'; // Primary key type is string
-    protected $primaryKey = 'uuid'; // Name of the UUID column
+    public $incrementing = false;
+    protected $keyType = 'string';
+    protected $primaryKey = 'uuid';
 
     protected $fillable = [
         'user_uuid',
@@ -52,7 +52,6 @@ class ChatSession extends Model
         });
     }
 
-    /** 12 karakter acak [A-Za-z0-9] (~71 bit) — tidak bisa ditebak. */
     public static function newShareCode(): string
     {
         do {
