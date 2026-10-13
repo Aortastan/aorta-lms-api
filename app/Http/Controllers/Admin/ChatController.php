@@ -8,6 +8,7 @@ use App\Services\WebChat;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Validator;
 
 class ChatController extends Controller
 {
@@ -108,6 +109,28 @@ class ChatController extends Controller
         }
 
         return response()->json(['message' => 'Success get data'] + $page);
+    }
+
+    public function send(Request $request, $uuid): JsonResponse
+    {
+        $session = ChatSession::find($uuid);
+        if (!$session) {
+            return response()->json(['message' => 'Data not found'], 404);
+        }
+        $validator = Validator::make($request->all(), ['text' => 'required|string|max:2000']);
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+        $admin = auth()->user();
+        $message = WebChat::addMessage($session, 'admin', trim($request->text), null, ['admin_name' => $admin->name ?? 'Admin']);
+        $session->admin_read_at = $message->created_at;
+        $session->save();
+
+        return response()->json([
+            'message' => 'Success',
+            'chat' => $this->formatSession($session),
+            'chat_message' => WebChat::format($message),
+        ], 200);
     }
 
     public function resolve($uuid): JsonResponse
