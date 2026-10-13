@@ -32,4 +32,11 @@ return [
 
     'bot_sso_secret' => env('BOT_SSO_SECRET', ''),
 
+    'webchat' => [
+        'bot_url' => env('WEBCHAT_BOT_URL', 'https://bot.aorta-edu.com'),
+        'bot_public_url' => env('WEBCHAT_BOT_PUBLIC_URL', ''),
+        'admin_wa' => env('WEBCHAT_ADMIN_WA', ''),
+        'site_url' => env('WEBCHAT_SITE_URL', 'https://aorta-edu.com'),
+    ],
+
 ];
