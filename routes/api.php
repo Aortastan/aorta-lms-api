@@ -212,6 +212,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('by-code/{code}', 'Admin\ChatController@byCode')->name('byCode');
             Route::get('{uuid}', 'Admin\ChatController@show')->name('show');
             Route::get('{uuid}/messages', 'Admin\ChatController@messages')->name('messages');
+            Route::post('{uuid}/messages', 'Admin\ChatController@send')->name('send');
             Route::post('{uuid}/resolve', 'Admin\ChatController@resolve')->name('resolve');
         });
 
