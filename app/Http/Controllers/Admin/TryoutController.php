@@ -273,50 +273,91 @@ class TryoutController extends Controller
             ], 422);
         }
 
-        // TryoutSegment::where([
-        //     'tryout_uuid' => $uuid
-        // ])->delete();
+        DB::transaction(function () use ($request, $uuid) {
+            $existingSegments = TryoutSegment::where('tryout_uuid', $uuid)->with('tryoutSegmentTests')->get();
+            $existingSegmentUuids = $existingSegments->pluck('uuid')->toArray();
 
-        foreach ($request->segments as $key => $segmentData) {
-            $segment = null;
-            if (isset($segmentData["segment_uuid"]) && !empty($segmentData["segment_uuid"])) {
-                $segment = TryoutSegment::where('uuid', $segmentData['segment_uuid'])->update([
-                    'title' => $segmentData['title']
-                ]);
-            } else {
-                $segment = TryoutSegment::create([
-                    'tryout_uuid' => $uuid,
-                    'title' => $segmentData['title']
-                ]);
-            }
+            $receivedSegmentUuids = [];
+            $receivedSegmentTestUuids = [];
 
-            foreach ($segmentData['tests'] as $key1 => $test) {
-                if ($test["segment_test_uuid"]) {
-                    TryoutSegmentTest::where("uuid", $test["segment_test_uuid"])->update([
-                        'tryout_segment_uuid' => $segmentData["segment_uuid"],
-                        'test_uuid' => $test['test_uuid'],
-                        'attempt' => $test['attempt'],
-                        'duration' => $test['duration'],
-                        'max_point' => $test['max_point'],
-                        'passing_score' => $test['test_passing_score'],
-                        'duration_per_question' => $test['duration_per_question'],
-                        'duration_type' => $test['duration_type'],
-                    ]);
-                } else {
-                    TryoutSegmentTest::create([
-                        'tryout_segment_uuid' => isset($segmentData["segment_uuid"]) ? $segmentData["segment_uuid"] : $segment->uuid,
-                        'test_uuid' => $test['test_uuid'],
-                        'attempt' => $test['attempt'],
-                        'duration' => $test['duration'],
-                        'max_point' => $test['max_point'],
-                        'passing_score' => $test['test_passing_score'],
-                        'duration_per_question' => $test['duration_per_question'],
-                        'duration_type' => $test['duration_type'],
-                    ]);
+            foreach ($request->segments as $segmentData) {
+                if (!empty($segmentData['segment_uuid'])) {
+                    $receivedSegmentUuids[] = $segmentData['segment_uuid'];
+                }
+                if (isset($segmentData['tests']) && is_array($segmentData['tests'])) {
+                    foreach ($segmentData['tests'] as $test) {
+                        if (!empty($test['segment_test_uuid'])) {
+                            $receivedSegmentTestUuids[] = $test['segment_test_uuid'];
+                        }
+                    }
                 }
             }
-        }
 
+            // Delete segments that are no longer present in the request
+            $segmentsToDelete = array_diff($existingSegmentUuids, $receivedSegmentUuids);
+            if (!empty($segmentsToDelete)) {
+                TryoutSegmentTest::whereIn('tryout_segment_uuid', $segmentsToDelete)->delete();
+                TryoutSegment::whereIn('uuid', $segmentsToDelete)->delete();
+            }
+
+            // Also delete individual segment tests that were removed within kept segments
+            $existingTestUuids = $existingSegments
+                ->whereNotIn('uuid', $segmentsToDelete)
+                ->flatMap(function ($segment) {
+                    return $segment->tryoutSegmentTests->pluck('uuid');
+                })
+                ->toArray();
+
+            $testsToDelete = array_diff($existingTestUuids, $receivedSegmentTestUuids);
+            if (!empty($testsToDelete)) {
+                TryoutSegmentTest::whereIn('uuid', $testsToDelete)->delete();
+            }
+
+            foreach ($request->segments as $key => $segmentData) {
+                $segment = null;
+                $segmentUuid = $segmentData['segment_uuid'] ?? null;
+
+                if (!empty($segmentUuid)) {
+                    TryoutSegment::where('uuid', $segmentUuid)->update([
+                        'title' => $segmentData['title']
+                    ]);
+                } else {
+                    $segment = TryoutSegment::create([
+                        'tryout_uuid' => $uuid,
+                        'title' => $segmentData['title']
+                    ]);
+                    $segmentUuid = $segment->uuid;
+                }
+
+                if (isset($segmentData['tests']) && is_array($segmentData['tests'])) {
+                    foreach ($segmentData['tests'] as $key1 => $test) {
+                        if (!empty($test['segment_test_uuid'])) {
+                            TryoutSegmentTest::where('uuid', $test['segment_test_uuid'])->update([
+                                'tryout_segment_uuid' => $segmentUuid,
+                                'test_uuid' => $test['test_uuid'],
+                                'attempt' => $test['attempt'],
+                                'duration' => $test['duration'],
+                                'max_point' => $test['max_point'],
+                                'passing_score' => $test['test_passing_score'],
+                                'duration_per_question' => $test['duration_per_question'],
+                                'duration_type' => $test['duration_type'],
+                            ]);
+                        } else {
+                            TryoutSegmentTest::create([
+                                'tryout_segment_uuid' => $segmentUuid,
+                                'test_uuid' => $test['test_uuid'],
+                                'attempt' => $test['attempt'],
+                                'duration' => $test['duration'],
+                                'max_point' => $test['max_point'],
+                                'passing_score' => $test['test_passing_score'],
+                                'duration_per_question' => $test['duration_per_question'],
+                                'duration_type' => $test['duration_type'],
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
 
         return response()->json([
             'message' => 'Add tests success',
