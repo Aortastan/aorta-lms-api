@@ -34,13 +34,24 @@ class SearchController extends Controller
                 'status' => 'Published'
             ]);
 
-            if ($request->has('key')) {
-                $key = $request->input('key');
-                if($key){
-                    $blogs = $blogs->where('blogs.title', 'like', '%' . $key . '%');
-                    $courses = $courses->where('packages.name', 'like', '%' . $key . '%');
-                    $tryouts = $tryouts->where('packages.name', 'like', '%' . $key . '%');
-                }
+            $key = trim($request->input('key', ''));
+            $subcategory_uuid = $request->input('subcategory_uuid');
+            $category_uuid = $request->input('category_uuid');
+
+            // Jika tidak ada kata kunci pencarian dan tidak ada filter kategori, jangan lakukan full-table dump
+            if (empty($key) && empty($subcategory_uuid) && empty($category_uuid)) {
+                return response()->json([
+                    'message' => 'Success get data',
+                    'blogs' => [],
+                    'courses' => [],
+                    'tryouts' => [],
+                ], 200);
+            }
+
+            if (!empty($key)) {
+                $blogs = $blogs->where('blogs.title', 'like', '%' . $key . '%');
+                $courses = $courses->where('packages.name', 'like', '%' . $key . '%');
+                $tryouts = $tryouts->where('packages.name', 'like', '%' . $key . '%');
             }
 
             if ($request->has('subcategory_uuid')) {

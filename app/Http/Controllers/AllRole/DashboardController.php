@@ -4,6 +4,7 @@ namespace App\Http\Controllers\AllRole;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Models\Package;
 use App\Models\DetailTransaction;
@@ -21,37 +22,43 @@ class DashboardController extends Controller
             FILTER_VALIDATE_BOOLEAN
         );
 
-        $query = Package::where('status', 'Published');
+        $cacheKey = 'dashboard_latest_packages_' . $limit . '_' . ($onlyWithTransactions ? '1' : '0');
 
-        if ($onlyWithTransactions) {
-            $packageUuidsWithSales = DB::table('detail_transactions')
+        $packages = Cache::remember($cacheKey, 600, function () use ($limit, $onlyWithTransactions) {
+            $query = Package::where('status', 'Published');
+
+            if ($onlyWithTransactions) {
+                $packageUuidsWithSales = DB::table('detail_transactions')
+                    ->join('transactions', 'transactions.uuid', '=', 'detail_transactions.transaction_uuid')
+                    ->where('transactions.transaction_status', 'settled')
+                    ->pluck('detail_transactions.package_uuid')
+                    ->unique()
+                    ->toArray();
+
+                $query->whereIn('uuid', $packageUuidsWithSales);
+            }
+
+            $packages = $query
+                ->orderByDesc('created_at')
+                ->limit($limit)
+                ->get(['uuid', 'name', 'image', 'package_type', 'description', 'created_at']);
+
+            $packageUuids = $packages->pluck('uuid')->toArray();
+            $salesCounts = DB::table('detail_transactions')
                 ->join('transactions', 'transactions.uuid', '=', 'detail_transactions.transaction_uuid')
                 ->where('transactions.transaction_status', 'settled')
-                ->pluck('detail_transactions.package_uuid')
-                ->unique()
+                ->whereIn('detail_transactions.package_uuid', $packageUuids)
+                ->select('detail_transactions.package_uuid', DB::raw('COUNT(*) as cnt'))
+                ->groupBy('detail_transactions.package_uuid')
+                ->pluck('cnt', 'detail_transactions.package_uuid')
                 ->toArray();
 
-            $query->whereIn('uuid', $packageUuidsWithSales);
-        }
+            $packages = $packages->map(function ($p) use ($salesCounts) {
+                $p->total_transactions = $salesCounts[$p->uuid] ?? 0;
+                return $p;
+            });
 
-        $packages = $query
-            ->orderByDesc('created_at')
-            ->limit($limit)
-            ->get(['uuid', 'name', 'image', 'package_type', 'description', 'created_at']);
-
-        $packageUuids = $packages->pluck('uuid')->toArray();
-        $salesCounts = DB::table('detail_transactions')
-            ->join('transactions', 'transactions.uuid', '=', 'detail_transactions.transaction_uuid')
-            ->where('transactions.transaction_status', 'settled')
-            ->whereIn('detail_transactions.package_uuid', $packageUuids)
-            ->select('detail_transactions.package_uuid', DB::raw('COUNT(*) as cnt'))
-            ->groupBy('detail_transactions.package_uuid')
-            ->pluck('cnt', 'detail_transactions.package_uuid')
-            ->toArray();
-
-        $packages = $packages->map(function ($p) use ($salesCounts) {
-            $p->total_transactions = $salesCounts[$p->uuid] ?? 0;
-            return $p;
+            return $packages;
         });
 
         return response()->json([
@@ -61,44 +68,42 @@ class DashboardController extends Controller
     }
 
     public function popularPackages(Request $request, $package_type){
-        $transactions = DB::table('transactions')
-        ->select('detail_transactions.package_uuid', DB::raw('COUNT(*) as total_sales'))
-        ->join('detail_transactions', 'transactions.uuid', '=', 'detail_transactions.transaction_uuid')
-        ->where('transactions.transaction_status', 'settled');
+        $year = $request->has('year') ? intval($request->input('year')) : null;
+        $cacheKey = 'dashboard_popular_packages_' . $package_type . '_' . ($year ?? 'all');
 
-        if($package_type != 'all'){
-            $transactions = $transactions->where('detail_transactions.transaction_type', $package_type);
-        }
+        $packages = Cache::remember($cacheKey, 600, function () use ($request, $package_type, $year) {
+            $transactions = DB::table('transactions')
+                ->select('detail_transactions.package_uuid', DB::raw('COUNT(*) as total_sales'))
+                ->join('detail_transactions', 'transactions.uuid', '=', 'detail_transactions.transaction_uuid')
+                ->where('transactions.transaction_status', 'settled');
 
-        if ($request->has('year')) {
-            $year = intval($request->input('year'));
-            if(is_int($year)){
+            if($package_type != 'all'){
+                $transactions = $transactions->where('detail_transactions.transaction_type', $package_type);
+            }
+
+            if ($year !== null && is_int($year)) {
                 $transactions = $transactions->where('transactions.created_at', '>=', now()->subYear($year));
             }
-        }
 
-        $transactions = $transactions->groupBy('detail_transactions.package_uuid')
-        ->orderByDesc('total_sales')
-        ->limit(5)
-        ->get();
+            $transactions = $transactions->groupBy('detail_transactions.package_uuid')
+                ->orderByDesc('total_sales')
+                ->limit(5)
+                ->get();
 
-        $package_uuids = [];
-        foreach ($transactions as $index => $transaction) {
-            $package_uuids[] = $transaction->package_uuid;
-        }
+            $package_uuids = [];
+            foreach ($transactions as $index => $transaction) {
+                $package_uuids[] = $transaction->package_uuid;
+            }
 
-        $packages = Package::whereIn('uuid', $package_uuids)
-            ->withCount(['packageTests', 'packageCourses'])
-            ->get();
+            $packages = Package::whereIn('uuid', $package_uuids)
+                ->withCount(['packageTests', 'packageCourses'])
+                ->get();
 
             foreach ($packages as $index => $package) {
                 $getData = DetailTransaction::where('package_uuid', $package->uuid)
-                    ->whereHas('transaction', function ($query) use ($request) {
-                        if ($request->has('year')) {
-                            $year = intval($request->input('year'));
-                            if (is_int($year)) {
-                                $query->where('created_at', '>=', now()->subYear($year));
-                            }
+                    ->whereHas('transaction', function ($query) use ($request, $year) {
+                        if ($year !== null && is_int($year)) {
+                            $query->where('created_at', '>=', now()->subYear($year));
                         }
                     })
                     ->with(['transaction']);
@@ -106,6 +111,9 @@ class DashboardController extends Controller
                 $totalTransactions = $getData->count();
                 $package->total_transactions = $totalTransactions;
             }
+
+            return $packages;
+        });
 
         return response()->json([
             'message' => 'Success get data',
