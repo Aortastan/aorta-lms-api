@@ -14,19 +14,18 @@ use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
 {
-    public
-    $user;
-
-    public function __construct(){
-        $this->user = JWTAuth::parseToken()->authenticate();
+    private function getUser()
+    {
+        return auth()->user() ?? JWTAuth::parseToken()->authenticate();
     }
 
     public function index(){
         try{
-            $profile = \Illuminate\Support\Facades\Cache::remember("user_profile:{$this->user->uuid}", 300, function () {
+            $user = $this->getUser();
+            $profile = \Illuminate\Support\Facades\Cache::remember("user_profile:{$user->uuid}", 300, function () use ($user) {
                 return User::select('name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar', 'name_verified_at', 'name_verified_by')
                     ->where([
-                        'uuid' => $this->user->uuid,
+                        'uuid' => $user->uuid,
                     ])->first();
             });
 
@@ -43,6 +42,8 @@ class ProfileController extends Controller
     }
 
     public function update(Request $request){
+        $user = $this->getUser();
+
         $validate = [
             'name' => 'required|string',
             'username' => 'required|string',
@@ -50,11 +51,11 @@ class ProfileController extends Controller
             'gender' => "string|in:male,female",
         ];
 
-        if($this->user->username != $request->username){
+        if($user->username != $request->username){
             $validate['username'] = 'required|string|unique:users';
         }
 
-        if($this->user->mobile_number != $request->mobile_number){
+        if($user->mobile_number != $request->mobile_number){
             $validate['mobile_number'] = 'required|string|unique:users';
         }
 
@@ -72,7 +73,7 @@ class ProfileController extends Controller
         }
 
         // Nama yang sudah diverifikasi admin tidak boleh diubah lagi oleh user sendiri
-        if ($this->user->name_verified_at && $this->user->name !== $request->name) {
+        if ($user->name_verified_at && $user->name !== $request->name) {
             return response()->json([
                 'message' => 'Nama Anda sudah diverifikasi admin dan tidak dapat diubah. Hubungi admin jika ada perubahan.',
                 'errors' => [
@@ -84,18 +85,18 @@ class ProfileController extends Controller
         $path = null;
 
         if($request->avatar == null){
-            if (File::exists(public_path('storage/'.$this->user->avatar))) {
-                File::delete(public_path('storage/'.$this->user->avatar));
+            if (File::exists(public_path('storage/'.$user->avatar))) {
+                File::delete(public_path('storage/'.$user->avatar));
             }
         }
 
         if($request->avatar instanceof \Illuminate\Http\UploadedFile && $request->avatar->isValid()){
             $path = $request->avatar->store('imagesProfile', 'public');
-            if (File::exists(public_path('storage/'.$this->user->avatar))) {
-                File::delete(public_path('storage/'.$this->user->avatar));
+            if (File::exists(public_path('storage/'.$user->avatar))) {
+                File::delete(public_path('storage/'.$user->avatar));
             }
         }elseif(is_string($request->avatar)){
-            $path = $this->user->avatar;
+            $path = $user->avatar;
         }
 
         $cleanedNumber = preg_replace('/[^0-9]/', '', $request->mobile_number);
@@ -110,7 +111,7 @@ class ProfileController extends Controller
         }
 
         User::where([
-            'uuid' => $this->user->uuid,
+            'uuid' => $user->uuid,
         ])->update([
             "name" => $request->name,
             "username" => $request->username,
@@ -119,7 +120,7 @@ class ProfileController extends Controller
             "avatar" => $path,
         ]);
 
-        \Illuminate\Support\Facades\Cache::forget("user_profile:{$this->user->uuid}");
+        \Illuminate\Support\Facades\Cache::forget("user_profile:{$user->uuid}");
 
         return response()->json([
             'message' => 'Update profile successfully',
@@ -127,6 +128,8 @@ class ProfileController extends Controller
     }
 
     public function changePassword(Request $request): JsonResponse{
+        $user = $this->getUser();
+
         $validate = [
             'current_password' => 'required|string',
             'new_password' => 'required|string|min:8|same:confirm_new_password',
@@ -144,7 +147,7 @@ class ProfileController extends Controller
         $profile = User::
             select('password')
             ->where([
-                'uuid' => $this->user->uuid,
+                'uuid' => $user->uuid,
             ])->first();
 
         if (!Hash::check($request->current_password, $profile->password)) {
@@ -155,7 +158,7 @@ class ProfileController extends Controller
 
         User::
             where([
-                'uuid' => $this->user->uuid,
+                'uuid' => $user->uuid,
             ])->update([
                 "password" => Hash::make($request->new_password)
             ]);

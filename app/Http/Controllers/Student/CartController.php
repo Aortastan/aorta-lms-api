@@ -11,18 +11,18 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class CartController extends Controller
 {
-    public $user;
-
-    public function __construct(){
-        $this->user = JWTAuth::parseToken()->authenticate();
+    private function getUser()
+    {
+        return auth()->user() ?? JWTAuth::parseToken()->authenticate();
     }
 
     public function index(){
         try{
-            $cacheKey = "user_carts:{$this->user->uuid}";
-            $cachedData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () {
+            $user = $this->getUser();
+            $cacheKey = "user_carts:{$user->uuid}";
+            $cachedData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user) {
                 $getCarts = Cart::where([
-                    'user_uuid' => $this->user->uuid,
+                    'user_uuid' => $user->uuid,
                 ])->with(['package'])->get();
         
                 $carts = [];
@@ -52,7 +52,7 @@ class CartController extends Controller
                 return $carts;
             });
 
-            $phone_status = $this->user->mobile_number ? true : false;
+            $phone_status = $user->mobile_number ? true : false;
             $message = $phone_status ? 'Sukses mengambil data' : 'Silahkan lengkapi nomor telepon anda';
     
             return response()->json([
@@ -69,6 +69,8 @@ class CartController extends Controller
     }
 
     public function store(Request $request){
+        $user = $this->getUser();
+
         $validate = [
             'package_uuid' => 'required|string',
         ];
@@ -94,17 +96,17 @@ class CartController extends Controller
 
         $checkCart = Cart::where([
             'package_uuid' => $checkPackage->uuid,
-            'user_uuid' => $this->user->uuid,
+            'user_uuid' => $user->uuid,
         ])->first();
 
         if(!$checkCart){
             Cart::create([
-                'user_uuid' => $this->user->uuid,
+                'user_uuid' => $user->uuid,
                 'package_uuid' => $checkPackage->uuid,
                 'product_type' => $checkPackage->package_type,
                 'qty' => 1,
             ]);
-            \Illuminate\Support\Facades\Cache::forget("user_carts:{$this->user->uuid}");
+            \Illuminate\Support\Facades\Cache::forget("user_carts:{$user->uuid}");
         }
 
         return response()->json([
@@ -114,12 +116,14 @@ class CartController extends Controller
 
     public function delete($cart_uuid){
         try{
+            $user = $this->getUser();
+
             Cart::
             where([
                 'uuid' => $cart_uuid,
             ])->delete();
 
-            \Illuminate\Support\Facades\Cache::forget("user_carts:{$this->user->uuid}");
+            \Illuminate\Support\Facades\Cache::forget("user_carts:{$user->uuid}");
 
             return response()->json([
                 'message' => 'Berhasil menghapus data',
