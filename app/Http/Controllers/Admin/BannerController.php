@@ -72,6 +72,7 @@ class BannerController extends Controller
         ];
 
         Banner::create($validated);
+        \Illuminate\Support\Facades\Cache::forget('banners_active_all');
 
         return response()->json([
             'message' => 'Success create new banner'
@@ -126,6 +127,7 @@ class BannerController extends Controller
         ];
 
         Banner::where(['uuid' => $uuid])->update($validated);
+        \Illuminate\Support\Facades\Cache::forget('banners_active_all');
 
         return response()->json([
             'message' => 'Success update banner'
@@ -144,6 +146,7 @@ class BannerController extends Controller
         }
 
         Banner::where(['uuid' => $uuid])->delete();
+        \Illuminate\Support\Facades\Cache::forget('banners_active_all');
 
         return response()->json([
             'message' => 'Success delete banner'
