@@ -317,7 +317,7 @@ class CourseController extends Controller
 
     public function detailPurchasedCourse($course_uuid)
     {
-        $user = JWTAuth::parseToken()->authenticate();
+        $user = auth()->user() ?? JWTAuth::parseToken()->authenticate();
 
         return $this->checkThisCourseIsPaid($course_uuid, $user);
     }
@@ -387,6 +387,34 @@ class CourseController extends Controller
             'lessons.assignments',
         ])->first();
 
+        // Batch pre-fetch semua lecture_uuids dan assignment_uuids untuk eliminasi N+1
+        $allLectureUuids = [];
+        $allAssignmentUuids = [];
+        foreach ($getCourse->lessons as $lesson) {
+            foreach ($lesson->lectures as $lecture) {
+                $allLectureUuids[] = $lecture->uuid;
+            }
+            foreach ($lesson->assignments as $assignment) {
+                $allAssignmentUuids[] = $assignment->uuid;
+            }
+        }
+
+        $doneLecturesMap = [];
+        if (!empty($allLectureUuids)) {
+            $doneLecturesMap = StudentProgress::where('user_uuid', $user->uuid)
+                ->whereIn('lecture_uuid', $allLectureUuids)
+                ->pluck('lecture_uuid', 'lecture_uuid')
+                ->toArray();
+        }
+
+        $studentAssignmentsMap = [];
+        if (!empty($allAssignmentUuids)) {
+            $studentAssignmentsMap = StudentAssignment::where('student_uuid', $user->uuid)
+                ->whereIn('assignment_uuid', $allAssignmentUuids)
+                ->pluck('status', 'assignment_uuid')
+                ->toArray();
+        }
+
         $pretest_posttests = [];
         foreach ($getCourse->pretestPosttests as $index => $test) {
             $pretest_posttests[] = [
@@ -403,7 +431,7 @@ class CourseController extends Controller
             $progressPoint = 0;
             $lesson_lectures = [];
             foreach ($lesson->lectures as $index1 => $lecture_data) {
-                $isDone = StudentProgress::isLectureDone($lecture_data->uuid, $user->uuid);
+                $isDone = isset($doneLecturesMap[$lecture_data->uuid]);
                 if ($lecture_data->attendance) {
                     if ($lecture_data->attendance->start_attendance) {
                         $progressPoint += 1;
@@ -436,14 +464,7 @@ class CourseController extends Controller
 
             $assignments = [];
             foreach ($lesson->assignments as $index1 => $assignment) {
-                $student_assignment = StudentAssignment::where([
-                    'student_uuid' => $user->uuid,
-                    'assignment_uuid' => $assignment->uuid,
-                ])->first();
-                $status = null;
-                if ($student_assignment != null) {
-                    $status = $student_assignment->status;
-                }
+                $status = $studentAssignmentsMap[$assignment->uuid] ?? null;
                 $assignments[] = [
                     "assignment_uuid" => $assignment->uuid,
                     'title' => $assignment->title,
