@@ -18,15 +18,27 @@ class WebChatController extends Controller
     public function session(Request $request): JsonResponse
     {
         $user = $this->currentUser();
+        $phoneRule = ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{8,20}$/'];
+        $messages = ['phone.regex' => 'Nomor HP tidak valid'];
 
         if ($user) {
+            $validator = Validator::make($request->all(), ['phone' => $phoneRule], $messages);
+            if ($validator->fails()) {
+                return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+            }
+            $phone = trim((string) $request->phone) ?: null;
+            $accountPhone = trim((string) $user->mobile_number) ?: null;
             $session = ChatSession::where('user_uuid', $user->uuid)->first();
             if (!$session) {
                 $session = $this->createOnce(['user_uuid' => $user->uuid], [
                     'name' => $user->name ?: ($user->username ?: 'Pengguna'),
-                    'phone' => $user->mobile_number,
+                    'phone' => $phone ?: $accountPhone,
                 ]);
             } else {
+                $fill = $phone ?: ($session->phone ? null : $accountPhone);
+                if ($fill && $fill !== $session->phone) {
+                    $session->update(['phone' => $fill]);
+                }
                 WebChat::recoverIfEngineFailed($session);
             }
             return $this->sessionResponse($session);
@@ -35,10 +47,8 @@ class WebChatController extends Controller
         $validator = Validator::make($request->all(), [
             'visitor_key' => 'required|string|min:20|max:100',
             'name' => 'nullable|string|max:100',
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{8,20}$/'],
-        ], [
-            'phone.regex' => 'Nomor HP tidak valid',
-        ]);
+            'phone' => $phoneRule,
+        ], $messages);
         if ($validator->fails()) {
             return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
