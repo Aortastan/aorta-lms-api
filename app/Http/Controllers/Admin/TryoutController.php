@@ -554,10 +554,7 @@ class TryoutController extends Controller
                 'tryoutSegments' => function ($query) {
                     $query->select('uuid', 'tryout_uuid', 'title');
                 },
-                'tryoutSegments.tryoutSegmentTests' => function ($query) use ($segmentTestFilter) {
-                    if (!empty($segmentTestFilter)) {
-                        $query->where('uuid', $segmentTestFilter);
-                    }
+                'tryoutSegments.tryoutSegmentTests' => function ($query) {
                     $query->select('uuid', 'tryout_segment_uuid', 'test_uuid', 'max_point');
                 },
                 'tryoutSegments.tryoutSegmentTests.test' => function ($query) {
@@ -571,10 +568,14 @@ class TryoutController extends Controller
                 ], 404);
             }
 
-            // Get all test UUIDs
-            $tryout_segment_test_uuids = $tryout->tryoutSegments->flatMap(function ($segment) {
-                return $segment->tryoutSegmentTests->pluck('uuid');
-            })->toArray();
+            // Get test UUIDs to query student tryouts
+            if (!empty($segmentTestFilter)) {
+                $tryout_segment_test_uuids = [$segmentTestFilter];
+            } else {
+                $tryout_segment_test_uuids = $tryout->tryoutSegments->flatMap(function ($segment) {
+                    return $segment->tryoutSegmentTests->pluck('uuid');
+                })->toArray();
+            }
 
             if (empty($tryout_segment_test_uuids)) {
                 return response()->json([
@@ -698,9 +699,35 @@ class TryoutController extends Controller
                 }
             }
 
+            // Current logged-in user
+            $currentAuthUser = null;
+            try {
+                $currentAuthUser = auth()->user() ?? (\Tymon\JWTAuth\Facades\JWTAuth::getToken() ? \Tymon\JWTAuth\Facades\JWTAuth::parseToken()->authenticate() : null);
+            } catch (\Exception $e) {
+                $currentAuthUser = null;
+            }
+
+            $currentUser = [
+                'uuid' => $currentAuthUser->uuid ?? null,
+                'name' => $currentAuthUser->name ?? $currentAuthUser->username ?? null,
+                'ranking' => null,
+                'score' => null,
+            ];
+
+            if (!empty($currentUser['uuid'])) {
+                foreach ($tryout_result as $row) {
+                    if ($row['user_uuid'] === $currentUser['uuid']) {
+                        $currentUser['ranking'] = $row['ranking'];
+                        $currentUser['score'] = $row['score'];
+                        break;
+                    }
+                }
+            }
+
             $data = [
                 'allLeaderboard' => $tryout_result,
                 'segmentTests' => $segmentTestsList,
+                'currentUser' => $currentUser,
             ];
 
             return response()->json([

@@ -23,7 +23,7 @@ class ProfileController extends Controller
         try{
             $user = $this->getUser();
             $profile = \Illuminate\Support\Facades\Cache::remember("user_profile:{$user->uuid}", 300, function () use ($user) {
-                return User::select('name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar', 'name_verified_at', 'name_verified_by')
+                return User::select('uuid', 'name', 'role', 'username', 'email', 'mobile_number', 'gender', 'avatar', 'name_verified_at', 'name_verified_by')
                     ->where([
                         'uuid' => $user->uuid,
                     ])->first();
