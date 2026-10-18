@@ -266,48 +266,53 @@ class CourseController extends Controller
     // ambil semua course yang sudah pernah dibeli dari package package
     public function getStudentCourses()
     {
-        $user = JWTAuth::parseToken()->authenticate();
-        $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
-        $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor', 'course.lessons'])->get();
+        $user = auth()->user() ?? JWTAuth::parseToken()->authenticate();
 
-        $my_courses = [];
-        $course_uuids = [];
-        foreach ($get_course_purchased as $index => $student_course) {
-            if (!in_array($student_course->course_uuid, $course_uuids)) {
-                $course_uuids[] = $student_course->course_uuid;
-                $my_courses[] = [
-                    "course_uuid" => $student_course->course_uuid,
-                    "type" => "Lifetime",
-                    "title" => $student_course->course->title,
-                    'description' => $student_course->course->description,
-                    'image' => $student_course->course->image,
-                    'video' => $student_course->course->video,
-                    'number_of_meeting' => $student_course->course->number_of_meeting,
-                    'number_of_lessons' => count($student_course->course->lessons),
-                    'instructor_uuid' => $student_course->course->instructor->name,
-                ];
+        $my_courses = \Illuminate\Support\Facades\Cache::remember("student_courses:{$user->uuid}", 180, function () use ($user) {
+            $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
+            $get_course_purchased = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor', 'course.lessons'])->get();
+
+            $coursesList = [];
+            $course_uuids = [];
+            foreach ($get_course_purchased as $index => $student_course) {
+                if (!in_array($student_course->course_uuid, $course_uuids)) {
+                    $course_uuids[] = $student_course->course_uuid;
+                    $coursesList[] = [
+                        "course_uuid" => $student_course->course_uuid,
+                        "type" => "Lifetime",
+                        "title" => $student_course->course->title,
+                        'description' => $student_course->course->description,
+                        'image' => $student_course->course->image,
+                        'video' => $student_course->course->video,
+                        'number_of_meeting' => $student_course->course->number_of_meeting,
+                        'number_of_lessons' => count($student_course->course->lessons),
+                        'instructor_uuid' => $student_course->course->instructor->name,
+                    ];
+                }
             }
-        }
 
-        $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
-        $get_course_membership = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor', 'course.lessons'])->get();
+            $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
+            $get_course_membership = PackageCourse::whereIn('package_uuid', $uuid_packages)->with(['course', 'course.instructor', 'course.lessons'])->get();
 
-        foreach ($get_course_membership as $index => $student_course) {
-            if (!in_array($student_course->course_uuid, $course_uuids)) {
-                $course_uuids[] = $student_course->course_uuid;
-                $my_courses[] = [
-                    "course_uuid" => $student_course->course_uuid,
-                    "type" => "Membership",
-                    "title" => $student_course->course->title,
-                    'description' => $student_course->course->description,
-                    'image' => $student_course->course->image,
-                    'video' => $student_course->course->video,
-                    'number_of_meeting' => $student_course->course->number_of_meeting,
-                    'number_of_lessons' => count($student_course->course->lessons),
-                    'instructor_uuid' => $student_course->course->instructor->name,
-                ];
+            foreach ($get_course_membership as $index => $student_course) {
+                if (!in_array($student_course->course_uuid, $course_uuids)) {
+                    $course_uuids[] = $student_course->course_uuid;
+                    $coursesList[] = [
+                        "course_uuid" => $student_course->course_uuid,
+                        "type" => "Membership",
+                        "title" => $student_course->course->title,
+                        'description' => $student_course->course->description,
+                        'image' => $student_course->course->image,
+                        'video' => $student_course->course->video,
+                        'number_of_meeting' => $student_course->course->number_of_meeting,
+                        'number_of_lessons' => count($student_course->course->lessons),
+                        'instructor_uuid' => $student_course->course->instructor->name,
+                    ];
+                }
             }
-        }
+
+            return $coursesList;
+        });
 
         return response()->json([
             'message' => "Sukses mengambil data",

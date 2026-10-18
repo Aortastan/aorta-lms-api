@@ -15,117 +15,219 @@ use Maatwebsite\Excel\Concerns\WithDrawings;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Concerns\WithEvents;
-
-
-
+use Illuminate\Support\Facades\DB;
 
 class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings, WithEvents
 {
-    /**
-     * @return \Illuminate\Support\Collection
-     */
-
     protected $tryout_uuid;
     protected $sortBy;
+    protected $segmentTestUuid;
     protected $images = [];
     protected $rowPosition = [];
 
-    public function __construct($tryout_uuid, $sortBy)
+    public function __construct($tryout_uuid, $sortBy = null, $segmentTestUuid = null)
     {
         $this->tryout_uuid = $tryout_uuid;
         $this->sortBy = $sortBy;
+        $this->segmentTestUuid = $segmentTestUuid;
     }
+
     public function collection()
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $tryout_uuid = $this->tryout_uuid;
         $sortBy = $this->sortBy;
+        $segmentTestUuid = $this->segmentTestUuid;
+
         $tryout = Tryout::where('uuid', $tryout_uuid)
-            ->with(['tryoutSegments.tryoutSegmentTests.studentTryouts'])
+            ->with([
+                'tryoutSegments.tryoutSegmentTests' => function ($q) use ($segmentTestUuid) {
+                    if (!empty($segmentTestUuid)) {
+                        $q->where('uuid', $segmentTestUuid);
+                    }
+                },
+                'tryoutSegments.tryoutSegmentTests.test'
+            ])
             ->first();
 
         if (!$tryout) {
-            return response()->json([
-                'message' => "Tes tidak ditemukan",
-            ], 404);
+            return collect();
         }
 
-        $studentTryouts = $tryout->tryoutSegments->flatMap->tryoutSegmentTests->flatMap->studentTryouts;
+        $segmentTests = $tryout->tryoutSegments->flatMap->tryoutSegmentTests;
+        $segmentTestUuids = $segmentTests->pluck('uuid')->toArray();
 
-        $studentTryouts = $studentTryouts->map(function ($item) {
-            $item->data_question = json_decode($item->data_question, true);
-            return $item;
-        });
+        if (empty($segmentTestUuids)) {
+            return collect();
+        }
 
-        $summary = collect();
-        $number = 1;
-        foreach ($studentTryouts as $outerKey => $tryout) {
-            foreach ($tryout->data_question ?? [] as $key => $question) {
-                if (!isset($question['question_uuid'])) {
-                    continue;
+        // Ambil urutan nomor soal dari question_tests
+        $testUuids = $segmentTests->pluck('test_uuid')->filter()->unique()->toArray();
+        $questionTests = DB::table('question_tests')
+            ->whereIn('test_uuid', $testUuids)
+            ->orderBy('id', 'asc')
+            ->select('test_uuid', 'question_uuid', 'id')
+            ->get();
+
+        $questionNumberByTest = [];
+        foreach ($questionTests->groupBy('test_uuid') as $tUuid => $qItems) {
+            $no = 1;
+            foreach ($qItems as $qItem) {
+                if (!isset($questionNumberByTest[$tUuid][$qItem->question_uuid])) {
+                    $questionNumberByTest[$tUuid][$qItem->question_uuid] = $no++;
                 }
-
-                $questionUuid = $question['question_uuid'];
-                $answers = collect($question['answers'] ?? []);
-
-                $isCorrectSelected = $answers->where('is_correct', 1)->where('is_selected', 1)->count();
-                $isIncorrectSelected = $answers->where('is_correct', 0)->where('is_selected', 1)->count();
-
-                if (!$summary->has($questionUuid)) {
-                    $summary->put($questionUuid, [
-                        'No.' => $number++,
-                        'Soal' => Question::where('uuid', $questionUuid)->first()->question,
-                        'Jumlah Jawaban Benar' => 0,
-                        'Jumlah Jawaban Salah' => 0,
-                    ]);
-                }
-
-                $current = $summary->get($questionUuid);
-
-                $current['Jumlah Jawaban Benar'] += $isCorrectSelected;
-                $current['Jumlah Jawaban Salah'] += $isIncorrectSelected;
-                $contains = str_contains($current['Soal'], 'img');
-                if ($contains) {
-                    $this->rowPosition[] = $current['No.'] + 1;
-                    $currNumber = (string)$current['No.'] + 1;
-                    $this->images["B" . $currNumber] = $current['Soal'];
-                }
-
-                $current['Soal'] = strip_tags($current['Soal']);
-                $current['Soal'] = html_entity_decode($current['Soal']);
-                $current['Jumlah Jawaban Benar'] = (string)$current['Jumlah Jawaban Benar'];
-                $current['Jumlah Jawaban Salah'] = (string)$current['Jumlah Jawaban Salah'];
-                $summary->put($questionUuid, $current);
             }
         }
 
-        // Sorting logic
-        $sorted = $summary->values();
+        $segmentTestInfo = [];
+        foreach ($segmentTests as $st) {
+            $segmentTestInfo[$st->uuid] = [
+                'test_uuid' => $st->test_uuid,
+            ];
+        }
 
-        // switch ($sortBy) {
-        //   case 'wrong_desc': // Soal salah terbanyak ke paling sedikit
-        //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-        //       break;
-        //   case 'correct_desc': // Soal benar terbanyak ke paling sedikit
-        //       $sorted = $sorted->sortByDesc('total_correct_selected')->values();
-        //       break;
-        //   case 'wrong_asc': // Soal salah paling sedikit ke paling banyak
-        //       $sorted = $sorted->sortBy('total_incorrect_selected')->values();
-        //       break;
-        //   case 'correct_asc': // Soal benar paling sedikit ke paling banyak
-        //       $sorted = $sorted->sortBy('total_correct_selected')->values();
-        //       break;
-        //   default:
-        //       // Default tetap wrong_desc
-        //       $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
-        //       break;
-        // }
+        $summary = [];
+        $allQuestionUuids = [];
 
-        return $sorted;
+        // Chunking untuk mencegah memory exhausted pada dataset attempt besar (~60MB JSON)
+        DB::table('student_tryouts')
+            ->whereIn('package_test_uuid', $segmentTestUuids)
+            ->whereNotNull('data_question')
+            ->select('id', 'package_test_uuid', 'data_question')
+            ->orderBy('id')
+            ->chunk(150, function ($rows) use (&$summary, &$allQuestionUuids, $segmentTestInfo, $questionNumberByTest) {
+                foreach ($rows as $stAttempt) {
+                    $decoded = json_decode($stAttempt->data_question, true);
+                    if (!is_array($decoded)) {
+                        continue;
+                    }
+
+                    $packageTestUuid = $stAttempt->package_test_uuid;
+                    $tUuid = $segmentTestInfo[$packageTestUuid]['test_uuid'] ?? null;
+
+                    foreach ($decoded as $questionIndex => $question) {
+                        if (!isset($question['question_uuid'])) {
+                            continue;
+                        }
+
+                        $questionUuid = $question['question_uuid'];
+                        $allQuestionUuids[$questionUuid] = true;
+
+                        $isCorrectSelected = 0;
+                        $isIncorrectSelected = 0;
+
+                        foreach ($question['answers'] ?? [] as $ans) {
+                            $isCorrect = isset($ans['is_correct']) && (int)$ans['is_correct'] === 1;
+                            $isSelected = isset($ans['is_selected']) && (int)$ans['is_selected'] === 1;
+
+                            if ($isSelected) {
+                                if ($isCorrect) {
+                                    $isCorrectSelected++;
+                                } else {
+                                    $isIncorrectSelected++;
+                                }
+                            }
+                        }
+
+                        $qNumber = null;
+                        if ($tUuid && isset($questionNumberByTest[$tUuid][$questionUuid])) {
+                            $qNumber = $questionNumberByTest[$tUuid][$questionUuid];
+                        } else {
+                            $qNumber = $questionIndex + 1;
+                        }
+
+                        if (!isset($summary[$questionUuid])) {
+                            $summary[$questionUuid] = [
+                                'No.' => $qNumber,
+                                'question_uuid' => $questionUuid,
+                                'raw_question' => '',
+                                'Soal' => '',
+                                'Jumlah Jawaban Benar' => 0,
+                                'Jumlah Jawaban Salah' => 0,
+                            ];
+                        }
+
+                        $summary[$questionUuid]['Jumlah Jawaban Benar'] += $isCorrectSelected;
+                        $summary[$questionUuid]['Jumlah Jawaban Salah'] += $isIncorrectSelected;
+                    }
+                }
+            });
+
+        if (!empty($allQuestionUuids)) {
+            $questionMap = Question::whereIn('uuid', array_keys($allQuestionUuids))
+                ->pluck('question', 'uuid')
+                ->toArray();
+
+            foreach ($summary as $qUuid => &$current) {
+                $rawQuestion = $questionMap[$qUuid] ?? '';
+                $current['raw_question'] = $rawQuestion;
+                $cleanQuestion = html_entity_decode(strip_tags($rawQuestion));
+                $current['Soal'] = $cleanQuestion;
+                $current['Jumlah Jawaban Benar'] = (string)$current['Jumlah Jawaban Benar'];
+                $current['Jumlah Jawaban Salah'] = (string)$current['Jumlah Jawaban Salah'];
+            }
+            unset($current);
+        }
+
+        $sorted = collect(array_values($summary));
+
+        switch ($sortBy) {
+            case 'wrong_desc':
+                $sorted = $sorted->sortByDesc(function ($item) {
+                    return (int)$item['Jumlah Jawaban Salah'];
+                })->values();
+                break;
+            case 'correct_desc':
+                $sorted = $sorted->sortByDesc(function ($item) {
+                    return (int)$item['Jumlah Jawaban Benar'];
+                })->values();
+                break;
+            case 'wrong_asc':
+                $sorted = $sorted->sortBy(function ($item) {
+                    return (int)$item['Jumlah Jawaban Salah'];
+                })->values();
+                break;
+            case 'correct_asc':
+                $sorted = $sorted->sortBy(function ($item) {
+                    return (int)$item['Jumlah Jawaban Benar'];
+                })->values();
+                break;
+            case 'number_desc':
+                $sorted = $sorted->sortByDesc('No.')->values();
+                break;
+            case 'number_asc':
+            default:
+                $sorted = $sorted->sortBy('No.')->values();
+                break;
+        }
+
+        // Simpan posisi baris dan gambar berdasarkan urutan final baris excel (dimulai dari baris 2 setelah header)
+        $this->images = [];
+        $this->rowPosition = [];
+
+        $finalCollection = new Collection();
+        foreach ($sorted as $rowIndex => $item) {
+            $excelRowNum = $rowIndex + 2; // Row 1 is header
+            $rawQuestion = $item['raw_question'] ?? '';
+
+            if (str_contains($rawQuestion, 'img')) {
+                $this->rowPosition[] = $excelRowNum;
+                $this->images["B" . $excelRowNum] = $rawQuestion;
+            }
+
+            $finalCollection->push([
+                'No.' => $item['No.'],
+                'Soal' => $item['Soal'],
+                'Jumlah Jawaban Benar' => $item['Jumlah Jawaban Benar'],
+                'Jumlah Jawaban Salah' => $item['Jumlah Jawaban Salah'],
+            ]);
+        }
+
+        return $finalCollection;
     }
 
-    /**
-     * @return array
-     */
     public function headings(): array
     {
         return [
@@ -136,15 +238,9 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
         ];
     }
 
-    /**
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
-     *
-     * @return array
-     */
     public function styles(Worksheet $sheet): array
     {
         return [
-            // Kolom A sampai Z akan memiliki word-wrap
             'A:Z' => [
                 'alignment' => ['wrapText' => true],
             ],
@@ -154,10 +250,10 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
     public function columnWidths(): array
     {
         return [
-            'A' => 5, // Lebar kolom A
-            'B' => 200, // Lebar kolom B
-            'C' => 15, // Lebar kolom C
-            'D' => 15, // Lebar kolom D
+            'A' => 5,
+            'B' => 200,
+            'C' => 15,
+            'D' => 15,
         ];
     }
 
@@ -165,26 +261,22 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
     {
         $drawings = [];
 
-        foreach ($this->images as $index => $imgTag) {
-
-            // Ambil src dari tag img
+        foreach ($this->images as $coordinate => $imgTag) {
             preg_match('/src="([^"]+)"/', $imgTag, $matches);
             $base64 = $matches[1] ?? null;
 
             if ($base64 && str_contains($base64, 'base64,')) {
-
                 $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64));
-                $tempFilePath = storage_path('app/temp_image_' . $index . '.png');
+                $tempFilePath = storage_path('app/temp_image_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $coordinate) . '.png');
                 file_put_contents($tempFilePath, $imageData);
 
                 $drawing = new Drawing();
-                $imgTag = strip_tags($imgTag);
-                $imgTag = html_entity_decode($imgTag);
-                $drawing->setName($imgTag);
-                $drawing->setDescription("Image for row $index");
+                $cleanTag = html_entity_decode(strip_tags($imgTag));
+                $drawing->setName($cleanTag ?: "Image");
+                $drawing->setDescription("Image for row $coordinate");
                 $drawing->setPath($tempFilePath);
                 $drawing->setHeight(50);
-                $drawing->setCoordinates($index ?? 'A1');
+                $drawing->setCoordinates($coordinate);
 
                 $drawings[] = $drawing;
             }
@@ -198,14 +290,13 @@ class RankingQuestionExport implements FromCollection, WithHeadings, WithStyles,
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 /** @var Worksheet $sheet */
-                for ($index = 0; $index < count($this->rowPosition); $index++) {
-                    $text = $event->sheet->getCell('B' . $this->rowPosition[$index])->getValue();
-                    $length = strlen($text) > 0 ? strlen($text) + 50 : 100; // bersihkan HTML kalau ada
+                foreach ($this->rowPosition as $rowNum) {
+                    $text = $event->sheet->getCell('B' . $rowNum)->getValue();
+                    $length = strlen($text) > 0 ? strlen($text) + 50 : 100;
                     $charsPerLine = 28;
                     $lines = ceil($length / $charsPerLine);
                     $height = $lines * 15;
-                    // $drawing->setHeight($height);
-                    $event->sheet->getDelegate()->getRowDimension($this->rowPosition[$index])->setRowHeight($height);  // Single row
+                    $event->sheet->getDelegate()->getRowDimension($rowNum)->setRowHeight($height);
                 }
             },
         ];

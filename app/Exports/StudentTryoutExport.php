@@ -11,14 +11,13 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithDrawings;
 use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
-class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings, WithEvents, WithChunkReading, WithTitle
+class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings, WithEvents, WithTitle
 {
     protected $studentTryout;
     protected $data_question;
@@ -36,13 +35,16 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
     public function __construct($studentTryout, $tryoutSegmentTest)
     {
         $this->studentTryout = $studentTryout;
-        $this->data_question = json_decode($studentTryout->data_question);
+        $this->data_question = is_string($studentTryout->data_question) ? json_decode($studentTryout->data_question) : $studentTryout->data_question;
         $user = $studentTryout->user;
         $this->name = $user ? $user->name : "";
         $this->test = $tryoutSegmentTest->test ?? null;
         $this->attempt = $tryoutSegmentTest->attempt ?? 1;
         $this->score = $studentTryout->score ?? 0;
-        $this->title = $this->name . " - " . ($this->test ? $this->test->title : "");
+        
+        $rawTitle = ($this->test ? $this->test->title : "Test");
+        // Title Excel sheet dibatasi maksimal 31 karakter oleh Excel
+        $this->title = mb_substr(preg_replace('/[\:\/\\\?\*\[\]]/', '_', $rawTitle), 0, 31);
 
         $this->headings = [
             ["Nama : " . $this->name],
@@ -51,12 +53,6 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
             ["Percobaan : " . $this->attempt],
             ['No.', 'Soal', 'Jawaban', 'Poin']
         ];
-    }
-
-    // Chunk reading
-    public function chunkSize(): int
-    {
-        return 20; // small chunk to reduce memory usage
     }
 
     public function title(): string
@@ -69,20 +65,37 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
         $numberedData = new Collection();
         $cellStartAt = count($this->headings) + 1;
 
+        if (empty($this->data_question) || !is_iterable($this->data_question)) {
+            return $numberedData;
+        }
+
+        // Kumpulkan semua question_uuid dan answer_uuid untuk di-batch fetch sekaligus (mengatasi N+1 query)
+        $qUuids = [];
+        $aUuids = [];
+        foreach ($this->data_question as $data) {
+            if (!empty($data->question_uuid)) {
+                $qUuids[] = $data->question_uuid;
+            }
+            foreach ($data->answers ?? [] as $aData) {
+                if (!empty($aData->answer_uuid)) {
+                    $aUuids[] = $aData->answer_uuid;
+                }
+            }
+        }
+
+        $questionsMap = Question::whereIn('uuid', array_unique($qUuids))->pluck('question', 'uuid')->toArray();
+        $answersMap = Answer::whereIn('uuid', array_unique($aUuids))->get()->keyBy('uuid');
+
         foreach ($this->data_question as $key => $data) {
-            $get_question = Question::select('uuid', 'question')->where('uuid', $data->question_uuid)->first();
-            if (!$get_question) {
-                Log::warning("Missing question UUID: {$data->question_uuid}");
+            $questionText = $questionsMap[$data->question_uuid] ?? null;
+            if (!$questionText) {
                 continue;
             }
 
             $answers = [];
-            foreach ($data->answers as $answerData) {
-                $get_answer = Answer::select('uuid', 'answer', 'point', 'correct_answer_explanation', 'image')
-                    ->where('uuid', $answerData->answer_uuid)
-                    ->first();
+            foreach ($data->answers ?? [] as $answerData) {
+                $get_answer = $answersMap->get($answerData->answer_uuid);
                 if (!$get_answer) {
-                    Log::warning("Missing answer UUID: {$answerData->answer_uuid}");
                     continue;
                 }
 
@@ -100,10 +113,9 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
             $selected_answer = collect($answers)->firstWhere('is_selected', true);
             $sanitizedAnswer = $selected_answer ? html_entity_decode(strip_tags($selected_answer['answer'])) : "";
 
-            // Track images for lazy processing
-            if (str_contains($get_question->question, 'img')) {
+            if (str_contains($questionText, 'img')) {
                 $this->rowPosition[] = $key + $cellStartAt;
-                $this->imagesQuestion["B" . ($key + $cellStartAt)] = $get_question->question;
+                $this->imagesQuestion["B" . ($key + $cellStartAt)] = $questionText;
             }
             if ($selected_answer && str_contains($selected_answer['answer'], 'img')) {
                 $this->rowPositionAnswer[] = $key + $cellStartAt;
@@ -112,7 +124,7 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
 
             $numberedData->push([
                 'No.' => $key + 1,
-                'Soal' => html_entity_decode(strip_tags($get_question->question)),
+                'Soal' => html_entity_decode(strip_tags($questionText)),
                 'Jawaban' => $sanitizedAnswer,
                 'Poin' => $selected_answer['point'] ?? 0,
             ]);
@@ -147,7 +159,7 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
 
             if ($base64 && str_contains($base64, 'base64,')) {
                 $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64));
-                $tempFilePath = storage_path('app/temp_images/' . uniqid() . "_Question.png");
+                $tempFilePath = storage_path('app/temp_image_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $cell) . '_q.png');
                 file_put_contents($tempFilePath, $imageData);
 
                 $drawing = new Drawing();
@@ -167,7 +179,7 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
 
             if ($base64 && str_contains($base64, 'base64,')) {
                 $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64));
-                $tempFilePath = storage_path('app/temp_images/' . uniqid() . "_Answer.png");
+                $tempFilePath = storage_path('app/temp_image_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $cell) . '_a.png');
                 file_put_contents($tempFilePath, $imageData);
 
                 $drawing = new Drawing();
@@ -196,27 +208,6 @@ class StudentTryoutExport implements FromCollection, WithHeadings, WithStyles, W
                 $event->sheet->mergeCells('A2:B2');
                 $event->sheet->mergeCells('A3:B3');
                 $event->sheet->mergeCells('A4:B4');
-
-                $totalQuestions = count($this->data_question);
-                $totalAnswers = collect($this->data_question)->sum(fn($q) => count($q->answers));
-                $totalImages = count($this->imagesQuestion) + count($this->imagesAnswer);
-
-                // Persistent log number
-                $logNumber = \Illuminate\Support\Facades\Cache::increment('student_tryout_export_log_number');
-                if (!$logNumber) {
-                    \Illuminate\Support\Facades\Cache::forever('student_tryout_export_log_number', 1);
-                    $logNumber = 1;
-                }
-
-                Log::info("StudentTryoutExport finished successfully (log #{$logNumber})", [
-                    'user' => $this->name,
-                    'test' => $this->test ? $this->test->title : null,
-                    'attempt' => $this->attempt,
-                    'score' => $this->score,
-                    'total_questions' => $totalQuestions,
-                    'total_answers' => $totalAnswers,
-                    'total_images' => $totalImages,
-                ]);
             },
         ];
     }

@@ -543,14 +543,26 @@ class TryoutController extends Controller
         ], 200);
     }
 
-    public function getLeaderboardNew($tryout_uuid)
+    public function getLeaderboardNew($tryout_uuid, Request $request = null)
     {
+        $segmentTestFilter = $request ? $request->query('tryout_segment_test_uuid') : request()->query('tryout_segment_test_uuid');
+
         try {
 
-            // Eager load all necessary relationships
+            // Eager load structure without data_question
             $tryout = Tryout::with([
-                'tryoutSegments.tryoutSegmentTests.test',
-                'tryoutSegments.tryoutSegmentTests.studentTryouts.user'
+                'tryoutSegments' => function ($query) {
+                    $query->select('uuid', 'tryout_uuid', 'title');
+                },
+                'tryoutSegments.tryoutSegmentTests' => function ($query) use ($segmentTestFilter) {
+                    if (!empty($segmentTestFilter)) {
+                        $query->where('uuid', $segmentTestFilter);
+                    }
+                    $query->select('uuid', 'tryout_segment_uuid', 'test_uuid', 'max_point');
+                },
+                'tryoutSegments.tryoutSegmentTests.test' => function ($query) {
+                    $query->select('uuid', 'test_type', 'title');
+                }
             ])->where('uuid', $tryout_uuid)->first();
 
             if (!$tryout) {
@@ -564,70 +576,108 @@ class TryoutController extends Controller
                 return $segment->tryoutSegmentTests->pluck('uuid');
             })->toArray();
 
-            // Get all unique users who attempted this tryout
-            $users = StudentTryout::whereIn('package_test_uuid', $tryout_segment_test_uuids)
-                ->with('user')
-                ->get()
-                ->unique('user_uuid')
-                ->map(function ($attempt) {
-                    return [
-                        "user_uuid" => $attempt->user_uuid,
-                        "user_name" => $attempt->user->username ?? 'Unknown',
-                    ];
-                });
+            if (empty($tryout_segment_test_uuids)) {
+                return response()->json([
+                    'message' => 'Berhasil mengambil data leaderboard',
+                    'status' => true,
+                    'data' => [
+                        'allLeaderboard' => [],
+                    ]
+                ], 200);
+            }
+
+            // Ambil hanya attempt pertama per user per package_test_uuid tanpa kolom data_question
+            // Subquery untuk mendapatkan created_at terlama (attempt pertama)
+            $firstAttempts = DB::table('student_tryouts as st')
+                ->join(DB::raw('(SELECT user_uuid, package_test_uuid, MIN(created_at) as min_created_at FROM student_tryouts WHERE package_test_uuid IN (\'' . implode("','", array_map('addslashes', $tryout_segment_test_uuids)) . '\') GROUP BY user_uuid, package_test_uuid) as first_st'), function ($join) {
+                    $join->on('st.user_uuid', '=', 'first_st.user_uuid')
+                        ->on('st.package_test_uuid', '=', 'first_st.package_test_uuid')
+                        ->on('st.created_at', '=', 'first_st.min_created_at');
+                })
+                ->leftJoin('users as u', 'u.uuid', '=', 'st.user_uuid')
+                ->whereIn('st.package_test_uuid', $tryout_segment_test_uuids)
+                ->select('st.user_uuid', 'st.package_test_uuid', 'st.score', 'u.username')
+                ->get();
+
+            // Kelompokkan attempt per user_uuid: [user_uuid => [package_test_uuid => score]]
+            $userScores = [];
+            $userNames = [];
+            foreach ($firstAttempts as $attempt) {
+                $userScores[$attempt->user_uuid][$attempt->package_test_uuid] = $attempt->score ?? 0;
+                if (!isset($userNames[$attempt->user_uuid])) {
+                    $userNames[$attempt->user_uuid] = $attempt->username ?? 'Unknown';
+                }
+            }
 
             $tryout_result = [];
 
-            foreach ($users as $user_attempt) {
-                $total_score = 0;
-                $segment_count = 0;
+            // Jika filter per TryoutSegmentTest aktif, hitung langsung per test tersebut
+            if (!empty($segmentTestFilter)) {
+                $targetSegmentTest = $tryout->tryoutSegments->flatMap->tryoutSegmentTests->firstWhere('uuid', $segmentTestFilter);
+                $isTargetPotensi = $targetSegmentTest && (optional($targetSegmentTest->test)->test_type === "Tes Potensi" || $targetSegmentTest->test_type === "Tes Potensi");
 
-                foreach ($tryout->tryoutSegments as $tryout_segment) {
-                    $segment_score = 0;
-                    $test_count = 0;
-
-                    foreach ($tryout_segment->tryoutSegmentTests as $tryout_segment_test) {
-                        $maxPoint = $tryout_segment_test->max_point ?? 0;
-
-                        // Get first attempt score
-                        $first_attempt = $tryout_segment_test->studentTryouts
-                            ->where('user_uuid', $user_attempt['user_uuid'])
-                            ->sortBy('created_at')
-                            ->first();
-
-                        if ($first_attempt) {
-                            $segment_score += $first_attempt->score ?? 0;
-                            $test_count++;
-                        }
-                    }
-
-                    // Calculate segment average if there are tests
-                    if ($test_count > 0) {
-                        if ($tryout)
-                            $total_score += ($segment_score / max(1, $test_count));
-                        $segment_count++;
+                foreach ($userScores as $user_uuid => $scoresPerTest) {
+                    if (array_key_exists($segmentTestFilter, $scoresPerTest)) {
+                        $rawScore = $scoresPerTest[$segmentTestFilter];
+                        $tryout_result[] = [
+                            "user_uuid" => $user_uuid,
+                            "name" => $userNames[$user_uuid] ?? 'Unknown',
+                            "tryout_uuid" => $tryout_uuid,
+                            'tryout_segment_test_uuid' => $segmentTestFilter,
+                            'tryout_name' => $tryout->title,
+                            'test_title' => optional($targetSegmentTest->test)->title ?? '',
+                            'score' => $isTargetPotensi ? intval($rawScore) + 200 : intval($rawScore),
+                        ];
                     }
                 }
+            } else {
+                $totalTryoutSegments = count($tryout->tryoutSegments);
 
-                // Calculate overall average if there are segments
-                if ($segment_count > 0) {
-                    $testPotensi = collect($tryout_segment->tryoutSegmentTests)->every(function ($test) {
-                        return $test->test_type === "Tes Potensi" ? true : false;
-                    });
+                foreach ($userScores as $user_uuid => $scoresPerTest) {
+                    $total_score = 0;
+                    $attempted_any = false;
+                    $lastSegmentPotensi = false;
 
-                    $tryout_result[] = [
-                        "user_uuid" => $user_attempt['user_uuid'],
-                        "name" => $user_attempt['user_name'],
-                        "tryout_uuid" => $tryout_uuid,
-                        'tryout_name' => $tryout->title,
-                        'score' => $testPotensi ? intval($total_score) + 200 : intval($total_score),
-                    ];
+                    foreach ($tryout->tryoutSegments as $tryout_segment) {
+                        $segment_score = 0;
+                        $total_tests_in_segment = count($tryout_segment->tryoutSegmentTests);
+
+                        foreach ($tryout_segment->tryoutSegmentTests as $tryout_segment_test) {
+                            if (array_key_exists($tryout_segment_test->uuid, $scoresPerTest)) {
+                                $segment_score += $scoresPerTest[$tryout_segment_test->uuid];
+                                $attempted_any = true;
+                            }
+                        }
+
+                        // Bagi dengan total seluruh subtes yang ada pada segmen ini (yang belum dikerjakan bernilai 0)
+                        $segment_average = $segment_score / max(1, $total_tests_in_segment);
+                        $total_score += $segment_average;
+
+                        // Cek apakah semua test dalam segment ini berjenis "Tes Potensi"
+                        $lastSegmentPotensi = collect($tryout_segment->tryoutSegmentTests)->every(function ($test) {
+                            return optional($test->test)->test_type === "Tes Potensi" || $test->test_type === "Tes Potensi";
+                        });
+                    }
+
+                    // Hanya masukkan peserta yang sudah mengerjakan minimal 1 subtes
+                    if ($attempted_any && $totalTryoutSegments > 0) {
+                        // Rata-rata per segmen (jika ada lebih dari 1 segmen)
+                        $overall_average = $total_score / max(1, $totalTryoutSegments);
+
+                        $tryout_result[] = [
+                            "user_uuid" => $user_uuid,
+                            "name" => $userNames[$user_uuid] ?? 'Unknown',
+                            "tryout_uuid" => $tryout_uuid,
+                            'tryout_name' => $tryout->title,
+                            'score' => $lastSegmentPotensi ? round($overall_average + 200, 2) : round($overall_average, 2),
+                        ];
+                    }
                 }
             }
 
             // Sort by score descending
             usort($tryout_result, function ($a, $b) {
-                return $b['score'] - $a['score'];
+                return $b['score'] <=> $a['score'];
             });
 
             // Add rankings
@@ -635,9 +685,22 @@ class TryoutController extends Controller
             foreach ($tryout_result as &$item) {
                 $item['ranking'] = $ranking++;
             }
+            unset($item);
+
+            $segmentTestsList = [];
+            foreach ($tryout->tryoutSegments as $seg) {
+                foreach ($seg->tryoutSegmentTests as $st) {
+                    $segmentTestsList[] = [
+                        'uuid' => $st->uuid,
+                        'segment_title' => $seg->title,
+                        'test_title' => optional($st->test)->title ?? 'Test',
+                    ];
+                }
+            }
 
             $data = [
                 'allLeaderboard' => $tryout_result,
+                'segmentTests' => $segmentTestsList,
             ];
 
             return response()->json([
@@ -1118,10 +1181,18 @@ class TryoutController extends Controller
     public function rankingQuestion($tryout_uuid, Request $request)
     {
         $sortBy = $request->query('sort');
+        $segmentTestFilter = $request->query('tryout_segment_test_uuid');
 
         try {
             $tryout = Tryout::where('uuid', $tryout_uuid)
-                ->with(['tryoutSegments.tryoutSegmentTests.studentTryouts'])
+                ->with([
+                    'tryoutSegments.tryoutSegmentTests' => function ($q) use ($segmentTestFilter) {
+                        if (!empty($segmentTestFilter)) {
+                            $q->where('uuid', $segmentTestFilter);
+                        }
+                    },
+                    'tryoutSegments.tryoutSegmentTests.test'
+                ])
                 ->first();
 
             if (!$tryout) {
@@ -1130,67 +1201,128 @@ class TryoutController extends Controller
                 ], 404);
             }
 
-            $studentTryouts = $tryout->tryoutSegments
-                ->flatMap->tryoutSegmentTests
-                ->flatMap->studentTryouts;
+            // Ambil semua tryout_segment_test yang relevan
+            $segmentTests = $tryout->tryoutSegments->flatMap->tryoutSegmentTests;
+            $segmentTestUuids = $segmentTests->pluck('uuid')->toArray();
 
-            $studentTryouts = $studentTryouts->map(function ($item) {
-                $item->data_question = json_decode($item->data_question, true);
-                return $item;
-            });
+            if (empty($segmentTestUuids)) {
+                return response()->json([
+                    'message' => 'Sukses ambil data ranking soal',
+                    'data' => [],
+                ], 200);
+            }
 
-            $summary = collect();
+            // Ambil urutan nomor soal dari tabel question_tests per test_uuid
+            $testUuids = $segmentTests->pluck('test_uuid')->filter()->unique()->toArray();
+            $questionTests = DB::table('question_tests')
+                ->whereIn('test_uuid', $testUuids)
+                ->orderBy('id', 'asc')
+                ->select('test_uuid', 'question_uuid', 'id')
+                ->get();
 
-            // 🔥 tampung semua uuid dulu
-            $allQuestionUuids = [];
-
-            foreach ($studentTryouts as $studentTryout) {
-                foreach ($studentTryout->data_question ?? [] as $question) {
-                    if (!isset($question['question_uuid'])) continue;
-
-                    $allQuestionUuids[] = $question['question_uuid'];
+            // Peta urutan nomor soal per test_uuid: [test_uuid => [question_uuid => nomor_soal]]
+            $questionNumberByTest = [];
+            foreach ($questionTests->groupBy('test_uuid') as $tUuid => $qItems) {
+                $no = 1;
+                foreach ($qItems as $qItem) {
+                    if (!isset($questionNumberByTest[$tUuid][$qItem->question_uuid])) {
+                        $questionNumberByTest[$tUuid][$qItem->question_uuid] = $no++;
+                    }
                 }
             }
 
-            // 🔥 ambil semua question dalam 1 query
-            $questionMap = Question::whereIn('uuid', array_unique($allQuestionUuids))
-                ->pluck('question', 'uuid');
+            // Peta package_test_uuid => test_uuid dan info segment test
+            $segmentTestInfo = [];
+            foreach ($segmentTests as $st) {
+                $segmentTestInfo[$st->uuid] = [
+                    'tryout_segment_test_uuid' => $st->uuid,
+                    'test_uuid' => $st->test_uuid,
+                    'test_title' => optional($st->test)->title ?? '',
+                ];
+            }
 
-            foreach ($studentTryouts as $studentTryout) {
-                foreach ($studentTryout->data_question ?? [] as $question) {
+            // Ambil data_question hanya dari kolom data_question & package_test_uuid
+            $studentTryouts = DB::table('student_tryouts')
+                ->whereIn('package_test_uuid', $segmentTestUuids)
+                ->whereNotNull('data_question')
+                ->select('package_test_uuid', 'data_question')
+                ->get();
+
+            $summary = [];
+            $allQuestionUuids = [];
+
+            foreach ($studentTryouts as $stAttempt) {
+                $decoded = json_decode($stAttempt->data_question, true);
+                if (!is_array($decoded)) {
+                    continue;
+                }
+
+                $packageTestUuid = $stAttempt->package_test_uuid;
+                $tUuid = $segmentTestInfo[$packageTestUuid]['test_uuid'] ?? null;
+
+                foreach ($decoded as $questionIndex => $question) {
                     if (!isset($question['question_uuid'])) {
                         continue;
                     }
 
                     $questionUuid = $question['question_uuid'];
-                    $answers = collect($question['answers'] ?? []);
+                    $allQuestionUuids[$questionUuid] = true;
 
-                    $isCorrectSelected = $answers->where('is_correct', 1)->where('is_selected', 1)->count();
-                    $isIncorrectSelected = $answers->where('is_correct', 0)->where('is_selected', 1)->count();
+                    $isCorrectSelected = 0;
+                    $isIncorrectSelected = 0;
 
-                    if (!$summary->has($questionUuid)) {
-                        $summary->put($questionUuid, [
+                    foreach ($question['answers'] ?? [] as $ans) {
+                        $isCorrect = isset($ans['is_correct']) && (int)$ans['is_correct'] === 1;
+                        $isSelected = isset($ans['is_selected']) && (int)$ans['is_selected'] === 1;
+
+                        if ($isSelected) {
+                            if ($isCorrect) {
+                                $isCorrectSelected++;
+                            } else {
+                                $isIncorrectSelected++;
+                            }
+                        }
+                    }
+
+                    // Tentukan nomor soal: dari tabel question_tests, atau fallback ke indeks + 1
+                    $qNumber = null;
+                    if ($tUuid && isset($questionNumberByTest[$tUuid][$questionUuid])) {
+                        $qNumber = $questionNumberByTest[$tUuid][$questionUuid];
+                    } else {
+                        $qNumber = $questionIndex + 1;
+                    }
+
+                    if (!isset($summary[$questionUuid])) {
+                        $summary[$questionUuid] = [
+                            'question_number' => $qNumber,
                             'question_uuid' => $questionUuid,
-                            // 🔥 pakai hasil whereIn, bukan query per loop
-                            'question' => $questionMap[$questionUuid] ?? null,
+                            'tryout_segment_test_uuid' => $packageTestUuid,
+                            'test_title' => $segmentTestInfo[$packageTestUuid]['test_title'] ?? '',
+                            'question' => null,
                             'total_correct_selected' => 0,
                             'total_incorrect_selected' => 0,
                             'total_participant' => 0,
-                        ]);
+                        ];
                     }
 
-                    $current = $summary->get($questionUuid);
-
-                    $current['total_correct_selected'] += $isCorrectSelected;
-                    $current['total_incorrect_selected'] += $isIncorrectSelected;
-                    $current['total_participant'] += 1;
-
-                    $summary->put($questionUuid, $current);
+                    $summary[$questionUuid]['total_correct_selected'] += $isCorrectSelected;
+                    $summary[$questionUuid]['total_incorrect_selected'] += $isIncorrectSelected;
+                    $summary[$questionUuid]['total_participant'] += 1;
                 }
             }
 
-            // Sorting (tetap pakai switch biar PHP 7.4 aman)
-            $sorted = $summary->values();
+            if (!empty($allQuestionUuids)) {
+                $questionMap = Question::whereIn('uuid', array_keys($allQuestionUuids))
+                    ->pluck('question', 'uuid')
+                    ->toArray();
+
+                foreach ($summary as $qUuid => &$data) {
+                    $data['question'] = $questionMap[$qUuid] ?? null;
+                }
+                unset($data);
+            }
+
+            $sorted = collect(array_values($summary));
 
             switch ($sortBy) {
                 case 'wrong_desc':
@@ -1204,6 +1336,12 @@ class TryoutController extends Controller
                     break;
                 case 'correct_asc':
                     $sorted = $sorted->sortBy('total_correct_selected')->values();
+                    break;
+                case 'number_asc':
+                    $sorted = $sorted->sortBy('question_number')->values();
+                    break;
+                case 'number_desc':
+                    $sorted = $sorted->sortByDesc('question_number')->values();
                     break;
                 default:
                     $sorted = $sorted->sortByDesc('total_incorrect_selected')->values();
@@ -1223,12 +1361,19 @@ class TryoutController extends Controller
     }
     public function exportRankingQuestion($tryout_uuid, Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $sorting = request()->query('sort');
-        return Excel::download(new RankingQuestionExport($tryout_uuid, $sorting), 'ranking-questions.xlsx');
+        $segmentTestUuid = request()->query('tryout_segment_test_uuid');
+        return Excel::download(new RankingQuestionExport($tryout_uuid, $sorting, $segmentTestUuid), 'ranking-questions.xlsx');
     }
 
     public function exportStudentTryout($tryout_uuid, Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $user_uuid = $request->query("user_uuid");
         try {
             if (empty($user_uuid)) {

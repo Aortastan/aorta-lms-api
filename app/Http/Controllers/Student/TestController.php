@@ -125,10 +125,13 @@ class TestController extends Controller
 
     // ambil semua test yang pernah dibeli berdasarkan package pacakge
     public function getStudentTests(Request $request){
-        $user = JWTAuth::parseToken()->authenticate();
-        $my_tests = [];
-        if ($request->has('package_uuid')) {
-            $packageUuid = $request->input('package_uuid');
+        $user = auth()->user() ?? JWTAuth::parseToken()->authenticate();
+        $packageUuid = $request->input('package_uuid', 'all');
+        $cacheKey = "student_tests:{$user->uuid}:{$packageUuid}";
+
+        $my_tests = \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($request, $user, $packageUuid) {
+            $my_tests = [];
+            if ($request->has('package_uuid')) {
             $get_package_test = PackageTest::where('package_uuid', $packageUuid)
             ->whereDoesntHave('delyn', function($query) {
                 $query->where('title', 'LIKE', '%Pauli%')
@@ -261,6 +264,8 @@ class TestController extends Controller
             }
         }
 
+            return $my_tests;
+        });
 
         return response()->json([
             'message'=> "Sukses mengambil data",
