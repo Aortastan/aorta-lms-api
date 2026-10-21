@@ -52,12 +52,12 @@ class Package extends Model
 
     public function packageTests()
     {
-        return $this->hasMany(PackageTest::class);
+        return $this->hasMany(PackageTest::class)->orderBy('id');
     }
 
     public function packageCourses()
     {
-        return $this->hasMany(PackageCourse::class);
+        return $this->hasMany(PackageCourse::class)->orderBy('id');
     }
 
     protected static function boot()

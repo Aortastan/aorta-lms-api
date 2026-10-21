@@ -140,6 +140,7 @@ class TestController extends Controller
                     ->orWhere('title', 'LIKE', '%koran%');
             })
             ->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])
+            ->orderBy('id')
             ->get();
 
             $my_tests = [];
@@ -182,7 +183,7 @@ class TestController extends Controller
             }
         }else{
             $uuid_packages = $this->checkAllPurchasedPackageByUser($user);
-            $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
+            $get_test_purchased = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->orderBy('id')->get();
 
             $my_tests = [];
             $tryout_uuids = [];
@@ -224,7 +225,7 @@ class TestController extends Controller
             }
 
             $uuid_packages = $this->checkAllMembershipPackageByUser($user, $uuid_packages);
-            $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->get();
+            $get_course_membership = PackageTest::whereIn('package_uuid', $uuid_packages)->with(['test', 'test.tryoutSegments', 'test.tryoutSegments.tryoutSegmentTests', 'test.tryoutSegments.tryoutSegmentTests.test'])->orderBy('id')->get();
 
             foreach ($get_course_membership as $index => $student_test) {
                 if (!in_array($student_test->uuid, $tryout_uuids)) {
