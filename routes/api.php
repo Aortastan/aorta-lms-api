@@ -171,6 +171,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         });
 
         Route::get('presence', 'Admin\PresenceController@index')->name('presence');
+        Route::post('presence/{uuid}/force-logout', 'Admin\PresenceController@forceLogout')->name('presence.forceLogout');
 
         // User management
         Route::group(['prefix' => 'users', 'as' => 'users.',], function () {

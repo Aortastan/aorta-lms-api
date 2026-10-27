@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\UserPresence;
 use App\Services\Presence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Token;
 
 class PresenceController extends Controller
 {
@@ -24,12 +27,13 @@ class PresenceController extends Controller
         $uuids = $presences->pluck('user_uuid')->all();
         $categoryRows = Presence::userCategories($uuids);
         $categoriesByUser = $categoryRows->groupBy('user_uuid');
+        $packagesByUser = Presence::userPackages($uuids)->groupBy('user_uuid');
         $tests = Presence::describeTests($presences);
         $packageNames = DB::table('packages')
             ->whereIn('uuid', $presences->pluck('package_uuid')->filter()->unique()->values())
             ->pluck('name', 'uuid');
 
-        $users = $presences->map(function ($p) use ($categoriesByUser, $tests, $packageNames) {
+        $users = $presences->map(function ($p) use ($categoriesByUser, $packagesByUser, $tests, $packageNames) {
             $test = $tests[$p->activity . ':' . $p->test_ref_uuid] ?? null;
 
             return [
@@ -47,6 +51,7 @@ class PresenceController extends Controller
                 'categories' => collect($categoriesByUser[$p->user_uuid] ?? [])->map(function ($c) {
                     return ['uuid' => $c->category_uuid, 'name' => $c->category_name];
                 })->values(),
+                'packages' => collect($packagesByUser[$p->user_uuid] ?? [])->pluck('package_name')->values(),
                 'activity_started_at' => optional($p->activity_started_at)->toIso8601String(),
                 'last_seen_at' => optional($p->last_seen_at)->toIso8601String(),
             ];
@@ -105,5 +110,34 @@ class PresenceController extends Controller
             'by_test' => $byTest,
             'users' => $users->take(self::USER_LIMIT)->values(),
         ], 200);
+    }
+
+    public function forceLogout($userUuid): JsonResponse
+    {
+        $user = User::where('uuid', $userUuid)->where('role', 'student')->first();
+        if (!$user) {
+            return response()->json(['message' => 'Siswa tidak ditemukan'], 404);
+        }
+
+        $presence = UserPresence::online()->where('user_uuid', $user->uuid)->first();
+        if ($presence && $presence->activity !== 'browsing') {
+            return response()->json(['message' => 'Siswa sedang mengerjakan tes, tidak bisa di-logout paksa.'], 422);
+        }
+
+        if ($user->active_token) {
+            try {
+                JWTAuth::manager()->invalidate(new Token($user->active_token));
+            } catch (\Exception $e) {
+            }
+        }
+
+        $user->update([
+            'active_token' => null,
+            'active_device_id' => null,
+            'active_device_name' => null,
+        ]);
+        UserPresence::where('user_uuid', $user->uuid)->delete();
+
+        return response()->json(['message' => 'Siswa berhasil di-logout paksa'], 200);
     }
 }
