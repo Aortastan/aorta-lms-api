@@ -59,6 +59,21 @@ class Presence
             ->get();
     }
 
+    public static function userPackages(array $userUuids): Collection
+    {
+        if (!$userUuids) {
+            return collect();
+        }
+
+        return DB::query()
+            ->fromSub(self::ownedPackages($userUuids), 'owned')
+            ->join('packages', 'packages.uuid', '=', 'owned.package_uuid')
+            ->select('owned.user_uuid', 'packages.uuid as package_uuid', 'packages.name as package_name')
+            ->distinct()
+            ->orderBy('packages.name')
+            ->get();
+    }
+
     public static function onlineUsersByCategory(): array
     {
         return Cache::remember(self::CATEGORY_CACHE_KEY, self::CATEGORY_CACHE_SECONDS, function () {
