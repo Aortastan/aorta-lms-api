@@ -37,6 +37,9 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('forgot-password', 'AuthController@forgotPassword')->name('forgotPassword');
     Route::post('reset-password', 'AuthController@resetPassword')->name('resetPassword');
     Route::get('banners/active', 'AllRole\BannerController@index')->name('index');
+    Route::get('exam-agendas', 'AllRole\ExamAgendaController@index')->name('examAgendas');
+    Route::post('presence/heartbeat', 'AllRole\PresenceController@heartbeat')->name('presence.heartbeat')->middleware(['auth', 'throttle:30,1,presence']);
+    Route::post('presence/offline', 'AllRole\PresenceController@offline')->name('presence.offline')->middleware(['auth', 'throttle:30,1,presence-offline']);
     Route::post('logout', 'AuthController@logout');
     Route::post('ping', 'AuthController@ping');
     Route::get('me/menu-access', 'AuthController@myMenuAccess')->name('me.menuAccess');
@@ -158,6 +161,16 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::delete('{uuid}', 'Admin\BannerController@delete')->name('delete');
         });
         // end Banner management
+
+        Route::group(['prefix' => 'exam-agendas', 'as' => 'examAgendas.',], function () {
+            Route::get('', 'Admin\ExamAgendaController@index')->name('get');
+            Route::get('{uuid}', 'Admin\ExamAgendaController@show')->name('show');
+            Route::post('{uuid}', 'Admin\ExamAgendaController@update')->name('update');
+            Route::post('', 'Admin\ExamAgendaController@store')->name('store');
+            Route::delete('{uuid}', 'Admin\ExamAgendaController@delete')->name('delete');
+        });
+
+        Route::get('presence', 'Admin\PresenceController@index')->name('presence');
 
         // User management
         Route::group(['prefix' => 'users', 'as' => 'users.',], function () {
@@ -477,6 +490,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // End Tryout
 
         Route::post('session/{session_uuid}', 'Student\SessionController@update')->name('test.session');
+        Route::get('presence/peers', 'Student\PresenceController@peers')->name('presence.peers');
     });
 
     Route::group(['middleware' => ['auth', 'instructor', 'verified'], 'prefix' => 'instructor', 'as' => 'instructor.',], function () {

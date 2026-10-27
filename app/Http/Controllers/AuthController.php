@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserMenuAccess;
+use App\Models\UserPresence;
 use App\Models\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -306,6 +307,7 @@ class AuthController extends Controller
                 'active_device_id' => null,
                 'active_device_name' => null,
             ]);
+            UserPresence::where('user_uuid', $user->uuid)->delete();
         }
         auth()->logout();
 
