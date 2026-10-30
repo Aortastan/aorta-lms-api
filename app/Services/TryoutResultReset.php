@@ -15,6 +15,22 @@ class TryoutResultReset
     const REASON_QUESTIONS_CHANGED = 'questions_changed';
     const REASON_TEST_REPLACED = 'test_replaced';
     const REASON_TEST_REMOVED = 'test_removed';
+    const REASON_SETTINGS_CHANGED = 'settings_changed';
+    const SCORING_SETTINGS = ['max_point', 'passing_score', 'duration', 'duration_per_question', 'duration_type'];
+
+    public static function scoringSettingsChanged($segmentTest, array $incoming): bool
+    {
+        $normalize = function ($value) {
+            return $value === null ? '' : trim((string) $value);
+        };
+        foreach (self::SCORING_SETTINGS as $field) {
+            if ($normalize($segmentTest->{$field}) !== $normalize($incoming[$field] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public static function reset(string $segmentTestUuid, string $reason, ?string $resetBy = null): array
     {

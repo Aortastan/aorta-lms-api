@@ -280,12 +280,11 @@ class TryoutController extends Controller
         DB::transaction(function () use ($request, $uuid, &$resetSummary, $resetBy) {
             $existingSegments = TryoutSegment::where('tryout_uuid', $uuid)->with('tryoutSegmentTests')->get();
             $existingSegmentUuids = $existingSegments->pluck('uuid')->toArray();
-            $existingTestUuidBySegmentTest = $existingSegments
+            $existingSegmentTests = $existingSegments
                 ->flatMap(function ($segment) {
                     return $segment->tryoutSegmentTests;
                 })
-                ->pluck('test_uuid', 'uuid')
-                ->toArray();
+                ->keyBy('uuid');
 
             $receivedSegmentUuids = [];
             $receivedSegmentTestUuids = [];
@@ -349,9 +348,17 @@ class TryoutController extends Controller
                 if (isset($segmentData['tests']) && is_array($segmentData['tests'])) {
                     foreach ($segmentData['tests'] as $key1 => $test) {
                         if (!empty($test['segment_test_uuid'])) {
-                            $previousTestUuid = $existingTestUuidBySegmentTest[$test['segment_test_uuid']] ?? null;
-                            if ($previousTestUuid && $previousTestUuid !== $test['test_uuid']) {
+                            $previous = $existingSegmentTests->get($test['segment_test_uuid']);
+                            if ($previous && $previous->test_uuid !== $test['test_uuid']) {
                                 $resetSummary[$test['segment_test_uuid']] = TryoutResultReset::reset($test['segment_test_uuid'], TryoutResultReset::REASON_TEST_REPLACED, $resetBy);
+                            } elseif ($previous && TryoutResultReset::scoringSettingsChanged($previous, [
+                                'max_point' => $test['max_point'],
+                                'passing_score' => $test['test_passing_score'],
+                                'duration' => $test['duration'],
+                                'duration_per_question' => $test['duration_per_question'],
+                                'duration_type' => $test['duration_type'],
+                            ])) {
+                                $resetSummary[$test['segment_test_uuid']] = TryoutResultReset::reset($test['segment_test_uuid'], TryoutResultReset::REASON_SETTINGS_CHANGED, $resetBy);
                             }
                             TryoutSegmentTest::where('uuid', $test['segment_test_uuid'])->update([
                                 'tryout_segment_uuid' => $segmentUuid,
@@ -384,8 +391,8 @@ class TryoutController extends Controller
 
         return response()->json([
             'message' => $resetAttempts > 0
-                ? "Tryout tersimpan. {$resetAttempts} hasil pengerjaan dari tes yang diganti/dihapus sudah direset (diarsipkan)."
-                : 'Add tests success',
+                ? "Tryout tersimpan. {$resetAttempts} hasil pengerjaan dari tes yang diganti, dihapus, atau diubah pengaturan nilainya sudah direset (diarsipkan)."
+                : 'Tryout tersimpan. Tidak ada hasil siswa yang direset.',
             'reset_attempts' => $resetAttempts,
         ], 200);
     }
