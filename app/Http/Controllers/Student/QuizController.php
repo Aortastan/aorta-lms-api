@@ -289,7 +289,7 @@ class QuizController extends Controller
 
             $getQuestions = QuestionTest::where([
                 'test_uuid' => $getTest->uuid,
-            ])->with(['question'])->get();
+            ])->with(['question'])->orderBy('order')->orderBy('id')->get();
 
             if(count($getQuestions) != count($request->student_answers)){
                 return response()->json([

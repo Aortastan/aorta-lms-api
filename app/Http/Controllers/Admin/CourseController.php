@@ -682,36 +682,21 @@ class CourseController extends Controller
 
         if ($check_package_course) {
             return response()->json([
-                'message' => 'This course has published and used in package. You can\'t delete it',
-            ], 404);
+                'message' => 'Course masih dipakai di paket. Lepaskan dari paket dulu sebelum dihapus.',
+            ], 422);
         }
 
-        $check_lesson = CourseLesson::where([
-            'course_uuid' => $uuid,
-        ])->get();
+        DB::transaction(function () use ($uuid) {
+            $lessonUuids = CourseLesson::where(['course_uuid' => $uuid])->pluck('uuid');
 
-        foreach ($check_lesson as $index => $lesson) {
-            LessonLecture::where([
-                'lesson_uuid' => $lesson->uuid,
-            ])->delete();
-
-            LessonQuiz::where([
-                'lesson_uuid' => $lesson->uuid,
-            ])->delete();
-
-            Assignment::where([
-                'lesson_uuid' => $lesson->uuid,
-            ])->delete();
-        }
-
-        CourseLesson::where([
-            'course_uuid' => $uuid,
-        ])->delete();
-
-        PretestPosttest::where([
-            'course_uuid' => $uuid,
-        ])->delete();
-
+            LessonLecture::whereIn('lesson_uuid', $lessonUuids)->delete();
+            LessonQuiz::whereIn('lesson_uuid', $lessonUuids)->delete();
+            Assignment::whereIn('lesson_uuid', $lessonUuids)->delete();
+            CourseLesson::where(['course_uuid' => $uuid])->delete();
+            PretestPosttest::where(['course_uuid' => $uuid])->delete();
+            CourseTag::where(['course_uuid' => $uuid])->delete();
+            Course::where(['uuid' => $uuid])->delete();
+        });
 
         return response()->json([
             'message' => 'Delete succesfully',

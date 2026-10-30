@@ -18,6 +18,7 @@ use App\Models\PackageTest;
 use App\Models\StudentTryout;
 use App\Models\Answer;
 use App\Models\StudentQuestionGrade;
+use App\Services\TryoutResultReset;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RankingQuestionExport;
 use App\Exports\StudentTryoutExport;
@@ -273,9 +274,18 @@ class TryoutController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($request, $uuid) {
+        $resetSummary = [];
+        $resetBy = optional(auth()->user())->uuid;
+
+        DB::transaction(function () use ($request, $uuid, &$resetSummary, $resetBy) {
             $existingSegments = TryoutSegment::where('tryout_uuid', $uuid)->with('tryoutSegmentTests')->get();
             $existingSegmentUuids = $existingSegments->pluck('uuid')->toArray();
+            $existingTestUuidBySegmentTest = $existingSegments
+                ->flatMap(function ($segment) {
+                    return $segment->tryoutSegmentTests;
+                })
+                ->pluck('test_uuid', 'uuid')
+                ->toArray();
 
             $receivedSegmentUuids = [];
             $receivedSegmentTestUuids = [];
@@ -296,6 +306,10 @@ class TryoutController extends Controller
             // Delete segments that are no longer present in the request
             $segmentsToDelete = array_diff($existingSegmentUuids, $receivedSegmentUuids);
             if (!empty($segmentsToDelete)) {
+                $removedSegmentTests = TryoutSegmentTest::whereIn('tryout_segment_uuid', $segmentsToDelete)->pluck('uuid');
+                foreach ($removedSegmentTests as $segmentTestUuid) {
+                    $resetSummary[$segmentTestUuid] = TryoutResultReset::reset($segmentTestUuid, TryoutResultReset::REASON_TEST_REMOVED, $resetBy);
+                }
                 TryoutSegmentTest::whereIn('tryout_segment_uuid', $segmentsToDelete)->delete();
                 TryoutSegment::whereIn('uuid', $segmentsToDelete)->delete();
             }
@@ -310,6 +324,9 @@ class TryoutController extends Controller
 
             $testsToDelete = array_diff($existingTestUuids, $receivedSegmentTestUuids);
             if (!empty($testsToDelete)) {
+                foreach ($testsToDelete as $segmentTestUuid) {
+                    $resetSummary[$segmentTestUuid] = TryoutResultReset::reset($segmentTestUuid, TryoutResultReset::REASON_TEST_REMOVED, $resetBy);
+                }
                 TryoutSegmentTest::whereIn('uuid', $testsToDelete)->delete();
             }
 
@@ -332,6 +349,10 @@ class TryoutController extends Controller
                 if (isset($segmentData['tests']) && is_array($segmentData['tests'])) {
                     foreach ($segmentData['tests'] as $key1 => $test) {
                         if (!empty($test['segment_test_uuid'])) {
+                            $previousTestUuid = $existingTestUuidBySegmentTest[$test['segment_test_uuid']] ?? null;
+                            if ($previousTestUuid && $previousTestUuid !== $test['test_uuid']) {
+                                $resetSummary[$test['segment_test_uuid']] = TryoutResultReset::reset($test['segment_test_uuid'], TryoutResultReset::REASON_TEST_REPLACED, $resetBy);
+                            }
                             TryoutSegmentTest::where('uuid', $test['segment_test_uuid'])->update([
                                 'tryout_segment_uuid' => $segmentUuid,
                                 'test_uuid' => $test['test_uuid'],
@@ -359,8 +380,35 @@ class TryoutController extends Controller
             }
         });
 
+        $resetAttempts = array_sum(array_column($resetSummary, 'attempts'));
+
         return response()->json([
-            'message' => 'Add tests success',
+            'message' => $resetAttempts > 0
+                ? "Tryout tersimpan. {$resetAttempts} hasil pengerjaan dari tes yang diganti/dihapus sudah direset (diarsipkan)."
+                : 'Add tests success',
+            'reset_attempts' => $resetAttempts,
+        ], 200);
+    }
+
+    public function resetSegmentTest($tryoutUuid, $segmentTestUuid): JsonResponse
+    {
+        $segmentTest = TryoutSegmentTest::where('uuid', $segmentTestUuid)->first();
+        $belongs = $segmentTest && TryoutSegment::where([
+            'uuid' => $segmentTest->tryout_segment_uuid,
+            'tryout_uuid' => $tryoutUuid,
+        ])->exists();
+
+        if (!$belongs) {
+            return response()->json([
+                'message' => 'Tes tidak ditemukan di tryout ini',
+            ], 404);
+        }
+
+        $result = TryoutResultReset::reset($segmentTestUuid, TryoutResultReset::REASON_MANUAL, optional(auth()->user())->uuid);
+
+        return response()->json([
+            'message' => "Hasil tes berhasil direset: {$result['attempts']} pengerjaan dari {$result['students']} siswa diarsipkan.",
+            'result' => $result,
         ], 200);
     }
 

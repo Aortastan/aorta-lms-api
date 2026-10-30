@@ -30,7 +30,7 @@ class Test extends Model
 
     public function questions()
     {
-        return $this->hasMany(QuestionTest::class);
+        return $this->hasMany(QuestionTest::class)->orderBy('order')->orderBy('id');
     }
 
     public function tags()

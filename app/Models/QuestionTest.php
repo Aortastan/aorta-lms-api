@@ -19,6 +19,7 @@ class QuestionTest extends Model
     protected $fillable = [
         'test_uuid',
         'question_uuid',
+        'order',
     ];
 
     public function question()

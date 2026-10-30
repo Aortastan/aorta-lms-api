@@ -13,6 +13,13 @@ use App\Models\Test;
 use App\Models\Tryout;
 use App\Models\PackageTest;
 use App\Models\PackageCourse;
+use App\Models\PurchasedPackage;
+use App\Models\MembershipHistory;
+use App\Models\DetailTransaction;
+use App\Models\Coupon;
+use App\Models\Cart;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
@@ -462,5 +469,121 @@ class PackageController extends Controller
         return response()->json([
             'message' => 'Success update data',
         ], 200);
+    }
+
+    public function duplicate(Request $request, $uuid): JsonResponse
+    {
+        $package = Package::where(['uuid' => $uuid])->with(['packageTests', 'packageCourses'])->first();
+        if (!$package) {
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $copy = DB::transaction(function () use ($request, $package) {
+                $copy = $package->replicate(['id']);
+                $copy->name = $request->name;
+                $copy->status = 'Draft';
+                $copy->image = $this->copyPackageImage($package->image);
+                $copy->save();
+
+                foreach ($package->packageTests as $packageTest) {
+                    $row = $packageTest->replicate(['id']);
+                    $row->package_uuid = $copy->uuid;
+                    $row->save();
+                }
+
+                foreach ($package->packageCourses as $packageCourse) {
+                    $row = $packageCourse->replicate(['id']);
+                    $row->package_uuid = $copy->uuid;
+                    $row->save();
+                }
+
+                return $copy;
+            });
+        } catch (\Exception $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Gagal menduplikat paket',
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Paket berhasil diduplikat',
+            'package_uuid' => $copy->uuid,
+        ], 200);
+    }
+
+    public function delete($uuid): JsonResponse
+    {
+        $package = Package::where(['uuid' => $uuid])->first();
+        if (!$package) {
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        if ($package->status === 'Published') {
+            return response()->json([
+                'message' => 'Paket masih Published. Ubah status ke Draft dulu sebelum dihapus.',
+            ], 422);
+        }
+
+        $hasBuyers = PurchasedPackage::where('package_uuid', $uuid)->exists()
+            || MembershipHistory::where('package_uuid', $uuid)->exists()
+            || DetailTransaction::where('package_uuid', $uuid)->exists();
+        if ($hasBuyers) {
+            return response()->json([
+                'message' => 'Paket sudah pernah dibeli siswa, jadi tidak bisa dihapus. Biarkan berstatus Draft untuk menyembunyikannya.',
+            ], 422);
+        }
+
+        if (Coupon::where('package_uuid', $uuid)->exists()) {
+            return response()->json([
+                'message' => 'Paket masih dipakai kupon. Hapus atau ubah kuponnya dulu.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($uuid) {
+            PackageTest::where('package_uuid', $uuid)->delete();
+            PackageCourse::where('package_uuid', $uuid)->delete();
+            Cart::where('package_uuid', $uuid)->delete();
+            Package::where('uuid', $uuid)->delete();
+        });
+
+        return response()->json([
+            'message' => 'Paket berhasil dihapus',
+        ], 200);
+    }
+
+    private function copyPackageImage($path)
+    {
+        if (!$path || Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        $disk = Storage::disk('public');
+        if (!$disk->exists($path)) {
+            return $path;
+        }
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        $target = 'packages/' . Str::uuid()->toString() . ($extension ? '.' . $extension : '');
+        $disk->copy($path, $target);
+
+        return $target;
     }
 }
