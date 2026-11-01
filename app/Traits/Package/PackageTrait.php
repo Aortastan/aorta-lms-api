@@ -20,7 +20,7 @@ trait PackageTrait
                 $uuid = "package_uuid";
             }
             $packages = DB::table('packages')
-                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'subcategories.name as subcategory_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership', 'packages.test_type')
+                ->select('packages.uuid as '.$uuid, 'categories.name as category_name', 'subcategories.name as subcategory_name', 'packages.name', 'packages.description', 'packages.package_type', 'packages.image', 'packages.price_lifetime', 'packages.price_one_month', 'packages.price_three_months', 'packages.price_six_months','packages.price_one_year', 'packages.learner_accesibility', 'packages.discount', 'packages.is_membership', 'packages.test_type', 'packages.status')
                 ->join('categories', 'packages.category_uuid', '=', 'categories.uuid')
                 ->join('subcategories', 'packages.subcategory_uuid', '=', 'subcategories.uuid');
 

@@ -283,6 +283,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('duplicate/{uuid}', 'Admin\TestController@duplicate')->name('duplicate');
             Route::post('{uuid}', 'Admin\TestController@update')->name('update');
             Route::put('add-questions/{uuid}', 'Admin\TestController@addQuestions')->name('update');
+            Route::put('reorder-questions/{uuid}', 'Admin\TestController@reorderQuestions')->name('reorder');
             Route::post('update-tags/{uuid}', 'Admin\TestController@updateTag')->name('update.tag');
             Route::get('preview/{uuid}', 'Admin\TestController@preview')->name('preview');
             Route::delete('{uuid}', 'Admin\TestController@delete')->name('delete');
@@ -295,6 +296,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{tryout_uuid}', 'Admin\TryoutController@show')->name('show');
             Route::put('{tryout_uuid}', 'Admin\TryoutController@update')->name('update');
             Route::put('add-tests/{tryout_uuid}', 'Admin\TryoutController@addTests')->name('addTests');
+            Route::post('{tryout_uuid}/segment-tests/{segment_test_uuid}/reset', 'Admin\TryoutController@resetSegmentTest')->name('resetSegmentTest');
             Route::post('', 'Admin\TryoutController@submit')->name('submit');
             Route::delete('{uuid}', 'Admin\TryoutController@delete')->name('delete');
         });
@@ -333,6 +335,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('', 'Admin\CourseLessonController@store')->name('store');
             Route::put('{uuid}', 'Admin\CourseLessonController@update')->name('update');
             Route::delete('{uuid}', 'Admin\CourseLessonController@delete')->name('delete');
+            Route::put('{uuid}/reorder-lectures', 'Admin\LessonLectureController@reorder')->name('reorderLectures');
         });
         // end course lesson management
 
@@ -353,6 +356,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('duplicate/{uuid}', 'Admin\PackageController@duplicate')->name('duplicate');
             Route::post('{type}/{uuid}', 'Admin\PackageController@update')->name('update');
             Route::post('lists/{type}/{uuid}', 'Admin\PackageController@packageLists')->name('lists');
+            Route::delete('{uuid}', 'Admin\PackageController@delete')->name('delete');
         });
         // end packages management
 

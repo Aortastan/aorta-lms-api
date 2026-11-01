@@ -12,6 +12,7 @@ use App\Models\SessionTest;
 use App\Models\Tag;
 use App\Models\IrtPoint;
 use App\Models\TryoutSegmentTest;
+use App\Services\TryoutResultReset;
 use App\Models\StudentQuiz;
 use App\Models\LessonQuiz;
 use App\Models\StudentTryout;
@@ -161,6 +162,11 @@ class TestController extends Controller
 
 
         $response_test['test_tags'] = $testTags;
+        $segmentTestUuids = TryoutSegmentTest::where('test_uuid', $test->uuid)->pluck('uuid');
+        $response_test['tryout_usage'] = [
+            'segment_tests' => $segmentTestUuids->count(),
+            'attempts' => $segmentTestUuids->isEmpty() ? 0 : StudentTryout::whereIn('package_test_uuid', $segmentTestUuids)->count(),
+        ];
 
         return response()->json([
             'message' => 'Success get data',
@@ -190,7 +196,7 @@ class TestController extends Controller
                     'answer' => $answer['answer'],
                     'image' => $answer['image'],
                     'is_correct' => $answer['is_correct'],
-                    'answer_correct_explanation' => $answer['answer_correct_explanation'],
+                    'correct_answer_explanation' => $answer['correct_answer_explanation'],
                     'point' => $answer['point'],
                     'is_selected' => 0,
                 ];
@@ -287,6 +293,49 @@ class TestController extends Controller
         return $this->duplicateTest($request, $uuid);
     }
 
+    public function reorderQuestions(Request $request, $uuid): JsonResponse
+    {
+        $test = Test::where(['uuid' => $uuid])->first();
+        if (!$test) {
+            return response()->json([
+                'message' => 'Test not found',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'question_uuids' => 'required|array',
+            'question_uuids.*' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $rows = QuestionTest::where('test_uuid', $test->uuid)->orderBy('order')->orderBy('id')->get();
+        $requested = array_values($request->question_uuids);
+        $existing = $rows->pluck('question_uuid')->all();
+
+        if (count($requested) !== count($existing) || count(array_diff($existing, $requested)) > 0 || count(array_unique($requested)) !== count($requested)) {
+            return response()->json([
+                'message' => 'Daftar soal sudah berubah. Muat ulang halaman lalu atur urutannya lagi.',
+            ], 422);
+        }
+
+        $position = array_flip($requested);
+        DB::transaction(function () use ($rows, $position) {
+            foreach ($rows as $row) {
+                QuestionTest::where('uuid', $row->uuid)->update(['order' => $position[$row->question_uuid] + 1]);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Urutan soal berhasil disimpan',
+        ], 200);
+    }
+
     public function addQuestions(Request $request, $uuid): JsonResponse
     {
         $test = Test::where(['uuid' => $uuid])->first();
@@ -335,6 +384,7 @@ class TestController extends Controller
                     'uuid' => Uuid::uuid4()->toString(),
                     'test_uuid' => $test->uuid,
                     'question_uuid' => $question['question_uuid'],
+                    'order' => $index + 1,
                 ];
             } else {
                 $allQuestionsUuid[] = $checkQuestionTest->uuid;
@@ -348,13 +398,22 @@ class TestController extends Controller
             QuestionTest::insert($newQuestions);
         }
 
+        $resetAttempts = 0;
+        $resetBy = optional(auth()->user())->uuid;
+        foreach (TryoutSegmentTest::where('test_uuid', $test->uuid)->pluck('uuid') as $segmentTestUuid) {
+            $resetAttempts += TryoutResultReset::reset($segmentTestUuid, TryoutResultReset::REASON_QUESTIONS_CHANGED, $resetBy)['attempts'];
+        }
+
         $this->updateSessionQuestions($test);
         $this->updateLessonQuizQuestionsStudent($test);
         $this->updatePretestPosttestQuestionsStudent($test);
         $this->updateTryoutQuestionsStudent($test);
 
         return response()->json([
-            'message' => 'Success update questions'
+            'message' => $resetAttempts > 0
+                ? "Soal tersimpan. {$resetAttempts} hasil pengerjaan tes ini di tryout sudah direset (diarsipkan)."
+                : 'Success update questions',
+            'reset_attempts' => $resetAttempts,
         ], 200);
     }
 
@@ -363,7 +422,7 @@ class TestController extends Controller
         // update session
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
-        ])->get();
+        ])->orderBy('order')->orderBy('id')->get();
 
 
         $sessions = SessionTest::where([
@@ -409,7 +468,7 @@ class TestController extends Controller
         // update session
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
-        ])->get();
+        ])->orderBy('order')->orderBy('id')->get();
 
         $lesson_quizzes = LessonQuiz::where([
             'test_uuid' => $test->uuid
@@ -458,7 +517,7 @@ class TestController extends Controller
         // update session
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
-        ])->get();
+        ])->orderBy('order')->orderBy('id')->get();
 
         $pretest_posttests = PretestPosttest::where([
             'test_uuid' => $test->uuid
@@ -506,7 +565,7 @@ class TestController extends Controller
     {
         $question_tests = QuestionTest::where([
             'test_uuid' => $test['uuid']
-        ])->get();
+        ])->orderBy('order')->orderBy('id')->get();
 
         $package_tests = TryoutSegmentTest::where([
             'test_uuid' => $test->uuid

@@ -52,6 +52,7 @@ trait DuplicateTrait
                     'uuid' => Uuid::uuid4()->toString(),
                     'test_uuid' => $test_uuid,
                     'question_uuid' => $question->question_uuid,
+                    'order' => $index + 1,
                 ];
             }
 
