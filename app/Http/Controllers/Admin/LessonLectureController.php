@@ -49,6 +49,47 @@ class LessonLectureController extends Controller
         }
     }
 
+    public function reorder(Request $request, $lessonUuid): JsonResponse
+    {
+        $lesson = CourseLesson::where('uuid', $lessonUuid)->first();
+        if (!$lesson) {
+            return response()->json([
+                'message' => 'Lesson not found',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'lecture_uuids' => 'required|array',
+            'lecture_uuids.*' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $existing = LessonLecture::where('lesson_uuid', $lessonUuid)->whereNull('parent_lecture_uuid')->pluck('uuid')->all();
+        $requested = array_values($request->lecture_uuids);
+
+        if (count($requested) !== count($existing) || count(array_diff($existing, $requested)) > 0 || count(array_unique($requested)) !== count($requested)) {
+            return response()->json([
+                'message' => 'Daftar materi sudah berubah. Muat ulang halaman lalu atur urutannya lagi.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($requested) {
+            foreach ($requested as $index => $lectureUuid) {
+                LessonLecture::where('uuid', $lectureUuid)->update(['order' => $index + 1]);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Urutan materi berhasil disimpan',
+        ], 200);
+    }
+
     public function store(Request $request){
         $checkLesson = CourseLesson::where(['uuid' => $request->lesson_uuid])->first();
         if(!$checkLesson){
@@ -121,7 +162,9 @@ class LessonLectureController extends Controller
             'url_path' => $url_path,
             'file_size' => $file_size,
             'file_duration' => $file_duration,
-            'order' => $request->order ?? 0,
+            'order' => $request->order ?? ((int) LessonLecture::where('lesson_uuid', $request->lesson_uuid)
+                ->where('parent_lecture_uuid', $request->parent_lecture_uuid ?: null)
+                ->max('order') + 1),
         ];
 
         $lecture = LessonLecture::create($validated);

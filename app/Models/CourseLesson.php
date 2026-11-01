@@ -37,7 +37,7 @@ class CourseLesson extends Model
 
     public function lectures()
     {
-        return $this->hasMany(LessonLecture::class, "lesson_uuid");
+        return $this->hasMany(LessonLecture::class, "lesson_uuid")->orderBy('order')->orderBy('created_at');
     }
 
 

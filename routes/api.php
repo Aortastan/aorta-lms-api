@@ -335,6 +335,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::post('', 'Admin\CourseLessonController@store')->name('store');
             Route::put('{uuid}', 'Admin\CourseLessonController@update')->name('update');
             Route::delete('{uuid}', 'Admin\CourseLessonController@delete')->name('delete');
+            Route::put('{uuid}/reorder-lectures', 'Admin\LessonLectureController@reorder')->name('reorderLectures');
         });
         // end course lesson management
 
