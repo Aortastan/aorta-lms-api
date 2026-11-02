@@ -170,6 +170,8 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::delete('{uuid}', 'Admin\ExamAgendaController@delete')->name('delete');
         });
 
+        Route::post('editor-images', 'Admin\EditorImageController@upload')->name('editorImages.upload');
+
         Route::get('presence', 'Admin\PresenceController@index')->name('presence');
         Route::post('presence/{uuid}/force-logout', 'Admin\PresenceController@forceLogout')->name('presence.forceLogout');
 
