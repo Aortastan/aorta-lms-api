@@ -20,6 +20,7 @@ class ExtractEditorImages extends Command
         {--dry-run : Hitung saja tanpa menyimpan file maupun mengubah database}
         {--table= : Batasi ke satu tabel (questions atau answers)}
         {--limit=0 : Batasi jumlah baris yang diproses per tabel}
+        {--test=* : Batasi ke soal dalam tes tertentu (uuid atau judul persis)}
         {--restore= : Kembalikan isi kolom dari file backup JSONL}';
 
     protected $description = 'Pindahkan gambar base64 di soal dan jawaban menjadi file di storage';
@@ -44,6 +45,27 @@ class ExtractEditorImages extends Command
             $targets = [$table => $targets[$table]];
         }
 
+        $questionUuids = null;
+        if ($tests = $this->option('test')) {
+            $testUuids = DB::table('tests')
+                ->whereIn('uuid', $tests)
+                ->orWhereIn('title', $tests)
+                ->pluck('uuid', 'title');
+            if ($testUuids->isEmpty()) {
+                $this->error('Tes tidak ditemukan');
+                return 1;
+            }
+            foreach ($testUuids as $title => $uuid) {
+                $this->info("Tes: {$title} ({$uuid})");
+            }
+            $questionUuids = DB::table('question_tests')
+                ->whereIn('test_uuid', $testUuids->values())
+                ->pluck('question_uuid')
+                ->unique()
+                ->values()
+                ->all();
+        }
+
         if (!$dryRun) {
             $path = self::BACKUP_FOLDER . '/extract-' . date('Ymd-His') . '.jsonl';
             Storage::disk('local')->put($path, '');
@@ -52,7 +74,7 @@ class ExtractEditorImages extends Command
         }
 
         foreach ($targets as $table => $columns) {
-            $this->processTable($table, $columns, $dryRun, (int) $this->option('limit'));
+            $this->processTable($table, $columns, $dryRun, (int) $this->option('limit'), $questionUuids);
         }
 
         if ($this->backup) {
@@ -64,7 +86,7 @@ class ExtractEditorImages extends Command
         return 0;
     }
 
-    private function processTable(string $table, array $columns, bool $dryRun, int $limit)
+    private function processTable(string $table, array $columns, bool $dryRun, int $limit, ?array $questionUuids)
     {
         $stats = [
             'rows' => 0,
@@ -83,6 +105,9 @@ class ExtractEditorImages extends Command
                     $query->orWhere($column, 'like', '%data:image%');
                 }
             });
+        if ($questionUuids !== null) {
+            $query->whereIn($table === 'questions' ? 'uuid' : 'question_uuid', $questionUuids);
+        }
 
         $bar = $this->output->createProgressBar((clone $query)->count());
         $bar->start();
