@@ -1,7 +1,9 @@
 <?php
 namespace App\Traits\Package;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Package;
+use App\Models\Cart;
 use App\Models\PurchasedPackage;
 use App\Models\Category;
 use App\Models\Subcategory;
@@ -335,6 +337,20 @@ trait PackageTrait
         ])->first();
 
         return $getPackage;
+    }
+
+    public function rejectUnpublishedPackage($package, $user_uuid){
+        if($package->status === 'Published'){
+            return null;
+        }
+
+        Cart::where(['user_uuid' => $user_uuid, 'package_uuid' => $package->uuid])->delete();
+        Cache::forget("user_carts:{$user_uuid}");
+
+        return response()->json([
+            'message' => 'Paket "'.$package->name.'" sudah tidak tersedia dan telah dihapus dari keranjang.',
+            'removed' => [$package->name],
+        ], 422);
     }
 
     public function checkPurchasedPackage($request, $package_uuid, $user_uuid){

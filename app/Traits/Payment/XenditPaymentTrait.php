@@ -133,6 +133,11 @@ trait XenditPaymentTrait
                 ], 404);
             }
 
+            $unpublished = $this->rejectUnpublishedPackage($getPackage, $user->uuid);
+            if($unpublished != null){
+                return $unpublished;
+            }
+
             // cek apakah user sudah pernah membeli lifetime package tersebut
             $checkPurchasedPackage = $this->checkPurchasedPackage($request, $package['package_uuid'], $user->uuid);
             if($checkPurchasedPackage != null){
