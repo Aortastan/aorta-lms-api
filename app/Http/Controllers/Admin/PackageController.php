@@ -527,6 +527,35 @@ class PackageController extends Controller
         ], 200);
     }
 
+    public function updateStatus(Request $request, $uuid): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:Published,Draft',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $package = Package::where(['uuid' => $uuid])->first();
+        if (!$package) {
+            return response()->json([
+                'message' => 'Data not found',
+            ], 404);
+        }
+
+        $package->update(['status' => $request->status]);
+
+        return response()->json([
+            'message' => $request->status === 'Draft'
+                ? 'Paket dijadikan Draft. Paket tidak tampil dan tidak bisa dibeli siswa.'
+                : 'Paket berhasil di-publish',
+        ], 200);
+    }
+
     public function delete($uuid): JsonResponse
     {
         $package = Package::where(['uuid' => $uuid])->first();
@@ -547,7 +576,7 @@ class PackageController extends Controller
             || DetailTransaction::where('package_uuid', $uuid)->exists();
         if ($hasBuyers) {
             return response()->json([
-                'message' => 'Paket sudah pernah dibeli siswa, jadi tidak bisa dihapus. Biarkan berstatus Draft untuk menyembunyikannya.',
+                'message' => 'Paket ini sudah pernah dibeli siswa, jadi tidak bisa dihapus. Paket tetap tersimpan di tab Draft dan tidak tampil/tidak bisa dibeli siswa.',
             ], 422);
         }
 

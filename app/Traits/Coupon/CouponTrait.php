@@ -192,6 +192,11 @@ trait CouponTrait
                     'message' => "Package not found",
                 ], 404);
             }
+
+            $unpublished = $this->rejectUnpublishedPackage($getPackage, $user->uuid);
+            if($unpublished != null){
+                return $unpublished;
+            }
 	   $list_package[] = $getPackage;
 
             // cek apakah user sudah pernah membeli lifetime package tersebut

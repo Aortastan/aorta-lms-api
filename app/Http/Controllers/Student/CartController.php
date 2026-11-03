@@ -20,6 +20,20 @@ class CartController extends Controller
         try{
             $user = $this->getUser();
             $cacheKey = "user_carts:{$user->uuid}";
+
+            $unavailable = Cart::where('carts.user_uuid', $user->uuid)
+                ->leftJoin('packages', 'carts.package_uuid', '=', 'packages.uuid')
+                ->where(function ($query) {
+                    $query->whereNull('packages.uuid')
+                        ->orWhere('packages.status', '!=', 'Published');
+                })
+                ->get(['carts.uuid', 'packages.name']);
+
+            if ($unavailable->isNotEmpty()) {
+                Cart::whereIn('uuid', $unavailable->pluck('uuid'))->delete();
+                \Illuminate\Support\Facades\Cache::forget($cacheKey);
+            }
+
             $cachedData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 180, function () use ($user) {
                 $getCarts = Cart::where([
                     'user_uuid' => $user->uuid,
@@ -59,6 +73,7 @@ class CartController extends Controller
                 'message' => $message,
                 'carts' => $cachedData,
                 'phone_status' => $phone_status,
+                'removed' => $unavailable->pluck('name')->filter()->values(),
             ], 200);
         }
         catch(\Exception $e){
@@ -91,6 +106,12 @@ class CartController extends Controller
         if (!$checkPackage) {
             return response()->json([
                 'message' => 'Paket tidak ditemukan',
+            ], 422);
+        }
+
+        if ($checkPackage->status !== 'Published') {
+            return response()->json([
+                'message' => 'Paket ini sedang tidak tersedia',
             ], 422);
         }
 

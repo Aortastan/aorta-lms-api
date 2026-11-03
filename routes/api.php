@@ -356,6 +356,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
             Route::get('{uuid}', 'Admin\PackageController@show')->name('show');
             Route::post('', 'Admin\PackageController@store')->name('store');
             Route::post('duplicate/{uuid}', 'Admin\PackageController@duplicate')->name('duplicate');
+            Route::put('{uuid}/status', 'Admin\PackageController@updateStatus')->name('updateStatus');
             Route::post('{type}/{uuid}', 'Admin\PackageController@update')->name('update');
             Route::post('lists/{type}/{uuid}', 'Admin\PackageController@packageLists')->name('lists');
             Route::delete('{uuid}', 'Admin\PackageController@delete')->name('delete');
