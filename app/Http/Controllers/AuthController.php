@@ -6,9 +6,14 @@ use App\Models\User;
 use App\Models\UserMenuAccess;
 use App\Models\UserPresence;
 use App\Models\PasswordReset;
+use App\Models\SessionTest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Token;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
@@ -322,6 +327,50 @@ class AuthController extends Controller
     public function refresh(): JsonResponse
     {
         return $this->respondWithToken(auth()->refresh());
+    }
+
+    public function refreshForTest(Request $request): JsonResponse
+    {
+        $raw = JWTAuth::parser()->parseToken();
+        $sessionUuid = (string) $request->input('session_uuid');
+        if (!$raw) {
+            return response()->json(['message' => 'token not found'], 401);
+        }
+        if (!Str::isUuid($sessionUuid)) {
+            return response()->json(['message' => 'Sesi tes tidak valid'], 422);
+        }
+
+        try {
+            $payload = JWTAuth::manager()->setRefreshFlow()->decode(new Token($raw));
+        } catch (TokenExpiredException $e) {
+            return response()->json(['message' => 'token expired'], 401);
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'token invalid'], 401);
+        }
+
+        $user = User::find($payload->get('sub'));
+        if (!$user || $user->role !== 'student' || !$user->active_token || !hash_equals($user->active_token, $raw)) {
+            return response()->json(['message' => 'token invalid'], 401);
+        }
+
+        $inTest = SessionTest::where('uuid', $sessionUuid)
+            ->where('user_uuid', $user->uuid)
+            ->where('updated_at', '>=', now()->subDay())
+            ->exists();
+        if (!$inTest) {
+            return response()->json(['message' => 'token expired'], 401);
+        }
+
+        try {
+            $token = JWTAuth::setToken($raw)->refresh();
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'token invalid'], 401);
+        }
+
+        $user->last_activity_at = now();
+        $user->save();
+
+        return $this->respondWithToken($token, $user);
     }
 
     /**
