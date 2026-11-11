@@ -41,6 +41,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
     Route::post('presence/heartbeat', 'AllRole\PresenceController@heartbeat')->name('presence.heartbeat')->middleware(['auth', 'throttle:30,1,presence']);
     Route::post('presence/offline', 'AllRole\PresenceController@offline')->name('presence.offline')->middleware(['auth', 'throttle:30,1,presence-offline']);
     Route::post('logout', 'AuthController@logout');
+    Route::post('auth/test-refresh', 'AuthController@refreshForTest')->name('auth.testRefresh')->middleware('throttle:10,1,test-refresh');
     Route::post('ping', 'AuthController@ping');
     Route::get('me/menu-access', 'AuthController@myMenuAccess')->name('me.menuAccess');
     Route::get('bot-sso', 'AuthController@botSso')->name('botSso');
