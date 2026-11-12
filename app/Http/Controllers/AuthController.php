@@ -60,18 +60,11 @@ class AuthController extends Controller
 
         // Limit maximum concurrent logged-in users (excluding admin)
         if ($user->role !== 'admin' && empty($user->active_token)) {
-            $idleThreshold = \Carbon\Carbon::now()->subMinutes(15);
-            $activeUsersCount = User::where('role', '!=', 'admin')
-                ->whereNotNull('active_token')
-                ->where(function ($query) use ($idleThreshold) {
-                    $query->where('last_activity_at', '>=', $idleThreshold)
-                        ->orWhereNull('last_activity_at');
-                })
-                ->count();
+            $activeUsersCount = UserPresence::online()->count();
 
-            if ($activeUsersCount >= 100) {
+            if ($activeUsersCount >= 200) {
                 return response()->json([
-                    'message' => 'Kapasitas pengguna aktif saat ini telah mencapai batas maksimal (100 pengguna). Silahkan coba beberapa saat lagi.'
+                    'message' => 'Kapasitas pengguna aktif saat ini telah mencapai batas maksimal (200 pengguna). Silahkan coba beberapa saat lagi.'
                 ], 429);
             }
         }
