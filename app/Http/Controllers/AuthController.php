@@ -186,9 +186,38 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $email = trim($request->email);
+
+        if (!User::where('email', $email)->exists()) {
+            return response()->json([
+                'message' => 'Email belum terdaftar',
+                'errors' => [
+                    'email' => ['Email belum terdaftar. Silakan daftar terlebih dahulu.'],
+                ],
+            ], 404);
+        }
+
+        try {
+            $status = Password::sendResetLink(['email' => $email]);
+        } catch (\Exception $e) {
+            PasswordReset::where('email', $email)->delete();
+            \Log::error('Forgot password mail failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Gagal mengirim email reset password, silakan coba lagi beberapa saat lagi',
+            ], 500);
+        }
+
+        if ($status === Password::RESET_THROTTLED) {
+            return response()->json([
+                'message' => 'Link reset password baru saja dikirim, silakan cek email Anda atau coba lagi beberapa saat lagi',
+            ], 429);
+        }
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            return response()->json([
+                'message' => 'Gagal mengirim email reset password, silakan coba lagi',
+            ], 400);
+        }
 
         return response()->json([
             'message' => 'Success send email',
