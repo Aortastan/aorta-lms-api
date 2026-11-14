@@ -45,7 +45,7 @@ class Coupon extends Model
 
     public function claimed()
     {
-        return $this->hasMany(ClaimedCoupon::class, "coupon_uuid");
+        return $this->hasMany(ClaimedCoupon::class, "coupon_uuid")->where('is_used', 1);
     }
 
     function package()

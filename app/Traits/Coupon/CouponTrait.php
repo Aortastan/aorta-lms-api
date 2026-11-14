@@ -22,7 +22,7 @@ trait CouponTrait
                 throw new \Exception("Coupon not found");
             }
 
-            $checkClaimedCoupon = ClaimedCoupon::where([
+            $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                 'coupon_uuid' => $coupon->uuid,
                 'user_uuid' => $user->uuid,
             ])->first();
@@ -33,7 +33,7 @@ trait CouponTrait
 
             if($coupon->type_limit == 1){
                 // check limit
-                $checkClaimedCoupon = ClaimedCoupon::where([
+                $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                     'coupon_uuid' => $coupon->uuid,
                 ])->count();
                 if($checkClaimedCoupon >= $coupon->limit){
@@ -117,6 +117,7 @@ trait CouponTrait
         $list_coupon_package = [];
         $list_coupon_category = [];
         $list_of_package_and_category = [];
+        $coupon_discounts = [];
 
         // cek semua kuponnya
         foreach ($request->coupon as $key => $code) {
@@ -126,9 +127,12 @@ trait CouponTrait
 
             if($get_coupon == null){
                 return response()->json([
+                    'coupon_code' => $code,
                     'message' => 'Coupon not found',
                 ], 404);
             }
+
+            $coupon_discounts[$get_coupon->code] = 0;
 
             if($get_coupon->is_restricted == 1){
                 if($get_coupon->restricted_by == 'package'){
@@ -232,7 +236,7 @@ trait CouponTrait
                     if(count($list_coupon_package) > 0){
                         foreach ($list_coupon_package as $key1 => $coupon_package) {
                             if($coupon_package['package_uuid'] == $getPackage->uuid){
-                                $checkClaimedCoupon = ClaimedCoupon::where([
+                                $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                                     'coupon_uuid' => $coupon_package['uuid'],
                                     'user_uuid' => $user->uuid,
                                 ])->get();
@@ -245,7 +249,7 @@ trait CouponTrait
 
                                 if($coupon_package['type_limit'] == 1){
                                     // check limit
-                                    $checkClaimedCoupon = ClaimedCoupon::where([
+                                    $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                                         'coupon_uuid' => $coupon_package['uuid'],
                                     ])->count();
                                     if($checkClaimedCoupon >= $coupon_package['limit']){
@@ -265,6 +269,7 @@ trait CouponTrait
                                     }
                                 }
 
+                                $before_discount = $totalDetailAmount;
                                 if($coupon_package['type_coupon'] == 'discount amount'){
                                     $totalDetailAmount = $totalDetailAmount - $coupon_package['price'];
                                     if($totalDetailAmount < 0){
@@ -274,6 +279,7 @@ trait CouponTrait
                                 if($coupon_package['type_coupon'] == 'percentage discount'){
                                     $totalDetailAmount = ((100 - $coupon_package['discount']) / 100) * $totalDetailAmount;
                                 }
+                                $coupon_discounts[$coupon_package['code']] += $before_discount - $totalDetailAmount;
                             }
                         }
                     }
@@ -322,7 +328,7 @@ trait CouponTrait
                     foreach ($list_of_package_by_this_category as $index2 => $list) {
                         $total_percategory += $list['total_detail_amount'];
                     }
-                    $checkClaimedCoupon = ClaimedCoupon::where([
+                    $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                         'coupon_uuid' => $coupon_category['uuid'],
                         'user_uuid' => $user->uuid,
                     ])->get();
@@ -336,7 +342,7 @@ trait CouponTrait
 
                     if($coupon_category['type_limit'] == 1){
                         // check limit
-                        $checkClaimedCoupon = ClaimedCoupon::where([
+                        $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                             'coupon_uuid' => $coupon_category['uuid'],
                         ])->count();
                         if($checkClaimedCoupon >= $coupon_category['limit']){
@@ -358,6 +364,7 @@ trait CouponTrait
                         }
                     }
 
+                    $before_discount = $total_percategory;
                     if($coupon_category['type_coupon'] == 'discount amount'){
                         $total_percategory = $total_percategory - $coupon_category['price'];
                         // if($total_percategory < 0){
@@ -368,7 +375,8 @@ trait CouponTrait
                         $total_percategory = ((100 - $coupon_category['discount']) / 100) * $total_percategory;
                     }
 
-                    
+                    $coupon_discounts[$coupon_category['code']] += $before_discount - $total_percategory;
+
                     $total_amount += $total_percategory;
                 
             }
@@ -380,7 +388,7 @@ trait CouponTrait
 
         if(count($list_coupon_not_restricted) > 0){
             foreach ($list_coupon_not_restricted as $key1 => $coupon) {
-                $checkClaimedCoupon = ClaimedCoupon::where([
+                $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                     'coupon_uuid' => $coupon['uuid'],
                     'user_uuid' => $user->uuid,
                 ])->get();
@@ -394,7 +402,7 @@ trait CouponTrait
 
                 if($coupon['type_limit'] == 1){
                     // check limit
-                    $checkClaimedCoupon = ClaimedCoupon::where([
+                    $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                         'coupon_uuid' => $coupon['uuid'],
                     ])->count();
                     if($checkClaimedCoupon >= $coupon['limit']){
@@ -416,6 +424,7 @@ trait CouponTrait
                     }
                 }
 
+                $before_discount = $total_amount;
                 if($coupon['type_coupon'] == 'discount amount'){
                     $total_amount = $total_amount - $coupon['price'];
                     if($total_amount < 0){
@@ -425,16 +434,17 @@ trait CouponTrait
                 if($coupon['type_coupon'] == 'percentage discount'){
                     $total_amount = ((100 - $coupon['discount']) / 100) * $total_amount;
                 }
+                $coupon_discounts[$coupon['code']] += $before_discount - $total_amount;
             }
         }
 
         if($total_amount > 0) {
             $final_amount = $total_amount + $this->paymentGateway->admin_fee;
         }
-        $selectedCoupon = Coupon::with(['package', 'category'])->where([
+        $selectedCoupon = $request->selectedCoupon ? Coupon::with(['package', 'category'])->where([
                 'code' => $request->selectedCoupon,
-            ])->first();
-        if($selectedCoupon->is_restricted == 1){
+            ])->first() : null;
+        if($selectedCoupon && $selectedCoupon->is_restricted == 1){
             if($selectedCoupon->restricted_by === "package") {
                 $exists = collect($request->packages)->contains('package_uuid', $selectedCoupon->package_uuid);
                 if (!$exists) {
@@ -460,14 +470,19 @@ trait CouponTrait
             'message' => 'Success count discount',
             'sub_total' => $sub_total,
             'admin_fee' => $admin_fee,
+            'admin_fee_applied' => $total_amount > 0 ? $admin_fee : 0,
             'total' => $final_amount,
+            'total_discount' => round(array_sum($coupon_discounts)),
+            'coupons' => collect($coupon_discounts)->map(function ($discount, $code) {
+                return ['code' => $code, 'discount' => round($discount)];
+            })->values(),
             "coupon_restrict" => $list_coupon_package,
-            "coupon" => [
+            "coupon" => $selectedCoupon ? [
                 'coupon_uuid'=>$selectedCoupon['uuid'],
                 'type_coupon' => $selectedCoupon['type_coupon'],
                 'discount_percentage' => $selectedCoupon['discount'],
                 'amount' => $selectedCoupon['price'],
-            ], 
+            ] : null,
         ], 200);
 
     }

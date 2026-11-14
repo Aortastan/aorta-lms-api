@@ -170,7 +170,7 @@ trait XenditPaymentTrait
                     if(count($list_coupon_package) > 0){
                         foreach ($list_coupon_package as $key1 => $coupon_package) {
                             if($coupon_package['package_uuid'] == $getPackage->uuid){
-                                $checkClaimedCoupon = ClaimedCoupon::where([
+                                $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                                     'coupon_uuid' => $coupon_package['uuid'],
                                     'user_uuid' => $user->uuid,
                                 ])->get();
@@ -183,7 +183,7 @@ trait XenditPaymentTrait
 
                                 if($coupon_package['type_limit'] == 1){
                                     // check limit
-                                    $checkClaimedCoupon = ClaimedCoupon::where([
+                                    $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                                         'coupon_uuid' => $coupon_package['uuid'],
                                     ])->count();
                                     if($checkClaimedCoupon >= $coupon_package['limit']){
@@ -260,7 +260,7 @@ trait XenditPaymentTrait
                     foreach ($list_of_package_by_this_category as $index2 => $list) {
                         $total_percategory += $list['total_detail_amount'];
                     }
-                    $checkClaimedCoupon = ClaimedCoupon::where([
+                    $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                         'coupon_uuid' => $coupon_category['uuid'],
                         'user_uuid' => $user->uuid,
                     ])->get();
@@ -274,7 +274,7 @@ trait XenditPaymentTrait
 
                     if($coupon_category['type_limit'] == 1){
                         // check limit
-                        $checkClaimedCoupon = ClaimedCoupon::where([
+                        $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                             'coupon_uuid' => $coupon_category['uuid'],
                         ])->count();
                         if($checkClaimedCoupon >= $coupon_category['limit']){
@@ -318,7 +318,7 @@ trait XenditPaymentTrait
 
         if(count($list_coupon_not_restricted) > 0){
             foreach ($list_coupon_not_restricted as $key1 => $coupon) {
-                $checkClaimedCoupon = ClaimedCoupon::where([
+                $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                     'coupon_uuid' => $coupon['uuid'],
                     'user_uuid' => $user->uuid,
                 ])->get();
@@ -331,7 +331,7 @@ trait XenditPaymentTrait
 
                 if($coupon['type_limit'] == 1){
                     // check limit
-                    $checkClaimedCoupon = ClaimedCoupon::where([
+                    $checkClaimedCoupon = ClaimedCoupon::where('is_used', 1)->where([
                         'coupon_uuid' => $coupon['uuid'],
                     ])->count();
                     if($checkClaimedCoupon >= $coupon['limit']){

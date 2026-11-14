@@ -150,6 +150,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         Route::group(['prefix' => 'transactions', 'as' => 'transactions.',], function () {
             Route::get('', 'Admin\TransactionController@index');
             Route::get('export', 'Admin\TransactionController@exportTransaction')->name('export');
+            Route::post('{transaction_uuid}/cancel', 'Admin\TransactionController@cancel')->name('cancel');
         });
         // End Manage Transaction
 
@@ -413,6 +414,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'v1', 'as' => 'api.',], functio
         // Manage Transaction
         Route::group(['prefix' => 'transactions', 'as' => 'transactions.',], function () {
             Route::get('', 'Student\TransactionController@index');
+            Route::post('{transaction_uuid}/cancel', 'Student\TransactionController@cancel')->name('cancel');
         });
         // End Manage Transaction
 

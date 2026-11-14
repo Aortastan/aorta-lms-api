@@ -7,9 +7,12 @@ use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Transaction;
 use App\Models\MembershipHistory;
+use App\Traits\Payment\CancelTransactionTrait;
 
 class TransactionController extends Controller
 {
+    use CancelTransactionTrait;
+
     public function index(){
         try{
             $user = JWTAuth::parseToken()->authenticate();
@@ -72,5 +75,22 @@ class TransactionController extends Controller
             ]);
         }
 
+    }
+
+    public function cancel($transaction_uuid)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $transaction = Transaction::where([
+            'uuid' => $transaction_uuid,
+            'user_uuid' => $user->uuid,
+        ])->first();
+
+        if ($transaction == null) {
+            return response()->json([
+                'message' => 'Transaction not found',
+            ], 404);
+        }
+
+        return $this->cancelPendingTransaction($transaction, 'student ' . $user->uuid);
     }
 }

@@ -184,6 +184,12 @@ class XenditController extends Controller
                 ], 200);
             }
 
+            if ($transaction->transaction_status == 'cancelled') {
+                ClaimedCoupon::where('transaction_uuid', $transaction->uuid)->update([
+                    'is_used' => 1,
+                ]);
+            }
+
             $getPackages = DetailTransaction::where([
                 'transaction_uuid' => $transaction->uuid,
             ])->get();
