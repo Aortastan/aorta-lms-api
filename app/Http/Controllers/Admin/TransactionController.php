@@ -8,9 +8,13 @@ use App\Models\Transaction;
 use App\Exports\TransactionExport;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Traits\Payment\CancelTransactionTrait;
 
 class TransactionController extends Controller
 {
+    use CancelTransactionTrait;
+
     public function index(Request $request)
     {
         try {
@@ -90,5 +94,20 @@ class TransactionController extends Controller
         $cleanedPackage = $selectedPackage ? str_replace('+', ' ', $selectedPackage) : null;
 
         return Excel::download(new TransactionExport($startDate, $endDate, $cleanedPackage, $selectedCoupon, $status), 'transaction.xlsx');
+    }
+
+    public function cancel($transaction_uuid)
+    {
+        $transaction = Transaction::where('uuid', $transaction_uuid)->first();
+
+        if ($transaction == null) {
+            return response()->json([
+                'message' => 'Transaction not found',
+            ], 404);
+        }
+
+        $admin = JWTAuth::parseToken()->authenticate();
+
+        return $this->cancelPendingTransaction($transaction, 'admin ' . $admin->uuid);
     }
 }
