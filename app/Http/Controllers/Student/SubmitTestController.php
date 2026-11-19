@@ -21,9 +21,12 @@ use App\Models\StudentQuestionGrade;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Traits\Student\TryoutPackageScopeTrait;
 
 class SubmitTestController extends Controller
 {
+    use TryoutPackageScopeTrait;
+
     public function submitTest(Request $request, $session_uuid)
     {
         $incomingDataQuestion = $request->input('data_question');
@@ -251,17 +254,15 @@ class SubmitTestController extends Controller
 
             $package_uuid = $user_session->package_uuid;
             if (!$package_uuid) {
-                $get_package_test = PackageTest::where([
-                    'test_uuid' => $check_tryout->uuid,
-                ])->first();
-                $package_uuid = $get_package_test ? $get_package_test->package_uuid : null;
+                $package_uuid = $this->resolveTryoutPackageUuid($user_session->user_uuid, $check_tryout->uuid);
             }
 
-                    $count = StudentTryout::where([
+                    $countQuery = StudentTryout::where([
                         'user_uuid' => $user_session->user_uuid,
                         'package_test_uuid' => $user_session->package_test_uuid,
-                        'package_uuid' => $package_uuid,
-                    ])->count();
+                    ]);
+                    $this->scopeStudentTryoutsToPackage($countQuery, $user_session->user_uuid, $check_tryout->uuid, $package_uuid);
+                    $count = $countQuery->count();
 
                     if ($test->test_type == 'TSKKWK') {
 

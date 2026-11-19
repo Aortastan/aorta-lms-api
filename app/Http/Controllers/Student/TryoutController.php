@@ -17,11 +17,14 @@ use App\Models\Question;
 use App\Models\Answer;
 use App\Models\StudentQuestionGrade;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Traits\Student\TryoutPackageScopeTrait;
 use Auth;
 use DB;
 
 class TryoutController extends Controller
 {
+    use TryoutPackageScopeTrait;
+
     public function index($tryout_uuid)
     {
         try {
@@ -43,15 +46,15 @@ class TryoutController extends Controller
             if ($checkTestIsPurchasedOrMembership != null) {
                 return $checkTestIsPurchasedOrMembership;
             }
+            $tryoutUuid = $this->tryoutUuidOfSegmentTest($getTest->uuid);
+            $packageUuid = $this->resolveTryoutPackageUuid($user->uuid, $tryoutUuid, request()->get('package_uuid'));
             $pretest_posttestsQuery = StudentTryout::select('uuid', 'score')
                 ->where([
                     'user_uuid' => $user->uuid,
                     'package_test_uuid' => $getTest->uuid,
                 ]);
-            if ($packageUuid = request()->get('package_uuid')) {
-                $pretest_posttestsQuery->where('package_uuid', $packageUuid);
-            }
-            $pretest_posttests = $pretest_posttestsQuery->get();
+            $this->scopeStudentTryoutsToPackage($pretest_posttestsQuery, $user->uuid, $tryoutUuid, $packageUuid);
+            $pretest_posttests = $pretest_posttestsQuery->orderBy('id')->get();
             $getTest['student_attempts'] = $pretest_posttests;
 
             return response()->json([
@@ -254,13 +257,16 @@ class TryoutController extends Controller
                 return $res;
             }
 
+            $tryoutUuid = $this->tryoutUuidOfSegmentTest($getTest->uuid);
+            $packageUuid = $this->resolveTryoutPackageUuid($user->uuid, $tryoutUuid, request()->get('package_uuid'));
+
             // check max attempt
-            if ($res = $this->checkTestMaxAttempt($user, $getTest)) {
+            if ($res = $this->checkTestMaxAttempt($user, $getTest, $tryoutUuid, $packageUuid)) {
                 return $res;
             }
 
             // get session
-            $sessionTest = $this->checkTestSession($user, $getTest);
+            $sessionTest = $this->checkTestSession($user, $getTest, $packageUuid);
 
             if (!$sessionTest instanceof SessionTest) {
                 return response()->json(['message' => "Gagal membuat sesi tes"], 500);
@@ -359,15 +365,13 @@ class TryoutController extends Controller
     }
 
 
-    public function checkTestMaxAttempt($user, $test)
+    public function checkTestMaxAttempt($user, $test, $tryoutUuid = null, $packageUuid = null)
     {
         $query = StudentTryout::where([
             'user_uuid' => $user->uuid,
             'package_test_uuid' => $test->uuid,
         ]);
-        if ($packageUuid = request()->get('package_uuid')) {
-            $query->where('package_uuid', $packageUuid);
-        }
+        $this->scopeStudentTryoutsToPackage($query, $user->uuid, $tryoutUuid, $packageUuid);
         $studentTest = $query->count();
 
         if ($studentTest >= $test->attempt) {
@@ -379,18 +383,24 @@ class TryoutController extends Controller
         return null;
     }
 
-    public function checkTestSession($user, $test)
+    public function checkTestSession($user, $test, $packageUuid = null)
     {
-        $packageUuid = request()->get('package_uuid');
         $query = SessionTest::where([
             'user_uuid' => $user->uuid,
             'package_test_uuid' => $test->uuid,
             'type_test' => 'tryout',
         ]);
         if ($packageUuid) {
-            $query->where('package_uuid', $packageUuid);
+            $query->where(function ($q) use ($packageUuid) {
+                $q->where('package_uuid', $packageUuid)->orWhereNull('package_uuid');
+            })->orderByRaw('package_uuid is null');
         }
         $sessionTest = $query->first();
+
+        if ($sessionTest != null && $packageUuid && !$sessionTest->package_uuid) {
+            $sessionTest->package_uuid = $packageUuid;
+            $sessionTest->save();
+        }
 
         if ($sessionTest == null) {
             $sessionTest = $this->createTestSession($user, $test, $packageUuid);
@@ -556,6 +566,19 @@ class TryoutController extends Controller
             ], 404);
         }
 
+        $userUuid = auth()->user()->uuid;
+        $packageUuid = $this->resolveTryoutPackageUuid($userUuid, $tryout_uuid, request()->get('package_uuid'));
+        $attemptRowsByTest = [];
+        foreach ($tryout['tryoutSegments'] as $tryout_segment) {
+            foreach ($tryout_segment['tryoutSegmentTests'] as $tryout_segment_test) {
+                $rowsQuery = StudentTryout::select('student_tryouts.score', 'student_tryouts.uuid', 'student_tryouts.package_test_uuid', 'student_tryouts.uuid as tryout_uuid', 'student_tryouts.created_at')
+                    ->where('student_tryouts.user_uuid', $userUuid)
+                    ->where('student_tryouts.package_test_uuid', $tryout_segment_test['uuid']);
+                $this->scopeStudentTryoutsToPackage($rowsQuery, $userUuid, $tryout_uuid, $packageUuid);
+                $attemptRowsByTest[$tryout_segment_test['uuid']] = $rowsQuery->orderBy('student_tryouts.id')->get()->values();
+            }
+        }
+
         $student_attempts = [];
         $do_repeat = true;
         $attempt = 1;
@@ -577,14 +600,7 @@ class TryoutController extends Controller
                     $maxPoint = $tryout_segment_test['max_point'] ?? 0;
 
                     // Fetch corresponding records in student_tryouts
-                    $attemptsDataQuery = StudentTryout::select('student_tryouts.score', 'student_tryouts.uuid', 'student_tryouts.package_test_uuid', 'student_tryouts.uuid as tryout_uuid', 'student_tryouts.created_at')
-                        ->where('student_tryouts.user_uuid', auth()->user()->uuid)
-                        ->where('student_tryouts.package_test_uuid', $tryout_segment_test['uuid'])
-                        ->where('student_tryouts.attempt', $attempt);
-                    if ($packageUuid = request()->get('package_uuid')) {
-                        $attemptsDataQuery->where('student_tryouts.package_uuid', $packageUuid);
-                    }
-                    $attemptsData = $attemptsDataQuery->first();
+                    $attemptsData = $attemptRowsByTest[$tryout_segment_test['uuid']][$attempt - 1] ?? null;
                     // Process each attempt for the test
                     $attemptResult = null;
                     $first_score = 0;
@@ -833,9 +849,11 @@ class TryoutController extends Controller
         /**
          * 2️⃣ Ambil SEMUA student_tryouts (ATTEMPT PERTAMA)
          */
-        $studentTryouts = StudentTryout::whereIn('package_test_uuid', $packageTestUuids)
+        $studentTryouts = StudentTryout::select('id', 'user_uuid', 'package_test_uuid', 'score')
+            ->whereIn('package_test_uuid', $packageTestUuids)
             ->where('attempt', 1)
             ->with('user')
+            ->orderBy('id')
             ->get();
 
         /**
@@ -843,7 +861,9 @@ class TryoutController extends Controller
          */
         $grouped = [];
         foreach ($studentTryouts as $st) {
-            $grouped[$st->user_uuid][$st->package_test_uuid] = $st;
+            if (!isset($grouped[$st->user_uuid][$st->package_test_uuid])) {
+                $grouped[$st->user_uuid][$st->package_test_uuid] = $st;
+            }
         }
 
         $leaderboard = [];
