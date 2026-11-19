@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 
 class ProfileController extends Controller
@@ -44,10 +45,17 @@ class ProfileController extends Controller
     public function update(Request $request){
         $user = $this->getUser();
 
+        $cleanedNumber = $this->normalizeMobileNumber($request->mobile_number);
+
         $validate = [
             'name' => 'required|string',
             'username' => 'required|string',
-            'mobile_number' => "required|string",
+            'mobile_number' => [
+                'required',
+                'string',
+                'regex:/^\+62[0-9]{8,13}$/',
+                Rule::unique('users', 'mobile_number')->ignore($user->uuid, 'uuid'),
+            ],
             'gender' => "string|in:male,female",
         ];
 
@@ -55,15 +63,20 @@ class ProfileController extends Controller
             $validate['username'] = 'required|string|unique:users';
         }
 
-        if($user->mobile_number != $request->mobile_number){
-            $validate['mobile_number'] = 'required|string|unique:users';
-        }
-
         if($request->avatar instanceof \Illuminate\Http\UploadedFile && $request->avatar->isValid()){
             $validate['avatar'] = 'required|image';
         }
 
-        $validator = Validator::make($request->all(), $validate);
+        $input = $request->all();
+        if (trim((string) $request->mobile_number) !== '') {
+            $input['mobile_number'] = $cleanedNumber;
+        }
+
+        $validator = Validator::make($input, $validate, [
+            'mobile_number.required' => 'Nomor telepon wajib diisi',
+            'mobile_number.regex' => 'Nomor telepon tidak valid. Contoh: 081234567890 atau +6281234567890',
+            'mobile_number.unique' => 'Nomor telepon sudah digunakan akun lain',
+        ]);
 
         if ($validator->fails()) {
             return response()->json([
@@ -99,32 +112,44 @@ class ProfileController extends Controller
             $path = $user->avatar;
         }
 
-        $cleanedNumber = preg_replace('/[^0-9]/', '', $request->mobile_number);
-
-        // Menambahkan awalan + jika belum dimulai dengan +
-        if (substr($cleanedNumber, 0, 1) !== '+') {
-            // Menghapus angka 0 di depan jika ada
-            $cleanedNumber = ltrim($cleanedNumber, '0');
-        
-            // Menambahkan awalan +62 jika tidak sudah dimulai dengan 62
-            $cleanedNumber = (substr($cleanedNumber, 0, 2) !== '62') ? '+62' . $cleanedNumber : '+' . $cleanedNumber;
+        try {
+            User::where([
+                'uuid' => $user->uuid,
+            ])->update([
+                "name" => $request->name,
+                "username" => $request->username,
+                "mobile_number" => $cleanedNumber,
+                "gender" => $request->gender,
+                "avatar" => $path,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (($e->errorInfo[1] ?? null) == 1062) {
+                $field = strpos($e->getMessage(), 'mobile_number') !== false ? 'mobile_number' : 'username';
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => [
+                        $field => [$field == 'mobile_number' ? 'Nomor telepon sudah digunakan akun lain' : 'Username sudah digunakan akun lain'],
+                    ],
+                ], 422);
+            }
+            throw $e;
         }
-
-        User::where([
-            'uuid' => $user->uuid,
-        ])->update([
-            "name" => $request->name,
-            "username" => $request->username,
-            "mobile_number" => $cleanedNumber,
-            "gender" => $request->gender,
-            "avatar" => $path,
-        ]);
 
         \Illuminate\Support\Facades\Cache::forget("user_profile:{$user->uuid}");
 
         return response()->json([
             'message' => 'Update profile successfully',
+            'profile' => [
+                'mobile_number' => $cleanedNumber,
+            ],
         ], 200);
+    }
+
+    private function normalizeMobileNumber($mobileNumber)
+    {
+        $cleanedNumber = ltrim(preg_replace('/[^0-9]/', '', (string) $mobileNumber), '0');
+
+        return substr($cleanedNumber, 0, 2) !== '62' ? '+62' . $cleanedNumber : '+' . $cleanedNumber;
     }
 
     public function changePassword(Request $request): JsonResponse{
